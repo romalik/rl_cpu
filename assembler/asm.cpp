@@ -177,6 +177,7 @@ int main(int argc, char ** argv) {
                     s++;
                 }
                 s++;
+                addr++;
                 *sDat = '"';
                 *(sDat + 1) = 0;
                 strcpy(text2 + strlen(text2), strData);

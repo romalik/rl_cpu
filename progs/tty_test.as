@@ -6,16 +6,7 @@
 #define REG_DISPLAY 0xfffe
 #define REG_KB 0xfffd
 #define REG_TTY 0xfffc
-#include "defs.inc"
-
-add @firststr 0 REG_A;
-@t_puts_loop
-#je **REG_A 0 @t_puts_end
-add **REG_A 0 REG_TTY
-#add *REG_A 1 REG_A
-#jmp 0 0 @t_puts_loop
-@t_puts_end
-jmp 0 0 @t_puts_end
+#include "../assembler/defs.inc"
 
 
 add 0x1100 0 __SP; #set up stack pointer
