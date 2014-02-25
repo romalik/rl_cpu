@@ -1,0 +1,19 @@
+ASM=../assembler/b.sh
+SOURCES=tty_test.as asm_test.as
+IMAGES=tty_test.img asm_test.img
+
+
+
+all: $(SOURCES) $(IMAGES)
+
+clean:
+	rm *.img
+
+    
+tty_test.img: tty_test.as
+	$(ASM) tty_test.as sim > tty_test.img
+
+asm_test.img: asm_test.as
+	$(ASM) asm_test.as sim > asm_test.img
+
+
