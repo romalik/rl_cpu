@@ -4,7 +4,7 @@
 #define REG_C 0x1002
 #define REG_D 0x1003
 #define REG_DISPLAY 0xfffe
-#define REG_KB 0xfffd
+#define REG_DISPLAY2 0xfffd
 #define REG_TTY 0xfffc
 #include "../assembler/defs.inc"
 
@@ -20,9 +20,11 @@ hlt 0 0 0
 
 @shownumrec
 LOCAL1(REG_B)
+add *__SP 0 REG_DISPLAY2
 add 0 *REG_B REG_DISPLAY
 sub *REG_B 1 REG_B
 je *REG_B 0 @quitshow
 CALL1(@shownumrec, *REG_B)
 @quitshow
+add *__SP 0 REG_DISPLAY2
 RET()
