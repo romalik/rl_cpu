@@ -6,6 +6,7 @@
 #define REG_DISPLAY 0xfffe
 #define REG_DISPLAY1 0xfffd
 #define REG_TTY 0xfffc
+#define REG_KB 0xffff
 #include "defs.inc"
 
 add 0xF000 0 __SP; #set up stack pointer
