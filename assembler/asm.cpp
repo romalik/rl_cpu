@@ -41,6 +41,8 @@ hlt 0x8000 1000 0000 0000 0000
 
 
 opcode_entry opcode_table[] = {
+    {"shl", 0x00, 4},
+    {"shr", 0x01, 4},
     {"add", 0x02, 4},
     {"sub", 0x03, 4},
     {"and", 0x04, 4},
