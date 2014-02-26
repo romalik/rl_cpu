@@ -1,35 +1,10 @@
-#define __SP 0x1010
-#define REG_A 0x1000
-#define REG_B 0x1001
-#define REG_C 0x1002
-#define REG_D 0x1003
-#define REG_DISPLAY 0xfffe
-#define REG_KB 0xfffd
-#define REG_TTY 0xfffc
-#include "../assembler/defs.inc"
+#include "init.as"
+#include "puts.as"
 
-
-add 0x1100 0 __SP; #set up stack pointer
-@begin
-add 0 @firststr REG_A;
-add 0 REG_TTY REG_B;
-CALL(@puts);
-
-add 0 @secondstr REG_A;
-add 0 REG_TTY REG_B;
-CALL(@puts);
-
-jmp 0 0 @begin;
-
-
-@puts
-@puts_loop
-je **REG_A 0 @puts_end
-add **REG_A 0 *REG_B
-add *REG_A 1 REG_A
-jmp 0 0 @puts_loop
-@puts_end
-RET();
+@start
+CALL2(@puts, @firststr, REG_TTY);
+CALL2(@puts, @secondstr, REG_TTY);
+jmp 0 0 @start ;
 
 @firststr "Hello "
 @secondstr " __world__ !!!    "
