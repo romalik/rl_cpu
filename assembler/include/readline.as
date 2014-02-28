@@ -11,5 +11,5 @@ add *REG_C 1 REG_C
 add *REG_C 0 REG_DISPLAY
 jmp 0 0 @readline_next_char
 @readline_finish
-add 0 0 **REG_B
+add 0 0 *REG_B
 RET();
