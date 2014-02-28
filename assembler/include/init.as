@@ -3,6 +3,9 @@
 #define REG_B 0x1001
 #define REG_C 0x1002
 #define REG_D 0x1003
+#define REG_E 0x1004
+#define REG_F 0x1005
+#define REG_LOCAL 0x1006
 #define REG_DISPLAY 0xfffe
 #define REG_DISPLAY1 0xfffd
 #define REG_TTY 0xfffc

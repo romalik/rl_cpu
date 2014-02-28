@@ -34,8 +34,14 @@
                 add *__SP **__SP __SP; \
                 jmp 0 0 **__SP;
 
-#define LOCAL1(A)  add *__SP 2 REG_C; \
-                   add **REG_C 0 A;
+#define LOCAL1(A)  add *__SP 2 REG_LOCAL; \
+                   add **REG_LOCAL 0 A;
 
-#define LOCAL2(A)  add *__SP 3 REG_C; \
-                  add **REG_C 0 A;
+#define TO_LOCAL1(A)  add *__SP 2 REG_LOCAL; \
+                      add A 0 *REG_LOCAL;
+
+#define LOCAL2(A)  add *__SP 3 REG_LOCAL; \
+                  add **REG_LOCAL 0 A;
+
+#define TO_LOCAL2(A)  add *__SP 3 REG_LOCAL; \
+                      add A 0 *REG_LOCAL;
