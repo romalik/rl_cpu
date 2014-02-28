@@ -37,7 +37,6 @@ or *REG_D 1 REG_D
 @div_skip_setbit
 jl *REG_D *REG_B @div_skip_sub
 sub *REG_D *REG_B REG_D
-add *REG_D 0 REG_DISPLAY1
 or *REG_C *REG_E REG_C
 @div_skip_sub
 shr *REG_E 0 REG_E
