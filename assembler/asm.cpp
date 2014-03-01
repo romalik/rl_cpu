@@ -175,7 +175,9 @@ int main(int argc, char ** argv) {
                 *sDat = '"';
                 sDat++;
                 s++;
-                while(*s && *s != '"') {
+                while(*s) {
+                    if(*s == '"' && *(s-1) != '\\')
+                            break;
                     *sDat = *s;
                     sDat++;
                     addr++;
@@ -255,10 +257,15 @@ int main(int argc, char ** argv) {
                     s++;
                 }
             }
+
+
             while(*s == '"' && *s) {
                 s++;
-                while(*s && *s != '"') {
-                    printf("%04X ", *s);
+                while(*s) {
+                    if(*s == '"' && *(s-1)!='\\')
+                        break;
+                    if(*s != '\\' || *(s-1)=='\\')
+                        printf("%04X ", *s);
                     s++;
                 }
                 printf("%04X\n", 0);
