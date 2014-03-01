@@ -6,7 +6,7 @@
 #define REG_DISPLAY 0xfffe
 #define REG_DISPLAY2 0xfffd
 #define REG_TTY 0xfffc
-#include "../assembler/defs.inc"
+#include "defs.inc"
 
 
 add 0x1100 0 __SP; #set up stack pointer
