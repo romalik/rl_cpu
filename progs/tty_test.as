@@ -14,10 +14,10 @@ add 10 0 REG_TTY
 hlt 0 0 0
 jmp 0 0 @start
 
-@str0 "mouse: "
-@str1 " ()_() "
-@str2 "  \\"/  "
-@str3 "    *   "
+@str0 "TEST "
+@str1 " --- "
+@str2 "  -  "
+@str3 "-----"
 
 @firststr "  >string read: "
 @secondstr .100
