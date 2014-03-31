@@ -55,6 +55,7 @@ opcode_entry opcode_table[] = {
     {"jl", 0x0d, 4},
     {"jg", 0x0e, 4},
     {"lpc", 0x10, 4},
+    {"reti", 0x808, 4},
     {"hlt", 0x8000, 4},
     {"", 0x00, 0}
 };

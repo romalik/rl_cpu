@@ -3,6 +3,10 @@ D-triggers:
 		LFRC - data
 		LFRC_Clk - clock
 
+	IRQ - InterruptRequest (set by interrupt source, waiting for processing)
+
+	IntProcess - Interrupt in process (new IRQs ignored till IntProcessEnd)
+
 Counters:
 	RS - Register Select
 		RSR - reset
@@ -28,7 +32,7 @@ SEQUENCE:
 
 {fetch}
 1	PcMux				pc out
-2	ALE					al in
+2	ALE; if not [IntProcess] PcIntClock; if [IRQ] goto INTERRUPT 
 3	RamCS & R/W Ram		ram out
 4	ILE					IL in
 
@@ -83,3 +87,8 @@ EXECUTE:
 ALU:
 18	ALE & PcClock
 19	ALUMUX OR PcMux & RAMCS & goto START
+INTERRUPT:
+
+20	IntProcessStart				//Merge 20 & 21  ???
+21	IntVectorMux; PcLoad
+22	PcClock; PcLoad; goto START;

@@ -1,7 +1,7 @@
 
 instruction
-|  15  |  14  |  13  |  12  |  11  |  10  |  9  |  8  |  7  |  6  |  5  |  4  |   3   |  2  |  1  |  0  |
-|  NA  |  NA  |  NA  |  NA  |  NA  |   deref2   |   deref1  |   deref0  | LfPC|alu/jmp|     opcode      |
+|  15  |  14  |  13  |  12  |      11    |  10  |  9  |  8  |  7  |  6  |  5  |  4   |    3    |  2  |  1  |  0  |
+| HALT |  NA  |  NA  |  NA  | Restore PC |   deref2   |   deref1  |   deref0  | LfPC | alu/jmp |     opcode      |
 
 alu:
 		pj=<>
@@ -22,3 +22,9 @@ jg	e	01110
 
 load from pc to dest
 lpc	10	10000
+
+restore pc from backup
+reti	808	(jmp + RestorePC)
+
+stop main clock
+hlt	8000

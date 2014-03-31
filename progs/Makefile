@@ -1,6 +1,6 @@
 ASM=../assembler/b.sh
-SOURCES=tty_test.as asm_test.as call_test.as str_test.as
-IMAGES=tty_test.img asm_test.img call_test.img str_test.img
+SOURCES=int_test.as tty_test.as asm_test.as call_test.as str_test.as
+IMAGES=int_test.img tty_test.img asm_test.img call_test.img str_test.img
 
 
 
@@ -20,5 +20,8 @@ asm_test.img: asm_test.as
 
 str_test.img: str_test.as
 	$(ASM) str_test.as sim > str_test.img
+
+int_test.img: int_test.as
+	$(ASM) int_test.as sim > int_test.img
 
 
