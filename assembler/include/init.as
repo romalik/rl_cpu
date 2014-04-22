@@ -8,8 +8,8 @@
 #define REG_LOCAL 0x1006
 #define REG_DISPLAY 0xfffe
 #define REG_DISPLAY1 0xfffd
-#define REG_TTY 0xfffc
-#define REG_KB 0xffff
+#define REG_TTY 0x2000
+#define REG_KB 0x2001
 #include "defs.inc"
 
 add 0x1FFF 0 __SP; #set up stack pointer 0x00
