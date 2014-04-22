@@ -12,7 +12,7 @@
 #define REG_KB 0xffff
 #include "defs.inc"
 
-add 0xF000 0 __SP; #set up stack pointer 0x00
+add 0x1FFF 0 __SP; #set up stack pointer 0x00
 jmp 0 0 @start     #                     0x04
 
 hlt 0 0 0 #0x08
