@@ -113,7 +113,11 @@ int getOpcodeTableIndex(char * token) {
 
 int flSim = 0;
 
+unsigned int memImage[0x10000];
+
 int main(int argc, char ** argv) {
+    memset(memImage,0,sizeof(unsigned int) * 0x10000);
+
     if(argc > 1) {
         FILE * fd;
         fd = fopen(argv[1], "r");
@@ -237,6 +241,7 @@ int main(int argc, char ** argv) {
         argN = 0;
         argC = 0;
 
+        unsigned int * tgt = memImage;
 
         if(!flSim) {
             printf("Labels:\n");
@@ -265,11 +270,17 @@ int main(int argc, char ** argv) {
                 while(*s) {
                     if(*s == '"' && *(s-1)!='\\')
                         break;
-                    if(*s != '\\' || *(s-1)=='\\')
-                        printf("%04X ", *s);
+                    if(*s != '\\' || *(s-1)=='\\') {
+                        //printf("%04X ", *s);
+                        *tgt = *s;
+                        tgt++;
+                    }
+
                     s++;
                 }
-                printf("%04X\n", 0);
+                //printf("%04X\n", 0);
+                *tgt = 0;
+                tgt++;
                 s++;
             }
             while(!strchr(" \t\n\r;", *s) && *s) {
@@ -318,9 +329,13 @@ int main(int argc, char ** argv) {
 
                 if(argN >= argC) {
                     static int addr = 0;
-                    if(flSim)
-                        printf("%04X %04X %04X %04X\n", instruction[0], instruction[1], instruction[2], instruction[3]);
-                    else
+                    if(flSim) {
+                        //printf("%04X %04X %04X %04X\n", instruction[0], instruction[1], instruction[2], instruction[3]);
+                        for(int _i = 0; _i < 4; _i++) {
+                            *tgt = instruction[_i];
+                            tgt++;
+                        }
+                    } else
                         printf("%04x : %04X %04X %04X %04X\n", addr, instruction[0], instruction[1], instruction[2], instruction[3]);
 
                     addr+=4;
@@ -328,6 +343,15 @@ int main(int argc, char ** argv) {
                 }
             }
         }
+
+    }
+    unsigned int stop;
+    for( stop = 0xffff; stop > 0; stop--) {
+        if(memImage[stop] != 0)
+            break;
+    }
+    for(unsigned int i = 0; i<stop; i+=4) {
+        printf("%04X %04X %04X %04X\n", memImage[i+0], memImage[i+1], memImage[i+2], memImage[i+3]);
 
     }
 
