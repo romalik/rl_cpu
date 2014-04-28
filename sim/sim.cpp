@@ -207,9 +207,14 @@ void loadROMImage(char * path) {
     int c = 0;
     char romtext[10000];
     char * romtextptr = romtext;
+    int skipLine = 1;
     while((c = fgetc(fd))!=EOF) {
-        * romtextptr = c;
-        romtextptr++;
+        if(c == '\n' || c == '\r')
+            skipLine = 0;
+        if(!skipLine) {
+            * romtextptr = c;
+            romtextptr++;
+        }
     }
     *romtextptr = 0;
     textHexToBin(romtext, ROM, 8192);
