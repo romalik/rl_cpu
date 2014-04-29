@@ -1,3 +1,5 @@
+#include "defs.inc"
+jmp 0 0 @calc_main
 @calc
 add 0 0xffff @currOp
 

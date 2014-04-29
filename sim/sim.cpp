@@ -89,6 +89,8 @@ unsigned int readMem(unsigned int addr, MemoryMapEntry * where) {
     return 0xffff;
 }
 
+int portFileOpen = 0;
+FILE * portFd;
 
 void portWriter(unsigned int addr, unsigned int val, MemoryMapEntry * where) {
     unsigned int localAddr = addr - where->blockStart;
@@ -106,6 +108,32 @@ unsigned int portReader(unsigned int addr, MemoryMapEntry * where) {
             return kb_buf[kb_buf_idx];
         } else {
             fprintf(stderr, "KB ZERO\n");
+            return 0;
+        }
+    } else if(localAddr == 2) { //data port
+        if(portFileOpen) {
+            char buf[100];
+            buf[0] = 0;
+            unsigned int t = 0;
+            int s = 0;
+            while(1) {
+                s = fgetc(portFd);
+                if(!(s) || s == EOF) {
+                    break;
+                } else if(isalnum(s)) {
+                    int len = strlen(buf);
+                    buf[len] = s;
+                    buf[len+1] = 0;
+                    t = strtol(buf, NULL, 16);
+                } else {
+                    if(strlen(buf)) {
+                        break;
+                    }
+                }
+            }
+            fprintf(stderr,"PORT READ 0x%04x\n", t);
+            return t;
+        } else {
             return 0;
         }
     }
@@ -354,15 +382,23 @@ void checkKb() {
     }
 }
 
+void initPorts(int argc, char ** argv) {
+    if(argc > 2) {
+        portFd = fopen(argv[2],"r");
+        portFileOpen = 1;
+    }
+}
+
 int main(int argc, char ** argv) {
     system("stty -echo");
     init();
+    initPorts(argc, argv);
     loadROMImage(argv[1]);
     while(1) {
         unsigned long t = gettime_ms();
         execCycle();
         checkKb();
-        while(gettime_ms() - t < 1) {}
+        //while(gettime_ms() - t < 1) {}
         unsigned long t2 = gettime_ms();
 
         fprintf(stderr, "cycle: %llu ms, freq: %f Hz\n", t2-t, 1000.0f/(t2-t));

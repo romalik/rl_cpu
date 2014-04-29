@@ -117,7 +117,7 @@ unsigned int getLabelAddress(char * _name) {
 unsigned int getLabelAbsAddress(char * _name) {
     for(int i = 0; i<255; i++) {
         if(!strcmp(_name, label_array[i].name)) {
-            return label_array[i].addr + ((label_array[i].segment==-1)?0:segmentOffset[label_array[i].segment]) + globalOffset;
+            return label_array[i].addr + ((label_array[i].segment==-1)?0:(segmentOffset[label_array[i].segment] + globalOffset));
         }
     }
     return 0;
