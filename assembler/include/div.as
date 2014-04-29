@@ -13,7 +13,7 @@ end
 */
 
 
-
+.seg0
 #function div
 @div
 LOCAL1(REG_A)  #N

@@ -1,3 +1,4 @@
+.seg0
 #function mult
 @mult
 LOCAL1(REG_A)

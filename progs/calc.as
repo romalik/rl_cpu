@@ -70,4 +70,14 @@ add 10 0 REG_TTY
 jmp 0 0 @calc_main_loop
 @calc_exit
 RET()
+.seg1
+
+
+@calc_disclaimer "---=== Calculator v0.1 for rlcpu ===---"
+@calc_str1 "calc> "
+@calc_str2 " = "
+@calc_exit_str "exit"
+@calc_buf .10
+@currOp .1
+
 

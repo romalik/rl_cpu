@@ -1,3 +1,4 @@
+.seg0
 @atoi
 LOCAL1(REG_A)
 add 0 0 REG_C

@@ -1,3 +1,4 @@
+.seg0
 @itoa
 LOCAL1(REG_A)
 add 10000 0 REG_C

@@ -205,7 +205,7 @@ void loadROMImage(char * path) {
     FILE * fd;
     fd = fopen(path, "r");
     int c = 0;
-    char romtext[10000];
+    char romtext[100000];
     char * romtextptr = romtext;
     int skipLine = 1;
     while((c = fgetc(fd))!=EOF) {

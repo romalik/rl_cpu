@@ -12,6 +12,7 @@
 #define REG_KB 0x2001
 #include "defs.inc"
 
+.seg0
 add 0x1FFF 0 __SP; #set up stack pointer 0x00
 jmp 0 0 @start     #                     0x04
 

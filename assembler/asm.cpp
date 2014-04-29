@@ -3,6 +3,8 @@
 #include <stdlib.h>
 
 
+#include <ctype.h>
+#include <unistd.h>
 
 char text[1000000];
 char text2[1000000];
@@ -60,10 +62,17 @@ opcode_entry opcode_table[] = {
     {"", 0x00, 0}
 };
 
+unsigned int segmentOffset[2];
+
+unsigned int globalOffset = 0;
+
+
+
 
 typedef struct label_entry_ {
     char name[255];
     unsigned int addr;
+    int segment;
 } label_entry;
 
 label_entry label_array[255];
@@ -72,16 +81,27 @@ void initLabelArray() {
     for(int i = 0; i<255; i++) {
         *label_array[i].name = 0;
         label_array[i].addr = 0;
+        label_array[i].segment = 0;
     }
 }
 
-void addLabel(char * _name, unsigned int _addr) {
+void addLabel(char * _name, unsigned int _addr, int segment) {
     for(int i = 0; i<255; i++) {
         if(!(*label_array[i].name)) {
             strcpy(label_array[i].name, _name);
             label_array[i].addr = _addr;
+            label_array[i].segment = segment;
             return;
         }
+    }
+}
+
+void loadLabelArray(char * fname) {
+    FILE * fd = fopen(fname, "r");
+    char lname[100];
+    unsigned int laddr;
+    while(fscanf(fd,"%s %x\n", lname, &laddr) != EOF) {
+        addLabel(lname, laddr, -1);
     }
 }
 
@@ -93,6 +113,16 @@ unsigned int getLabelAddress(char * _name) {
     }
     return 0;
 }
+
+unsigned int getLabelAbsAddress(char * _name) {
+    for(int i = 0; i<255; i++) {
+        if(!strcmp(_name, label_array[i].name)) {
+            return label_array[i].addr + ((label_array[i].segment==-1)?0:segmentOffset[label_array[i].segment]) + globalOffset;
+        }
+    }
+    return 0;
+}
+
 
 int getOpcodeTableIndex(char * token) {
     int cnt = 0;
@@ -114,13 +144,63 @@ int getOpcodeTableIndex(char * token) {
 int flSim = 0;
 
 unsigned int memImage[0x10000];
+unsigned int * seg[2];
 
 int main(int argc, char ** argv) {
+
+    char * outName = 0;
+    char * outLinkName = 0;
+    char * inLinkName = 0;
+    char * inName = 0;
+    int verbose = 0;
+
+
+    opterr = 0;
+    int c;
+    while ((c = getopt (argc, argv, "s:O:l:L:o:v::")) != -1) {
+        switch (c)
+        {
+        case 'v':
+            verbose = 1;
+            if(optarg)
+                if(*optarg == 'v')
+                    verbose = 2;
+            break;
+        case 'l':
+            inLinkName = optarg;
+            break;
+        case 'L':
+            outLinkName = optarg;
+            break;
+        case 'o':
+            outName = optarg;
+            break;
+        case 's':
+            inName = optarg;
+            break;
+        case 'O':
+            globalOffset = strtol(optarg, 0, 0);
+            break;
+        //default:
+            //abort ();
+        }
+    }
+    if(verbose) {
+        printf("Verbose: %d\noutName: %s\ninLinkName: %s\noutLinkName: %s\nglobalOffset: %d\ninName: %s\n", verbose, outName?outName:"NO", inLinkName?inLinkName:"NO", outLinkName?outLinkName:"NO", globalOffset, inName?inName:"NO");
+    }
+
+
     memset(memImage,0,sizeof(unsigned int) * 0x10000);
 
+    segmentOffset[0] = 0;
+    segmentOffset[1] = 0x1020;
+    seg[0] = (unsigned int *)malloc(0x10000 * sizeof(unsigned int));
+    seg[1] = (unsigned int *)malloc(0x10000 * sizeof(unsigned int));
+    memset(seg[0], 0, 0x10000*sizeof(unsigned int));
+    memset(seg[1], 0, 0x10000*sizeof(unsigned int));
     if(argc > 1) {
         FILE * fd;
-        fd = fopen(argv[1], "r");
+        fd = fopen(inName, "r");
         char * s = text;
         while(1) {
             int c;
@@ -131,14 +211,22 @@ int main(int argc, char ** argv) {
             s++;
 
         }
-        if(argc > 2)
-            flSim = !strcmp(argv[2], "-sim");
 
-        if(flSim) {
-            printf("v2.0 raw\n");
-        } else {
-            printf("text:\n%s\n", text);
+        if(verbose) {
+            printf("Global offset: 0x%04X\n", globalOffset);
+            if(verbose == 2) printf("text:\n%s\n", text);
         }
+
+        initLabelArray();
+        if(inLinkName) {
+            if(verbose) {
+                printf("Loading link info from %s\n", inLinkName);
+            }
+            loadLabelArray(inLinkName);
+
+
+        }
+
         /*
     printf("opcodes:\n");
 
@@ -157,10 +245,15 @@ int main(int argc, char ** argv) {
         s = text;
         int argN = 0;
         int argC = 4;
-        unsigned int addr = 0;
+        unsigned int addr[2];
+        addr[0] = 0;
+        addr[1] = 0;
+
+
+        unsigned int cSeg = 0;
+
         *text2 = 0;
 
-        initLabelArray();
 
         while(1) {
             char token[1000];
@@ -185,11 +278,11 @@ int main(int argc, char ** argv) {
                             break;
                     *sDat = *s;
                     sDat++;
-                    addr++;
+                    addr[cSeg]++;
                     s++;
                 }
                 s++;
-                addr++;
+                addr[cSeg]++;
                 *sDat = '"';
                 *(sDat + 1) = 0;
                 strcpy(text2 + strlen(text2), strData);
@@ -206,15 +299,29 @@ int main(int argc, char ** argv) {
             if(*t) {
                 if(argN == 0) { //opcode
                     if(token[0] == '@') {
-                        addLabel(token+1, addr);
+                        addLabel(token+1, addr[cSeg], cSeg);
                     } else if (token[0] == '.') {
                         int skip = 0;
-                        if(!(token[1])) { //default skip 1 word
+                        if(!memcmp(token+1, "seg", 3)) { //change segment
+                            cSeg = atoi(token + 4);
+                            strcpy(text2 + strlen(text2), token);
+                            strcpy(text2 + strlen(text2), "\n");
+
+                        } else if(!(token[1])) { //default skip 1 word
                             skip = 1;
                         } else {
                             skip = atoi(token + 1);
                         }
-                        addr+=skip;
+                        addr[cSeg]+=skip; //zero-terminator
+
+                        //add space for variable (epic hack)
+                        if(skip) {
+                            strcpy(text2 + strlen(text2), "\"");
+                            for(int i = 0; i<skip-1; i++) {
+                                strcpy(text2 + strlen(text2), "S");
+                            }
+                            strcpy(text2 + strlen(text2), "\"");
+                        }
                     } else {
                         argN++;
                         strcpy(text2 + strlen(text2), token);
@@ -229,7 +336,7 @@ int main(int argc, char ** argv) {
                 }
                 if(argN >= argC) {
                     strcpy(text2 + strlen(text2), ";\n");
-                    addr += 4;
+                    addr[cSeg] += 4;
                     argN = 0;
                 }
             }
@@ -241,15 +348,28 @@ int main(int argc, char ** argv) {
         argN = 0;
         argC = 0;
 
-        unsigned int * tgt = memImage;
+        unsigned int * tgt[2];
+        tgt[0] = seg[0];
+        tgt[1] = seg[1];
+        cSeg = 0;
 
-        if(!flSim) {
+        if(outLinkName) {
+            if(verbose)
+                printf("Writing link information to %s\n", outLinkName);
+            FILE* outLinkFd = fopen(outLinkName, "w");
+            for(int i = 0; i<255;i++) {
+                if(!(*label_array[i].name)) break;
+                fprintf(outLinkFd, "%s 0x%04X\n", label_array[i].name, getLabelAbsAddress(label_array[i].name));
+            }
+        }
+
+        if(verbose) {
             printf("Labels:\n");
             for(int i = 0; i<255; i++) {
                 if(!(*label_array[i].name)) break;
-                printf("[%s] -> [0x%04X]\n", label_array[i].name, label_array[i].addr);
+                printf("[%s] -> [0x%04X] seg %d abs[0x%04X]\n", label_array[i].name, label_array[i].addr, label_array[i].segment, getLabelAbsAddress(label_array[i].name));
             }
-            printf("Text after first pass:\n%s\n", text2);
+            if(verbose == 2) printf("Text after first pass:\n%s\n", text2);
         }
         while(1) {
             char token[1000];
@@ -272,15 +392,15 @@ int main(int argc, char ** argv) {
                         break;
                     if(*s != '\\' || *(s-1)=='\\') {
                         //printf("%04X ", *s);
-                        *tgt = *s;
-                        tgt++;
+                        *tgt[cSeg] = *s;
+                        tgt[cSeg]++;
                     }
 
                     s++;
                 }
                 //printf("%04X\n", 0);
-                *tgt = 0;
-                tgt++;
+                *tgt[cSeg] = 0;
+                tgt[cSeg]++;
                 s++;
             }
             while(!strchr(" \t\n\r;", *s) && *s) {
@@ -293,20 +413,25 @@ int main(int argc, char ** argv) {
                 break;
             if(*t) {
                 //printf("token: %s\n", token);
+                int flSkip = 0;
                 if(argN == 0) { //opcode
-
-                    int opcodeIdx = getOpcodeTableIndex(t);
-                    if(opcodeIdx < 0) {
-                        printf("Unknown opcode: \"%s\"! Stop.\n", t);
-                        return -1;
+                    if(!memcmp(t, ".seg", 4)) {
+                        cSeg = atoi(t+4);
+                        flSkip = 1;
                     } else {
-                        //printf("0x%04X\n", opcode_table[opcodeIdx].code);
-                        argC = opcode_table[opcodeIdx].argC;
-                        instruction[0] = opcode_table[opcodeIdx].code;
 
-                        argN++;
+                        int opcodeIdx = getOpcodeTableIndex(t);
+                        if(opcodeIdx < 0) {
+                            printf("Unknown opcode: \"%s\"! Stop.\n", t);
+                            return -1;
+                        } else {
+                            //printf("0x%04X\n", opcode_table[opcodeIdx].code);
+                            argC = opcode_table[opcodeIdx].argC;
+                            instruction[0] = opcode_table[opcodeIdx].code;
+
+                            argN++;
+                        }
                     }
-
                 } else if(argN < argC) {
                     int deref_cnt = 1;
                     while(t[0] == '*') {
@@ -314,7 +439,7 @@ int main(int argc, char ** argv) {
                         deref_cnt++;
                     }
                     if(t[0]=='@') {
-                        instruction[argN] = getLabelAddress(t+1);
+                        instruction[argN] = getLabelAbsAddress(t+1);
                         //printf("\n\n\t>>>>>replace %s with address 0x%04X\n\n", t+1, instruction[argN]);
 
                     } else {
@@ -326,35 +451,47 @@ int main(int argc, char ** argv) {
 
 
                 }
-
-                if(argN >= argC) {
-                    static int addr = 0;
-                    if(flSim) {
-                        //printf("%04X %04X %04X %04X\n", instruction[0], instruction[1], instruction[2], instruction[3]);
-                        for(int _i = 0; _i < 4; _i++) {
-                            *tgt = instruction[_i];
-                            tgt++;
-                        }
-                    } else
-                        printf("%04x : %04X %04X %04X %04X\n", addr, instruction[0], instruction[1], instruction[2], instruction[3]);
-
-                    addr+=4;
+                if(argN >= argC && !flSkip) {
+                    //printf("%04X %04X %04X %04X\n", instruction[0], instruction[1], instruction[2], instruction[3]);
+                    for(int _i = 0; _i < 4; _i++) {
+                        *tgt[cSeg] = instruction[_i];
+                        tgt[cSeg]++;
+                    }
                     argN = 0;
                 }
             }
         }
 
     }
+
+    memcpy(memImage + segmentOffset[0], seg[0], (0x10000 - segmentOffset[0])*sizeof(unsigned int));
+    memcpy(memImage + segmentOffset[1], seg[1], (0x10000 - segmentOffset[1])*sizeof(unsigned int));
+
     unsigned int stop;
     for( stop = 0xffff; stop > 0; stop--) {
         if(memImage[stop] != 0)
             break;
     }
-    for(unsigned int i = 0; i<stop; i+=4) {
-        printf("%04X %04X %04X %04X\n", memImage[i+0], memImage[i+1], memImage[i+2], memImage[i+3]);
+    if(verbose == 2) {
+        for(unsigned int i = 0; i<stop; i+=4) {
+            printf("%04x : %04X %04X %04X %04X\n", i, memImage[i+0], memImage[i+1], memImage[i+2], memImage[i+3]);
+
+        }
+        printf("STOP at 0x%04X\n", stop);
 
     }
+    if(outName) {
 
+        FILE * outfd = fopen(outName, "w");
+
+        fprintf(outfd, "v2.0 raw\n");
+
+        for(unsigned int i = 0; i<stop; i+=4) {
+            fprintf(outfd, "%04X %04X %04X %04X\n", memImage[i+0], memImage[i+1], memImage[i+2], memImage[i+3]);
+
+        }
+        fclose(outfd);
+    }
 
 
     return 0;

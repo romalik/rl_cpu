@@ -1,3 +1,4 @@
+.seg0
 @puts
 LOCAL1(REG_A)
 LOCAL2(REG_B)

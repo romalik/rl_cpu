@@ -1,3 +1,4 @@
+.seg0
 @strcmp
 LOCAL1(REG_A) #str1
 LOCAL2(REG_B) #str2

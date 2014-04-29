@@ -1,3 +1,4 @@
+.seg0
 @readline
 LOCAL1(REG_A) #source port
 LOCAL2(REG_B) #dest address of first char

@@ -10,18 +10,18 @@ clean:
 	rm *.img
 
 call_test.img: call_test.as
-	$(ASM) call_test.as sim > call_test.img
+	$(ASM) call_test.as -o call_test.img
     
 tty_test.img: tty_test.as
-	$(ASM) tty_test.as sim > tty_test.img
+	$(ASM) tty_test.as -o tty_test.img
 
 asm_test.img: asm_test.as
-	$(ASM) asm_test.as sim > asm_test.img
+	$(ASM) asm_test.as -o  asm_test.img
 
 int_test.img: int_test.as
-	$(ASM) int_test.as sim > int_test.img
+	$(ASM) int_test.as -o  int_test.img
 
 cmd.img: cmd.as
-	$(ASM) cmd.as sim > cmd.img
+	$(ASM) cmd.as -o  cmd.img
 
 

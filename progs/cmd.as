@@ -7,7 +7,7 @@
 #include "readline.as"
 #include "strcmp.as"
 #include "calc.as"
-
+.seg0
 @start
 add 10 0 REG_TTY
 CALL2(@puts, @str_ps, REG_TTY)
@@ -44,7 +44,7 @@ jmp 0 0 @start
 
 
 
-
+.seg1
 
 
 @cmd_calc "calc"
@@ -56,11 +56,4 @@ jmp 0 0 @start
 @str_ps "cmd> "
 
 
-@calc_disclaimer "---=== Calculator v0.1 for rlcpu ===---"
-@calc_str1 "calc> "
-@calc_str2 " = "
-@calc_exit_str "exit"
-
 @cmd_buf .20
-@calc_buf .100
-@currOp .1
