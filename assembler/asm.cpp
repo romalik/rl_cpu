@@ -484,7 +484,7 @@ int main(int argc, char ** argv) {
 
         FILE * outfd = fopen(outName, "w");
 
-        fprintf(outfd, "v2.0 raw\n");
+        //fprintf(outfd, "v2.0 raw\n");
 
         for(unsigned int i = 0; i<stop; i+=4) {
             fprintf(outfd, "%04X %04X %04X %04X\n", memImage[i+0], memImage[i+1], memImage[i+2], memImage[i+3]);

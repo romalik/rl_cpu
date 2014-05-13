@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
+//#include <opencv2/opencv.hpp>
+
 unsigned int REG_A = 0;
 unsigned int REG_B = 0;
 unsigned int REG_C = 0;
@@ -137,6 +139,7 @@ unsigned int portReader(unsigned int addr, MemoryMapEntry * where) {
             return 0;
         }
     }
+    return 0;
 }
 
 MemoryMapEntry * memoryMap;
@@ -235,7 +238,7 @@ void loadROMImage(char * path) {
     int c = 0;
     char romtext[100000];
     char * romtextptr = romtext;
-    int skipLine = 1;
+    int skipLine = 0;
     while((c = fgetc(fd))!=EOF) {
         if(c == '\n' || c == '\r')
             skipLine = 0;
@@ -390,6 +393,9 @@ void initPorts(int argc, char ** argv) {
 }
 
 int main(int argc, char ** argv) {
+
+    //cv::Mat gWin = cv::Mat::zeros(256,256,CV_8U);
+    //cv::imshow("gWin",gWin);
     system("stty -echo");
     init();
     initPorts(argc, argv);
@@ -401,7 +407,7 @@ int main(int argc, char ** argv) {
         //while(gettime_ms() - t < 1) {}
         unsigned long t2 = gettime_ms();
 
-        fprintf(stderr, "cycle: %llu ms, freq: %f Hz\n", t2-t, 1000.0f/(t2-t));
+        fprintf(stderr, "cycle: %lu ms, freq: %f Hz\n", t2-t, 1000.0f/(t2-t));
     }
 
 

@@ -60,6 +60,9 @@ jmp 0 0 @start
 
 @cmd_exec_jump
 CALL(0x8000)
+add 10 0 REG_TTY
+CALL2(@puts, @str_finished, REG_TTY)
+
 jmp 0 0 @start
 
 .seg1
@@ -75,5 +78,6 @@ jmp 0 0 @start
 @str_unknown "Bad command: "
 @str_ps "cmd> "
 
+@str_finished "command successfully finished, dude!"
 
 @cmd_buf .20

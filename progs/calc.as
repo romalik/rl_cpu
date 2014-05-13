@@ -27,6 +27,17 @@ jmp 0 0 @currOp_BREAK
 add *REG_B *REG_C REG_B
 jmp 0 0 @currOp_BREAK
 
+
+@currOp_MUL
+CALL2(@mult, REG_A, REG_B)
+add 0 *REG_C REG_B
+jmp 0 0 @currOp_BREAK
+
+@currOp_DIV
+CALL2(@div, REG_A, REG_B)
+add 0 *REG_C REG_B
+jmp 0 0 @currOp_BREAK
+
 @currOp_MINUS
 sub *REG_B *REG_C REG_B
 jmp 0 0 @currOp_BREAK
