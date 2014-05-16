@@ -1,0 +1,5 @@
+address decoder:
+0x0000 - 0x1FFF (8192w) - ROM (d0)
+0x2000 - 0x3FFF (8192w) - devices (d1)
+0x4000 - 0x7FFF (16384w) - Lower RAM(d2,d3)
+0x8000 - 0xFFFF (32768w) - Upper RAM(d4,d5,d6,d7)
