@@ -20,8 +20,21 @@ struct Token {
     int nArg;
 };
 
-int main() {
-    char * inStr = "$dest_var = func1 ( 3 + ( $var1 + 2 ) , $var2 ) + func2 ( $var3 + 4 , 12 , 13 ) - voidFunc ( )";
+struct localVariableEntry {
+    std::string name;
+    int offset;
+};
+
+/*
+struct globalSymbolEntry {
+    std::string name;
+
+};
+*/
+
+
+
+int parseExpression(char * inStr, int cOffset) {
 //    char * inStr = "$dest_var = $var1 + 3 - 4";
 
     std::vector<std::string> tokens;
@@ -44,7 +57,7 @@ int main() {
     }
 
     for(int i = 0; i<tokens.size(); i++) {
-        printf("token %d: %s\n", i, tokens[i].c_str());
+        //printf("token %d: %s\n", i, tokens[i].c_str());
     }
 
 
@@ -53,28 +66,28 @@ int main() {
 
     for(int i = 0; i<tokens.size(); i++) {
 
-        printf("Top on opStack %s\n", opStack.empty()?"EMPTY":opStack.top().content.c_str());
-        printf("Output: ");
+        //printf("Top on opStack %s\n", opStack.empty()?"EMPTY":opStack.top().content.c_str());
+        //printf("Output: ");
         if(output.size()) {
             for(int j = 0; j<output.size(); j++) {
-                printf("%s ", output[j].content.c_str());
+                //printf("%s ", output[j].content.c_str());
             }
         }
-        printf("\n");
+        //printf("\n");
 
 
         Token cToken;
         cToken.content = tokens[i];
-        printf("token: %s\n", cToken.content.c_str());
+        //printf("token: %s\n", cToken.content.c_str());
         if(tokens[i].c_str()[0] == '$') {
             cToken.type = VARIABLE;
-            printf("type: Variable\n");
+            //printf("type: Variable\n");
             output.push_back(cToken);
         } else if(tokens[i].c_str()[0] == ',') {
-            printf("type: comma\n");
+            //printf("type: comma\n");
             while(opStack.top().type != FUNCTION) {
                 if(!opStack.size()) {
-                    printf("function comma/parenthesis mismatch!\n");
+                    //printf("function comma/parenthesis mismatch!\n");
                     exit(0);
                 }
                 output.push_back(opStack.top());
@@ -85,37 +98,37 @@ int main() {
 
 
         } else if(tokens[i].c_str()[0] == '(') {
-            printf("type: Left parenthesis\n");
+            //printf("type: Left parenthesis\n");
 
             cToken.type = UNKNOWN;
             if(opStack.top().type != FUNCTION)
                 opStack.push(cToken);
         } else if(tokens[i].c_str()[0] == ')') {
-            printf("type: right parenthesis\n");
+            //printf("type: right parenthesis\n");
 
             if(!opStack.size()) {
-                printf("parenthesis mismatch!\n");
+                //printf("parenthesis mismatch!\n");
                 exit(0);
             }
             int zeroArgsInFunction = 1;
             while(1) {
                 if(!opStack.size()) {
-                    printf("parenthesis mismatch!\n");
+                    //printf("parenthesis mismatch!\n");
                     exit(0);
                 }
                 if(opStack.top().content == "(" || opStack.top().type == FUNCTION) {
                     break;
                 }
                 zeroArgsInFunction = 0;
-                printf("push %d %d %s\n", output.size(), opStack.size(), opStack.top().content.c_str());
+                //printf("push %d %d %s\n", output.size(), opStack.size(), opStack.top().content.c_str());
                 output.push_back(opStack.top());
                 opStack.pop();
-                printf("wat\n");
+                //printf("wat\n");
             }
             if(opStack.top().type != FUNCTION)
                 opStack.pop(); //remove parenthesis
 
-            printf("try check function on top of stack\n");
+            //printf("try check function on top of stack\n");
             if(opStack.size()) {
                 if(opStack.top().type == FUNCTION) {
                     if(zeroArgsInFunction && opStack.top().nArg == 0) {
@@ -129,12 +142,12 @@ int main() {
             }
         } else if((tokens[i].c_str()[0] >='0') && (tokens[i].c_str()[0] <='9')) {
             cToken.type = NUMERIC;
-            printf("type: Numeric\n");
+            //printf("type: Numeric\n");
 
             output.push_back(cToken);
         } else if(strchr("+-=", tokens[i].c_str()[0])) {
             cToken.type = OPERATOR;
-            printf("type: Operator\n");
+            //printf("type: Operator\n");
 
             if(tokens[i].c_str()[0] == '+') cToken.precedence = 4;
             if(tokens[i].c_str()[0] == '-') cToken.precedence = 4;
@@ -143,7 +156,7 @@ int main() {
             /* precedence check needed */
             if(opStack.size()) {
                 while(opStack.top().type == OPERATOR && opStack.top().precedence < cToken.precedence) {
-                    printf("push to Output %s type %d\n", opStack.top().content.c_str(), opStack.top().type);
+                    //printf("push to Output %s type %d\n", opStack.top().content.c_str(), opStack.top().type);
                     output.push_back(opStack.top());
                     opStack.pop();
                     if(!opStack.size())
@@ -152,7 +165,7 @@ int main() {
             }
             opStack.push(cToken);
         } else {
-            printf("type: Function\n");
+            //printf("type: Function\n");
             cToken.type = FUNCTION;
             cToken.nArg = 0;
             opStack.push(cToken);
@@ -160,7 +173,7 @@ int main() {
     }
     while(opStack.size()) {
         if(opStack.top().content == "(") {
-            printf("parenthesis mismatch!\n");
+            //printf("parenthesis mismatch!\n");
             exit(0);
         }
         output.push_back(opStack.top());
@@ -168,13 +181,13 @@ int main() {
     }
 
 
-    printf("output:\n");
+    //printf("output:\n");
     for(int i = 0; i<output.size(); i++) {
-        printf("[type: %d (nArg: %d)] %s\n", output[i].type, (output[i].type==FUNCTION)?output[i].nArg:-1, output[i].content.c_str());
+        //printf("[type: %d (nArg: %d)] %s\n", output[i].type, (output[i].type==FUNCTION)?output[i].nArg:-1, output[i].content.c_str());
     }
 
 
-    int cOffset = 0;
+    printf("\n\t\t<--- expr [cOffset = %d]\n", cOffset);
 
     for(int i = 0; i<output.size(); i++) {
         if(output[i].type == NUMERIC || output[i].type == VARIABLE) {
@@ -208,6 +221,77 @@ int main() {
     }
 
 
+
+    return 0;
+}
+
+char * parseScope(char * scope, std::vector<localVariableEntry> locals, int cOffset) {
+
+    printf("Upper-level variables: \n");
+    for(int i = 0; i<locals.size(); i++) {
+        printf("%s ---> %d\n", locals[i].name.c_str(), locals[i].offset);
+    }
+    char * s = scope;
+    while(1) {
+        char expr[10000];
+        char * e = expr;
+        while(isspace(*s) && *s) s++;
+        char * startS = s;
+        while(*s != ';' && *s) { *e = *s; e++; s++; }
+        *e = 0;
+
+        printf("EXPR: %s\n", expr);
+
+
+        /** WARNING! Possible segfault here! strlen(expr) must be >= strlen("local") **/
+        if(!memcmp(expr, "local", strlen("local"))) { //will register local variable on stack here
+            char *n = expr + strlen("local");
+            while(isspace(*n) && *n)
+                n++;
+
+            if(!*n) {
+                printf("Something terribly wrong with LOCAL declaration!\n");
+                exit(1);
+            }
+
+            char newName[1024];
+            char * nn = newName;
+            while(!isspace(*n) && *n && *n != ';') {
+                *nn = *n;
+                n++; nn++;
+            }
+            *nn = 0;
+            localVariableEntry newLocal;
+            newLocal.name = std::string(newName);
+            newLocal.offset = cOffset;
+            locals.push_back(newLocal);
+
+            printf("Reg LOCAL %s with bp-offset %d\n", newLocal.name.c_str(), newLocal.offset);
+
+            cOffset++;
+        } else if (expr[0] == '{') {
+            printf("Entering scope\n");
+            s = parseScope(startS + 1, locals, cOffset);
+        } else {
+            parseExpression(expr, cOffset);
+        }
+
+        if(!*s)
+            return s;
+        if(*s == '}') {
+            s++;
+            return s;
+        }
+        s++;
+    }
+}
+
+int main() {
+    char * inStr = " local blahblah ; local blahblah2 ;  { &inner1 = $inner2 + $inner3 ; } $a = $b + $c + func1 ( $d ) ;  $a2 = $b2 - $c2 - func2 ( $d2 ) ;";
+
+    std::vector<localVariableEntry> locals;
+
+    parseScope(inStr, locals, 0);
 
     return 0;
 }
