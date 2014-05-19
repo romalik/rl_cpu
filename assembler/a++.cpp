@@ -17,10 +17,12 @@ struct Token {
     TOKEN_TYPE type;
     std::string content;
     int precedence;
+    int nArg;
 };
 
 int main() {
-    char * inStr = "$dest_var = func1 ( 3 + ( $var1 + 2 ) , $var2 ) + func2 ( $var3 + 4 , 12 , 13 )";
+    char * inStr = "$dest_var = func1 ( 3 + ( $var1 + 2 ) , $var2 ) + func2 ( $var3 + 4 , 12 , 13 ) - voidFunc ( )";
+//    char * inStr = "$dest_var = $var1 + 3 - 4";
 
     std::vector<std::string> tokens;
 
@@ -70,20 +72,24 @@ int main() {
             output.push_back(cToken);
         } else if(tokens[i].c_str()[0] == ',') {
             printf("type: comma\n");
-            while(opStack.top().content != "(") {
+            while(opStack.top().type != FUNCTION) {
                 if(!opStack.size()) {
-                    printf("parenthesis mismatch!\n");
+                    printf("function comma/parenthesis mismatch!\n");
                     exit(0);
                 }
                 output.push_back(opStack.top());
                 opStack.pop();
             }
+            opStack.top().nArg++;
+
+
 
         } else if(tokens[i].c_str()[0] == '(') {
             printf("type: Left parenthesis\n");
 
             cToken.type = UNKNOWN;
-            opStack.push(cToken);
+            if(opStack.top().type != FUNCTION)
+                opStack.push(cToken);
         } else if(tokens[i].c_str()[0] == ')') {
             printf("type: right parenthesis\n");
 
@@ -91,25 +97,32 @@ int main() {
                 printf("parenthesis mismatch!\n");
                 exit(0);
             }
+            int zeroArgsInFunction = 1;
             while(1) {
                 if(!opStack.size()) {
                     printf("parenthesis mismatch!\n");
                     exit(0);
                 }
-                if(opStack.top().content == "(") {
+                if(opStack.top().content == "(" || opStack.top().type == FUNCTION) {
                     break;
                 }
+                zeroArgsInFunction = 0;
                 printf("push %d %d %s\n", output.size(), opStack.size(), opStack.top().content.c_str());
                 output.push_back(opStack.top());
                 opStack.pop();
                 printf("wat\n");
             }
-
-            opStack.pop(); //remove parenthesis
+            if(opStack.top().type != FUNCTION)
+                opStack.pop(); //remove parenthesis
 
             printf("try check function on top of stack\n");
             if(opStack.size()) {
                 if(opStack.top().type == FUNCTION) {
+                    if(zeroArgsInFunction && opStack.top().nArg == 0) {
+                        opStack.top().nArg = 0; //void arg
+                    } else {
+                        opStack.top().nArg += 1; //at least one arg
+                    }
                     output.push_back(opStack.top());
                     opStack.pop();
                 }
@@ -141,6 +154,7 @@ int main() {
         } else {
             printf("type: Function\n");
             cToken.type = FUNCTION;
+            cToken.nArg = 0;
             opStack.push(cToken);
         }
     }
@@ -156,7 +170,44 @@ int main() {
 
     printf("output:\n");
     for(int i = 0; i<output.size(); i++) {
-        printf("[type: %d] %s\n", output[i].type, output[i].content.c_str());
+        printf("[type: %d (nArg: %d)] %s\n", output[i].type, (output[i].type==FUNCTION)?output[i].nArg:-1, output[i].content.c_str());
     }
+
+
+    int cOffset = 0;
+
+    for(int i = 0; i<output.size(); i++) {
+        if(output[i].type == NUMERIC || output[i].type == VARIABLE) {
+            printf("add %s 0 bp-%d\n", output[i].content.c_str(), cOffset);
+            cOffset += 1;
+        } else if(output[i].type == OPERATOR) {
+
+            /* optimize this shit - no need to fuck around with stack for these operations */
+
+            if(output[i].content == "+") {
+                printf("add *bp-%d *bp-%d bp-%d\n", cOffset-1, cOffset-2, cOffset-2);
+                cOffset -= 1;
+            } else if(output[i].content == "-") {
+                printf("sub *bp-%d *bp-%d bp-%d\n", cOffset-1, cOffset-2, cOffset-2);
+                cOffset -= 1;
+            } else if(output[i].content == "=") {
+                printf("add *bp-%d 0 bp-%d\n", cOffset-1, cOffset-2, cOffset-2);
+                cOffset -= 1;
+            }
+        } else if(output[i].type == FUNCTION) {
+            printf("sub **SP %d *SP\n", cOffset);
+            printf("lpc 0 0 *SP\t#return address\n");
+            printf("add **SP hzhz *SP\t#return address\n");
+            printf("add *SP 1 SP\n");
+            printf("add bp 0 *SP\tsave base pointer\n");
+            printf("add *SP 1 SP\n");
+            printf("jmp 0 0 %s\n", output[i].content.c_str());
+
+
+        }
+    }
+
+
+
     return 0;
 }
