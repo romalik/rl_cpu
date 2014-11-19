@@ -1,0 +1,93 @@
+ProgramCounter
+
+PC:
+   select
+   load
+   oe
+   inc
+   reset
+
+
+Command registers:
+
+C0 C1 C2 C3:
+   clock
+   oe
+
+CommandCounter
+
+CC (VIRT 2 bit)
+
+MemoryLatch
+
+ML:
+   clock
+
+Memory
+
+MEM:
+   select
+   read
+   write
+
+ALU:
+   RA: clock
+   RB: clock
+   RC: clock, oe
+
+   AluBuf: oe
+
+SysSelector: /* PC, PC(Interrupted),  */
+   SysDemux(3->8)
+
+MicrocodeSequencer:
+   reset
+   clock
+
+Process:
+
+progDiff: deref1(2b) deref2(2b) deref3(2b) br(1)
+
+
+
+Common:
+   PC:select, PC:oe, CC:00, ML:clock
+   MEM:select, MEM:read, C0:clock
+
+   PC:select, PC:oe, CC:01, ML:clock
+   MEM:select, MEM:read, C1:clock
+
+   PC:select, PC:oe, CC:10, ML:clock
+   MEM:select, MEM:read, C2:clock
+
+   PC:select, PC:oe, CC:11, ML:clock
+   MEM:select, MEM:read, C3:clock
+
+   PC:inc
+
+
+/* Dereference 1st op */
+
+sect deref1 = 00:  /* immediate */
+   C1:oe RA:clock
+end sect
+
+sect deref1 = 01: /* mem address */
+   C1:oe RC:clock
+   RC:oe ML:clock
+   MEM:read RA:clock
+end sect
+
+sect deref1 = 10: /* pointer */
+   C1:oe RC:clock
+   RC:oe ML:clock
+   MEM:read RC:clock
+   RC:oe ML:clock
+   MEM:read RA:clock
+end sect
+   
+sect deref1 = 11: /* sys */
+
+
+
+

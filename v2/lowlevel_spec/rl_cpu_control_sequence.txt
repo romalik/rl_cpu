@@ -1,0 +1,94 @@
+D-triggers:
+	LFRC - Load From RC
+		LFRC - data
+		LFRC_Clk - clock
+
+	IRQ - InterruptRequest (set by interrupt source, waiting for processing)
+
+	IntProcess - Interrupt in process (new IRQs ignored till IntProcessEnd)
+
+Counters:
+	RS - Register Select
+		RSR - reset
+		RSI   - increment
+	DC - Dereference Counter
+		DCDL - decrement[H] / load[L]
+		DC_Clk
+
+Decoders:
+	RegDecoder
+		RDE - Reg Decoder Enable
+
+Logic
+	DCZ - DerefCounterZero = (DC0 NOR- DC1)
+
+
+Reset register if DC == 0 AND LFRC == 0? (if unused)
+	- no need in plain OUT_A and OUT_B opcodes
+
+=============================================
+SEQUENCE:
+=============================================
+
+{fetch}
+1	PcMux				pc out
+2	ALE; if not [IntProcess] PcIntClock; if [IRQ] goto INTERRUPT 
+3	RamCS & R/W Ram		ram out
+4	ILE					IL in
+
+{load}
+	
+4	RSR					[reset RegCnt]
+
+NEXT_REG:
+5	PcClk				inc PC
+5	LFRC_Reset			LOAD_FROM_RC = 0
+	
+6	DC_Clk				load DerefCnt
+
+DEREF_LOOP:
+7 	if DerefCnt == 0 goto INC_REG [??AND RESET CURRENT REG IF NOT LFRC ??]
+
+8	LOAD_FROM_RC? RC : PC out
+9	ALE			al in
+10	RamCS & R/W Ram		ram out
+
+11	RDE				RA or RB or RC in
+
+11	[LFRC_Set]			|[LOAD_FROM_RC = 1]
+
+
+12	DCDL				|DerefCnt--
+12	DC_Clk				|
+
+
+13 goto DEREF_LOOP
+
+INC_REG:
+
+14 	RSI					RegCnt++
+
+15 	if RegCnt == 3 goto EXECUTE else goto NEXT_REG
+
+
+EXECUTE:
+
+16	RCMux; 
+	if(jmp_bit) {
+	  if(jmp_ok) {
+	    PcIncLoad = 0
+	  }
+	} else {
+	  goto ALU
+	}
+
+17	PcClock & goto START
+
+ALU:
+18	ALE & PcClock
+19	ALUMUX OR PcMux & RAMCS & goto START
+INTERRUPT:
+
+20	IntProcessStart				//Merge 20 & 21  ???
+21	IntVectorMux; PcLoad
+22	PcClock; PcLoad; goto START;

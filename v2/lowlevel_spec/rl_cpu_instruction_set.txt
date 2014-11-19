@@ -1,0 +1,42 @@
+
+
+aluctl:
+s0 s1 s2 s3 l/a cIn
+
+cond:
+
+s3-0 l/a cIn
+0110  0   1
+
+
+|15|14|13| 12 |11|10|9|8|7|6| 5 |    4   |3|2|1|0|
+         | br |d2   |d1 |d0 |cIn| log/ar |  alu  |
+                                         |       
+
+deref = 11: use system addr instead of mem
+
+alu:
+		pj=<>
+add	2	00010
+sub	3	00011
+and	4	00100
+or	5	00101
+
+jmp:
+		pj=<>
+jmp	8	01000
+jle	9	01001
+jge	a	01010
+je	b	01011
+jne	c	01100
+jl	d	01101
+jg	e	01110
+
+load from pc to dest
+lpc	10	10000
+
+restore pc from backup
+reti	808	(jmp + RestorePC)
+
+stop main clock
+hlt	8000
