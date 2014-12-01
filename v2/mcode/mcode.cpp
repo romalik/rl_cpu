@@ -12,6 +12,7 @@ class MCompiler {
     int outputWidth;
     int seqWidth;
     int commandWidth;
+    int splitWidth;
     typedef std::pair<int,int> Condition;
     typedef std::vector<Condition> ConditionVector;
     typedef std::vector<ConditionVector> ConditionCascade;
@@ -36,6 +37,7 @@ public:
         outputWidth = -1;
         seqWidth = -1;
         commandWidth = -1;
+        splitWidth = 0;
         currentState = NO_STATE;
     }
 
@@ -154,6 +156,9 @@ public:
                     if(wordsVector[0] == "command") {
                         commandWidth = atoi(wordsVector[1].c_str());
                     }
+                    if(wordsVector[0] == "split") {
+                        splitWidth = atoi(wordsVector[1].c_str());
+                    }
                 }
 
 
@@ -210,6 +215,9 @@ public:
 
     void writeBin(char * fname) {
         std::ofstream outputFile;
+
+
+
         outputFile.open(fname);
 
         for(int i = 0; i<code.size(); i++) {
