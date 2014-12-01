@@ -58,18 +58,18 @@ end
 #### end of definitions ####
 
 section IRQ 0
+	#fetch
+	PCOE 0 ML 0 PCLatchClk 1
+	MR 0 IR 0 PCInc 1
 
-#fetch
-PCOE 1 ML 1 PCLatchClk 1
-MR 1 IR 1 PCInc 1
-
-section INT 0
-
-section DRF00 0 DRF01 0
-PCLatchOE 1 PCV0 0 PCV1 1 ML 1
-MR 1 RAClk 1
+	section INT 0
+		section DRF00 0 DRF01 0
+			PCLatchOE 0 PCV0 0 PCV1 1 ML 0
+			MR 0 RAClk 1
+		end
+	end
 end
 
-end
-
+section IRQ 1
+	ALUBufOE 0
 end
