@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <map>
 #include <math.h>
+#include <stdint.h>
 
 class MCompiler {
     std::ifstream file;
@@ -213,24 +214,49 @@ public:
 
     }
 
-    void writeBin(char * fname) {
+    void write(char * fname) {
+        std::vector<std::ofstream *> outputFileVector;
         std::ofstream outputFile;
 
-
-
         outputFile.open(fname);
+
+        if(splitWidth > 0 && outputWidth > splitWidth) {
+
+            for(int i = 0; i*splitWidth<outputWidth; i++) {
+                char buf[1000];
+                sprintf(buf, "%s.%d", fname, i*splitWidth);
+                outputFileVector.push_back(new std::ofstream());
+                outputFileVector[i]->open(buf);
+            }
+        }
 
         for(int i = 0; i<code.size(); i++) {
             for(int j = 0; j<code[i].size(); j++) {
                 Instruction inst = code[i][j];
+                uint64_t a = 0;
                 for(int i = 0; i<inst.size(); i++) {
                     outputFile << inst[i] << " ";
+                    a |= (inst[i] << i);
                 }
+
                 outputFile << std::endl;
+                //outputFile << std::hex << a << std::endl;
+                for(int f = 0; f<outputFileVector.size(); f++) {
+                    uint64_t mask = (1 << (f+1)*splitWidth) - 1;
+                    printf("mask: %llu\n", mask);
+                    uint64_t toWrite = (a >> f*splitWidth) & mask;
+                    printf("toWrite: %llu\n", toWrite);
+                    (*outputFileVector[f]) << std::hex << toWrite << std::endl;
+                }
             }
         }
         outputFile.close();
+        for(int i = 0; i<outputFileVector.size(); i++) {
+            outputFileVector[i]->close();
+        }
+
     }
+
 
 };
 
@@ -241,7 +267,7 @@ int main(int argc, char ** argv) {
     MCompiler compiler(argv[1]);
     compiler.compile();
     if(argc == 3) {
-        compiler.writeBin(argv[2]);
+        compiler.write(argv[2]);
     }
     return 0;
 }

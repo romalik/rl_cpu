@@ -5,6 +5,8 @@ out 19
 count 5
 #command width
 command 11
+#split width
+split 8
 end
 
 
