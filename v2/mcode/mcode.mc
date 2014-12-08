@@ -14,34 +14,39 @@ end
 
 define
 
-# memory
-ML 0 0
-MR 1 1
-MW 2 1
+#read:(3 bit)
+# 000 #NONE##
+# 001 PCOE
+# 010 PCLatchOE
+# 011 MR
+# 100 ALUOE
+# 101 SPOE
+# 110 RCOE
 
-# clock
-PCInc 3 0
+R0 0 0
+R1 1 0
+R2 2 0
+
+# write (AND-ed with overlap clk)
+IRClk 3 0
 PCLoad 4 0
-PCOE 5 1
-PCV0 6 0
-PCV1 7 0
+PCLatchClk 5 0
+RAClk 6 0
+RBClk 7 0
+RCClk 8 0
+ML 9 0
+MW 10 0
+SPLoad 11 0
+PCCondLoad 12 0
 
 
-# control
-IR 8 1
-RCClk 9 0
-RCOE 10 1
-MCRST 11 0
-PCLatchClk 12 0
-PCLatchOE 13 1
-CondJump 14 0
-
-# alu
-RAClk 15 0
-RBClk 16 0
-ALUBufOE 17 1
-
-GenInt 18 0
+# Control
+PCUp 13 0
+PCV0 14 0
+PCV1 15 0
+SPUp 16 0
+SPDown 17 0
+MCRST 18 0
 
 
 #command
@@ -63,8 +68,11 @@ end
 
 section IRQ 0
 	#fetch
-	PCOE 0 ML 0 PCLatchClk 1
-	MR 0 IR 0 PCInc 1
+
+	#PCOE
+	R0 1 ML 1 PCLatchClk 1
+	#MR
+	R0 1 R1 1 IRClk 1 PCUp 1
 
 	section INT 0
 
@@ -72,26 +80,38 @@ section IRQ 0
 
 		#instant first op
 		section DRF00 0 DRF01 0
-			PCLatchOE 0 PCV0 1 PCV1 0 ML 1
-			MR 0 RAClk 1
+			#PCLatchOE
+			R1 1 PCV0 1 PCV1 0 ML 1
+			#MR
+			R0 1 R1 1 RAClk 1
 		end
 
 		#memory first op
 		section DRF00 1 DRF01 0
-			PCLatchOE 0 PCV0 1 PCV1 0 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RAClk 1
+			#PCLatchOE 
+			R1 1 PCV0 1 PCV1 0 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R2 1 R1 1 ML 1
+			#MR
+			R0 1 R1 1 RAClk 1
 		end
 
 		#pointer first op
 		section DRF00 0 DRF01 1
-			PCLatchOE 0 PCV0 1 PCV1 0 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RAClk 1
+			#PCLatchOE
+			R1 1 PCV0 1 PCV1 0 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R1 1 R2 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R1 1 R2 1 ML 1
+			#MR
+			R0 1 R1 1 RAClk 1
 		end
 
 
@@ -99,26 +119,38 @@ section IRQ 0
 
 		#instant second op
 		section DRF10 0 DRF11 0
-			PCLatchOE 0 PCV0 0 PCV1 1 ML 1
-			MR 0 RBClk 1
+			#PCLatchOE
+			R1 1 PCV0 0 PCV1 1 ML 1
+			#MR
+			R0 1 R1 1 RBClk 1
 		end
 
 		#memory second op
 		section DRF10 1 DRF11 0
-			PCLatchOE 0 PCV0 0 PCV1 1 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RBClk 1
+			#PCLatchOE
+			R1 1 PCV0 0 PCV1 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R1 1 R2 1 ML 1
+			#MR
+			R0 1 R1 1 RBClk 1
 		end
 
 		#pointer second op
 		section DRF10 0 DRF11 1
-			PCLatchOE 0 PCV0 0 PCV1 1 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RBClk 1
+			#PCLatchOE
+			R1 1 PCV0 0 PCV1 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R1 1 R2 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R1 1 R2 1 ML 1
+			#MR
+			R0 1 R1 1 RBClk 1
 		end
 
 
@@ -126,51 +158,58 @@ section IRQ 0
 
 		#instant dest op
 		section DRF20 0 DRF21 0
-			PCLatchOE 0 PCV0 1 PCV1 1 ML 1
-			MR 0 RCClk 1
+			#PCLatchOE
+			R1 1 PCV0 1 PCV1 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
 		end
 
 		#memory dest op
 		section DRF20 1 DRF21 0
-			PCLatchOE 0 PCV0 1 PCV1 1 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RCClk 1
+			#PCLatchOE
+			R1 1 PCV0 1 PCV1 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R1 1 R2 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
 		end
 
 		#pointer dest op
 		section DRF20 0 DRF21 1
-			PCLatchOE 0 PCV0 1 PCV1 1 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RCClk 1
-			RCOE 0 ML 1
-			MR 0 RCClk 1
+			#PCLatchOE
+			R1 1 PCV0 1 PCV1 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R1 1 R2 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
+			#RCOE
+			R1 1 R2 1 ML 1
+			#MR
+			R0 1 R1 1 RCClk 1
 		end
 
 		### JUMP ###
 
 		section J 1
-			RCOE 0 CondJump 1
+			#RCOE 
+			R1 1 R2 1 PCCondLoad 1
 		end
 
 		### Store ALU results ###
 
 		section J 0
-			RCOE 0 ML 1
-			ALUBufOE 0 MW 0
+			#RCOE
+			R1 1 R2 1 ML 1
+			#ALUOE
+			R2 1 MW 1
 		end
 
 		MCRST 1
 
-	end
-
-	section INT 1
-		# NOP instruction
-		section J 0
-			GenInt 1		
-		end
-		MCRST 1
 	end
 
 end
