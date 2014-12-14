@@ -5,6 +5,7 @@ MR
 ALUOE
 SPOE
 RCOE
+IntOE
 
 write:
 IRClk
@@ -25,4 +26,7 @@ PCV1
 SPUp
 SPDown
 MCRST
-
+UserModeSet
+UserModeReset
+Interrupt
+IntReset

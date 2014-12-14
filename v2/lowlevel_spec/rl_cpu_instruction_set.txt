@@ -60,3 +60,9 @@ int:
 		sp--
 		*sp->pc
 
+101 jmp_user:
+		(op2, deref=arg) -> pc
+		setUserMode
+
+IRQ:
+		resetUserMode; intOE -> pc

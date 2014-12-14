@@ -1,6 +1,6 @@
 conf
 #control width
-out 19
+out 23
 #sequencer counter width
 count 5
 #command width
@@ -22,6 +22,7 @@ define
 # 100 ALUOE
 # 101 SPOE
 # 110 RCOE
+# 111 IntOE
 
 R0 0 0
 R1 1 0
@@ -47,7 +48,10 @@ PCV1 15 0
 SPUp 16 0
 SPDown 17 0
 MCRST 18 0
-
+UserSet 19 0
+UserReset 20 0
+Interrupt 21 0
+IntReset 22 0
 
 #command
 J 0 -1
@@ -77,43 +81,84 @@ section IRQ 0
 	section INT 0
 
 		### FIRST OP ###
+                section DRFS0 0
 
-		#instant first op
-		section DRF00 0 DRF01 0
-			#PCLatchOE
-			R1 1 PCV0 1 PCV1 0 ML 1
-			#MR
-			R0 1 R1 1 RAClk 1
-		end
 
-		#memory first op
-		section DRF00 1 DRF01 0
-			#PCLatchOE 
-			R1 1 PCV0 1 PCV1 0 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-			#RCOE
-			R2 1 R1 1 ML 1
-			#MR
-			R0 1 R1 1 RAClk 1
-		end
+                    #instant first op
+                    section DRF00 0 DRF01 0
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR
+                            R0 1 R1 1 RAClk 1
+                    end
 
-		#pointer first op
-		section DRF00 0 DRF01 1
-			#PCLatchOE
-			R1 1 PCV0 1 PCV1 0 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-			#RCOE
-			R1 1 R2 1 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-			#RCOE
-			R1 1 R2 1 ML 1
-			#MR
-			R0 1 R1 1 RAClk 1
-		end
+                    #memory first op
+                    section DRF00 1 DRF01 0
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R2 1 R1 1 ML 1
+                            #MR
+                            R0 1 R1 1 RAClk 1
+                    end
 
+                    #pointer first op
+                    section DRF00 0 DRF01 1
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RAClk 1
+                    end
+
+                    #pointer to pointer first op
+                    section DRF00 1 DRF01 1
+                            #PCLatchOE -> ML
+                            R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RCOE -> ML
+                            R1 1 R2 1 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RCOE -> ML
+                            R1 1 R2 1 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RCOE -> ML
+                            R1 1 R2 1 ML 1
+                            #MR -> RA
+                            R0 1 R1 1 RAClk 1
+                    end
+                end
+
+                section DRFS0 1
+                    #first op not modified
+                    section DRF00 0 DRF01 0
+                    end
+
+                    #PC->A
+                    section DRF00 1 DRF01 0
+                        #PCOE
+                        R0 1 RAClk 1
+                    end
+
+                    #SP->A
+                    section DRF00 0 DRF01 1
+                        #SPOE
+                        R0 1 R2 1 RAClk 1
+                    end
+
+                end
 
 		### SECOND OP ###
 
@@ -153,44 +198,87 @@ section IRQ 0
 			R0 1 R1 1 RBClk 1
 		end
 
+                #pointer to pointer second op
+                section DRF10 1 DRF11 1
+                        #PCLatchOE
+                        R1 1 PCV0 0 PCV1 1 ML 1
+                        #MR
+                        R0 1 R1 1 RCClk 1
+                        #RCOE
+                        R1 1 R2 1 ML 1
+                        #MR
+                        R0 1 R1 1 RCClk 1
+                        #RCOE
+                        R1 1 R2 1 ML 1
+                        #MR
+                        R0 1 R1 1 RCClk 1
+                        #RCOE
+                        R1 1 R2 1 ML 1
+                        #MR
+                        R0 1 R1 1 RBClk 1
+                end
 
 		### DEST OP ###
 
-		#instant dest op
-		section DRF20 0 DRF21 0
-			#PCLatchOE
-			R1 1 PCV0 1 PCV1 1 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-		end
+                section DRFS1 0
 
-		#memory dest op
-		section DRF20 1 DRF21 0
-			#PCLatchOE
-			R1 1 PCV0 1 PCV1 1 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-			#RCOE
-			R1 1 R2 1 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-		end
+                    #instant dest op
+                    section DRF20 0 DRF21 0
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                    end
 
-		#pointer dest op
-		section DRF20 0 DRF21 1
-			#PCLatchOE
-			R1 1 PCV0 1 PCV1 1 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-			#RCOE
-			R1 1 R2 1 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-			#RCOE
-			R1 1 R2 1 ML 1
-			#MR
-			R0 1 R1 1 RCClk 1
-		end
+                    #memory dest op
+                    section DRF20 1 DRF21 0
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                    end
+
+                    #pointer dest op
+                    section DRF20 0 DRF21 1
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                    end
+
+                    #pointer to pointer dest op
+                    section DRF20 0 DRF21 1
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                    end
+                end
+
 
 		### JUMP ###
 
@@ -202,15 +290,32 @@ section IRQ 0
 		### Store ALU results ###
 
 		section J 0
-			#RCOE
+                    section DRFS1 0
+                        #RCOE
 			R1 1 R2 1 ML 1
 			#ALUOE
 			R2 1 MW 1
+                    end
+                    section DRFS1 1
+                        #ALU->SP
+                        R2 1 SPLoad 1
+                    end
 		end
 
 		MCRST 1
 
+        #end INT 0
 	end
+
+
+
+
+########### EXTENDED COMMANDS #################
+        section INT 1
+            # 0000 -> nop
+            section DRF21 0 DRF20 0 DRF11 0 DRF10 0
+            end
+        end
 
 end
 
