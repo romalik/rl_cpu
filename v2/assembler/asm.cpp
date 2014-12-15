@@ -75,6 +75,7 @@ public:
         baseOpcodes["jne"] = 0x0d;
         baseOpcodes["jle"] = 0x0e;
         baseOpcodes["jmp"] = 0x0f;
+        baseOpcodes["push"] = 0x1080;
 
     }
 
@@ -391,5 +392,16 @@ int main(int argc, char ** argv) {
     }
     printf("\n");
 
+    std::ofstream romFile;
+    romFile.open("rom");
+    romFile << "v2.0 raw" << std::endl;
+    romFile << std::hex;
+    for(int i = 0; i<assembler.textImage.size(); i++) {
+        romFile << assembler.textImage[i] << std::endl;
+    }
+    for(int i = 0; i<assembler.roDataImage.size(); i++) {
+        romFile << assembler.roDataImage[i] << std::endl;
+    }
+    romFile.close();
     return 0;
 }

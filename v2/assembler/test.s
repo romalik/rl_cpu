@@ -1,16 +1,11 @@
-# comment
-
 .text
 
-add 1 *3 **4
-jne *3 VAR1 Label1 # jump
-jmp 0 0 0
-Label1:
-xor 10 20 30
+add 0 0 Counter
+L1:
+add *Counter 1 Counter
+jl *Counter 0x10 L1
+add 5 0 Counter
+jmp 0 0 L1
 
 .data
-
-VAR1: .1 10
-VAR2: .6 9
-VAR3:
-.3 0 
+Counter: .1

@@ -80,7 +80,7 @@ section IRQ 0
 
 	section INT 0
 
-		### FIRST OP ###
+################### FIRST OP ########################
                 section DRFS0 0
 
 
@@ -160,7 +160,7 @@ section IRQ 0
 
                 end
 
-		### SECOND OP ###
+###################### SECOND OP #################################
 
 		#instant second op
 		section DRF10 0 DRF11 0
@@ -259,7 +259,7 @@ section IRQ 0
                     end
 
                     #pointer to pointer dest op
-                    section DRF20 0 DRF21 1
+                    section DRF20 1 DRF21 1
                             #PCLatchOE
                             R1 1 PCV0 1 PCV1 1 ML 1
                             #MR
@@ -308,16 +308,110 @@ section IRQ 0
 	end
 
 
-
-
 ########### EXTENDED COMMANDS #################
         section INT 1
             # 0000 -> nop
             section DRF21 0 DRF20 0 DRF11 0 DRF10 0
+                MCRST 1
             end
+
+############ 0001 PUSH #############################
+
+            section DRF21 0 DRF20 0 DRF11 0 DRF10 1
+
+################### FIRST OP ########################
+                section DRFS0 0
+
+
+                    #instant first op
+                    section DRF00 0 DRF01 0
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                    end
+
+                    #memory first op
+                    section DRF00 1 DRF01 0
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R2 1 R1 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                    end
+
+                    #pointer first op
+                    section DRF00 0 DRF01 1
+                            #PCLatchOE
+                            R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                            #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR
+                            R0 1 R1 1 RCClk 1
+                    end
+
+                    #pointer to pointer first op
+                    section DRF00 1 DRF01 1
+                            #PCLatchOE -> ML
+                            R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RCOE -> ML
+                            R1 1 R2 1 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RCOE -> ML
+                            R1 1 R2 1 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RCOE -> ML
+                            R1 1 R2 1 ML 1
+                            #MR -> RA
+                            R0 1 R1 1 RCClk 1
+                    end
+                end
+
+                section DRFS0 1
+                    #first op not modified
+                    section DRF00 0 DRF01 0
+                    end
+
+                    #PC->A
+                    section DRF00 1 DRF01 0
+                        #PCOE
+                        R0 1 RCClk 1
+                    end
+
+                    #SP->A
+                    section DRF00 0 DRF01 1
+                        #SPOE
+                        R0 1 R2 1 RCClk 1
+                    end
+
+                end
+############ end first op ###############
+                #SPOE -> ML
+                R0 1 R2 1 ML 1
+                #RC -> MW
+                R1 1 R2 1 MW 1
+                SPUp 1
+                MCRST 1
+            end
+############ end PUSH #####################
         end
 
+
 end
+
 
 section IRQ 1
 	

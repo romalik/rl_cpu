@@ -204,6 +204,14 @@ public:
             }
         }
 
+        int maxLen = 0;
+        for(int i = 0; i<code.size(); i++) {
+            if(code[i].size() > maxLen)
+                maxLen = code[i].size();
+        }
+
+        printf("Longest sequence: %d\n", maxLen);
+
         //now fill all routines to max length with default values
         for(int i = 0; i<code.size(); i++) {
             while(code[i].size() < pow(2, seqWidth)) {
