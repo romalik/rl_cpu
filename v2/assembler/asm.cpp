@@ -243,17 +243,32 @@ ALU->sp
         }
         if(str.substr(0,3) == "BP+") {
             int offset = strtol(str.substr(3).c_str(),0,0);
-            if(offset > 0x2000) {
+            if(offset > 0x1000) {
                 printf("Too big offset for BP\n");
 
                 exit(1);
             }
-            val = 0x2000 + offset;
+            val = 0x2000 | offset;
             deref++;
             if(deref > 4) {
                 printf("Too many dereferences for BP!\n");
                 exit(1);
             }
+        } else if(str.substr(0,3) == "BP-") {
+            int offset = strtol(str.substr(3).c_str(),0,0);
+            if(offset > 0x1000) {
+                printf("Too big offset for BP\n");
+
+                exit(1);
+            }
+            val = 0x2000 | 0x1000 | offset;
+            deref++;
+            if(deref > 4) {
+                printf("Too many dereferences for BP!\n");
+                exit(1);
+            }
+        } else if(str == "BP") {
+            val = 0x2000;
         } else if(isdigit(str[0])) {
             val = strtol(str.c_str(), 0, 0);
             printf("numeric %s -> %d\n", str.c_str(), val);
