@@ -76,6 +76,11 @@ public:
         baseOpcodes["jle"] = 0x0e;
         baseOpcodes["jmp"] = 0x0f;
         baseOpcodes["push"] = 0x1080;
+        baseOpcodes["pop"] = 0x1100;
+        baseOpcodes["call"] = 0x1180;
+        baseOpcodes["ret"] = 0x1200;
+
+
 
     }
 
