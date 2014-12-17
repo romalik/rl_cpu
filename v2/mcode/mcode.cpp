@@ -251,9 +251,7 @@ public:
                 //outputFile << std::hex << a << std::endl;
                 for(int f = 0; f<outputFileVector.size(); f++) {
                     uint64_t mask = (1 << (f+1)*splitWidth) - 1;
-                    printf("mask: %llu\n", mask);
                     uint64_t toWrite = (a >> f*splitWidth) & mask;
-                    printf("toWrite: %llu\n", toWrite);
                     (*outputFileVector[f]) << std::hex << toWrite << std::endl;
                 }
             }

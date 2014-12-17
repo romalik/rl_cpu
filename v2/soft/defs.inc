@@ -1,62 +1,35 @@
-#define __SP 0x1010
-#define REG_A 0x1000
-#define REG_B 0x1001
-#define REG_C 0x1002
-#define REG_D 0x1003
-#define REG_E 0x1004
-#define REG_F 0x1005
-#define REG_LOCAL 0x1006
-#define REG_DISPLAY 0xfffe
-#define REG_DISPLAY1 0xfffd
-#define REG_TTY 0x2000
-#define REG_KB 0x2001
-#define REG_PORT 0x2002
+#ifndef __DEFS_INC
+#define __DEFS_INC
 
-#define CALL(X) lpc 0 0 *__SP; \
-                add **__SP 20 *__SP; \
-                sub *__SP 1 __SP; \
-                add 0 1 *__SP; \
-                sub *__SP 1 __SP; \
-                jmp 0 0 X;
+#define INC(x) INC_ ## x
+#define INC_0 1
+#define INC_1 2
+#define INC_2 3
+#define INC_3 4
+#define INC_4 5
+#define INC_5 6
+#define INC_6 7
+#define INC_7 8
+#define INC_8 9
+#define INC_9 10
 
-#define CALL1(X,A) lpc 0 0 *__SP; \
-                add **__SP 28 *__SP; \
-                sub *__SP 1 __SP; \
-                add 0 A *__SP; \
-                sub *__SP 1 __SP; \
-                add 0 2 *__SP; \
-                sub *__SP 1 __SP; \
-                jmp 0 0 X;
 
-#define CALL2(X,A,B) lpc 0 0 *__SP; \
-                add **__SP 36 *__SP; \
-                sub *__SP 1 __SP; \
-                add 0 B *__SP; \
-                sub *__SP 1 __SP; \
-                add 0 A *__SP; \
-                sub *__SP 1 __SP; \
-                add 0 3 *__SP; \
-                sub *__SP 1 __SP; \
-                jmp 0 0 X;
-/*
-#define CALL(X, A, B) lpc 0 0 *__SP; \
-                add **__SP 12 *__SP; \
-                sub *__SP 1 __SP; \
-                jmp 0 0 X;
-*/
-#define RET()   add *__SP 1 __SP; \
-                add *__SP **__SP __SP; \
-                jmp 0 0 **__SP;
+#define LOCAL(X) *BP-X
 
-#define LOCAL1(A)  add *__SP 2 REG_LOCAL; \
-                   add **REG_LOCAL 0 A;
+#define ARG(X) *BP+INC(X)
 
-#define TO_LOCAL1(A)  add *__SP 2 REG_LOCAL; \
-                      add A 0 *REG_LOCAL;
+#define FUNC_HEADER()    push *BP 0 0 __CR__ \
+						add SP 1 BP __CR__
+ 
 
-#define LOCAL2(A)  add *__SP 3 REG_LOCAL; \
-                  add **REG_LOCAL 0 A;
+#define FUNC_FOOTER()   sub *BP 1 SP __CR__\
+						pop BP 0 0 __CR__\
+						ret 0 0 0 __CR__
 
-#define TO_LOCAL2(A)  add *__SP 3 REG_LOCAL; \
-                      add A 0 *REG_LOCAL;
+#define shl(A,D)    shift A 0 D
+#define shr(A,D)    shift A 1 D
+#define shl8(A,D)    shift A 2 D
+#define shr8(A,D)    shift A 3 D
 
+
+#endif 

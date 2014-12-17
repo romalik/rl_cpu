@@ -12,10 +12,13 @@ push 111 0 0 # local
 
 
 add **BP+2 **BP+3 *BP+4
-L3: jmp 0 0 L3
 
+add **BP+2 0 bp2
+add **BP+3 0 bp3
+add **BP+4 0 bp4
+L1: jmp 0 0 L1
 #epilog
-add **BP 0 SP # free locals
+sub *BP 1 SP # free locals
 pop BP 0 0
 ret 0 0 0
 
@@ -25,13 +28,17 @@ push *BP 0 0
 add SP 1 BP
 
 push 0 0 0 # result [BP - 1]
+
 push 1 0 0 # param1
 push 2 0 0 # param2
 call add 0 0
 add SP 2 SP
 add **BP-1 0 Result
-add SP 1 SP
+sub *BP 1 SP
 pop BP 0 0
 ret 0 0 0
 .data
-Result: .0
+bp2: .1
+bp3: .1
+bp4: .1
+Result: .1
