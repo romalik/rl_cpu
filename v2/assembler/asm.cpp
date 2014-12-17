@@ -249,7 +249,6 @@ ALU->sp
                 exit(1);
             }
             val = 0x2000 | offset;
-            deref++;
             if(deref > 4) {
                 printf("Too many dereferences for BP!\n");
                 exit(1);
@@ -262,7 +261,6 @@ ALU->sp
                 exit(1);
             }
             val = 0x2000 | 0x1000 | offset;
-            deref++;
             if(deref > 4) {
                 printf("Too many dereferences for BP!\n");
                 exit(1);

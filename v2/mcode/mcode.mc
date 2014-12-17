@@ -403,14 +403,14 @@ section IRQ 0
                 R0 1 R2 1 ML 1
                 #RC -> MW
                 R1 1 R2 1 MW 1
-                SPUp 1
+                SPDown 1
                 MCRST 1
             end
 ############ end PUSH #####################
 
 ############ 0010 POP #############################
             section DRF21 0 DRF20 0 DRF11 1 DRF10 0
-                SPDown 1
+                SPUp 1
                 #SP -> ML
                 R0 1 R2 1 ML 1
                 #MR -> A
@@ -431,6 +431,10 @@ section IRQ 0
                     section DRF00 0 DRF01 0
                             #PCLatchOE
                             R1 1 PCV0 1 PCV1 0 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RC -> ML
+                            R1 1 R2 1 ML 1
                     end
 
                     #memory first op
@@ -441,6 +445,10 @@ section IRQ 0
                             R0 1 R1 1 RCClk 1
                             #RCOE
                             R2 1 R1 1 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RC -> ML
+                            R1 1 R2 1 ML 1
                     end
 
                     #pointer first op
@@ -454,6 +462,10 @@ section IRQ 0
                             #MR
                             R0 1 R1 1 RCClk 1
                             #RCOE
+                            R1 1 R2 1 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RC -> ML
                             R1 1 R2 1 ML 1
                     end
 
@@ -472,6 +484,10 @@ section IRQ 0
                             #MR -> RC
                             R0 1 R1 1 RCClk 1
                             #RCOE -> ML
+                            R1 1 R2 1 ML 1
+                            #MR -> RC
+                            R0 1 R1 1 RCClk 1
+                            #RC -> ML
                             R1 1 R2 1 ML 1
                     end
 
@@ -517,7 +533,7 @@ section IRQ 0
                 #PCOE -> MW
                 R0 1 MW 1
 
-                SPUp 1
+                SPDown 1
 
 ################### FIRST OP -> pc ########################
                 section DRFS0 0
@@ -609,7 +625,7 @@ section IRQ 0
             section DRF21 0 DRF20 1 DRF11 0 DRF10 0
                 #sp--
                 #*sp->pc
-                SPDown 1
+                SPUp 1
                 #SPOE -> ML
                 R0 1 R2 1 ML 1
                 #MR -> PCLoad
