@@ -26,10 +26,10 @@
 						pop BP 0 0 __CR__\
 						ret 0 0 0 __CR__
 
-#define shl(A,D)    shift A 0 D
-#define shr(A,D)    shift A 1 D
-#define shl8(A,D)    shift A 2 D
-#define shr8(A,D)    shift A 3 D
+#define shl(A,D)    shift A 1 D
+#define shr(A,D)    shift A 0 D
+#define shl8(A,D)    shift A 3 D
+#define shr8(A,D)    shift A 2 D
 
 
 #endif 
