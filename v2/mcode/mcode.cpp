@@ -10,15 +10,24 @@
 
 class MCompiler {
     std::ifstream file;
+	//width of control word
     int outputWidth;
+	//width of input counter value
     int seqWidth;
+	//width of input command and flags
     int commandWidth;
+	//width of one memory chip
     int splitWidth;
+
+	//one condition
     typedef std::pair<int,int> Condition;
+	//one-level set of conditions
     typedef std::vector<Condition> ConditionVector;
+	//whole tree of conditions
     typedef std::vector<ConditionVector> ConditionCascade;
     ConditionCascade currentConditions;
 
+	//definition vector
     typedef std::map<std::string, std::pair<int,int> > DefVector;
     DefVector definitions;
     enum {
@@ -29,12 +38,18 @@ class MCompiler {
     };
     int currentState;
 public:
+	//one microinstruction (contril word)
     typedef std::vector<int> Instruction;
+	//default control word
     Instruction defaultCode;
+	//set of microinstructions (control words) for one input command and flags
     typedef std::vector<Instruction> Routine;
+
+	//whole code. This vector size is 2 ^ (width of input command and flags).
     std::vector<Routine> code;
     MCompiler(std::string path) {
         file.open(path.c_str());
+		//set defaults
         outputWidth = -1;
         seqWidth = -1;
         commandWidth = -1;
@@ -58,6 +73,7 @@ public:
     }
 
 
+	//check if cmd fits current conditions tree
     bool checkCondition(int cmd) {
         bool res = true;
         for(int i = 0; i<currentConditions.size(); i++) {
