@@ -3,6 +3,7 @@
 
 static char rcsid[] = "$Id: bytecode.c,v 1.1 2002/08/28 23:12:41 drh Exp $";
 
+
 static void I(segment)(int n) {
 	static int cseg;
 
@@ -142,8 +143,12 @@ static void dumptree(Node p) {
 }
 
 static void I(emit)(Node p) {
-	for (; p; p = p->link)
+	for (; p; p = p->link) {
 		dumptree(p);
+		if (generic(p->op) == CALL && optype(p->op) != VOID) {
+			print("DISCARD%s%d\n", " "/*suffixes[optype(p->op)]*/, opsize(p->op));
+		}
+	}
 }
 
 static void I(export)(Symbol p) {
@@ -238,15 +243,15 @@ static void I(stabline)(Coordinate *cp) {
 
 Interface xbytecodeIR = {
 	1, 1, 0,	/* char */
-	2, 2, 0,	/* short */
-	4, 4, 0,	/* int */
-	4, 4, 0,	/* long */
+	1, 1, 0,	/* short */
+	1, 1, 0,	/* int */
+	2, 2, 0,	/* long */
 	4, 4, 0,	/* long long */
 	4, 4, 1,	/* float */
 	8, 8, 1,	/* double */
 	8, 8, 1,	/* long double */
-	4, 4, 0,	/* T* */
-	0, 4, 0,	/* struct */
+	1, 1, 0,	/* T* */
+	0, 1, 0,	/* struct */
 	0,		/* little_endian */
 	0,		/* mulops_calls */
 	0,		/* wants_callb */
