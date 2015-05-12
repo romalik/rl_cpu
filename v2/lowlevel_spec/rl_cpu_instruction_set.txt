@@ -1,5 +1,5 @@
 |15|14|13| 12 |11|10|9|8|7|6 |5|4|3|2|1|0|
-|  |  |  |int |s2| d2 |d1 |s0|d0 |J|aluop|
+|b3|b2|b1|int |s2| d2 |d1 |s0|d0 |J|aluop|
 ..........int1...|   cmd  | deref|........                              
 
 
@@ -41,10 +41,11 @@ op0:
 A not modified
 pc->A
 sp->A
+bp->A
 
 op2:
 ALU->sp
-
+ALU->BP
 
 int:
 000 nop
