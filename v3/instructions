@@ -1,0 +1,139 @@
+|15|14|13|12|11|10|9|8| |7|6|5|4|3|2|1|0|
+|--|--|--|--|--|--|-|-| |P|S|L|B|J|aluop|
+|--|--|--|--|--|--|-|-| |1|1| |ext|xxxxx|
+
+J - jump
+L - long instruction
+B - bp-relative
+P - push
+S - store
+
+P=S=1 : ext mode
+00 call
+01 ret
+10 indir
+
+
+--- constb arg
+push arg on stack
+arg: 0-255
+
+[arg|constb]
+
+sp++
+sp->ml
+IRHigh->mw
+pc++
+
+-----
+
+
+--- constw arg
+push arg on stack
+arg: 0-65535
+
+[xxx|constw][arg]
+
+sp++
+pc++
+pc->ml
+mr->T
+sp->ml
+T->mw
+pc++
+
+-----
+
+--- store
+pop address, pop data, write data to address
+
+[store]
+
+sp->ml
+mr->T
+sp--
+sp->ml
+mr->T2
+T2->ml
+T->mw
+pc++
+
+--- indir
+pop address, push data on address
+
+[indir]
+
+sp->ml
+mr->T
+T->ml
+mr->T
+sp->ml
+T->mw
+pc++
+
+--- {add|sub|and|or|xor}
+perform arithmetic on two popped stack values, push result
+
+sp->ml
+mr->A
+sp--
+sp->ml
+mr->B
+alu->mw
+pc++
+-----
+
+--- {add|sub|and|or|xor}constb arg
+perform arithmetic on popped stack value and arg, push result
+[arg8|op]
+
+sp->ml
+mr->A
+IRHigh->B
+alu->mw
+pc++
+
+-----
+
+
+--- {add|sub|and|or|xor}constw arg
+perform arithmetic on popped stack value and arg, push result
+[op][arg16]
+sp->ml
+mr->A
+pc++
+pc->ml
+mr->B
+sp->ml
+alu->mw
+pc++
+
+-----
+
+
+-----
+
+aluop:
+j = 0		j = 1
+000 +		0		
+001 -		>
+010 and		==
+011 or		>=
+100 xor		<
+101 shift	!=
+110		<=
+111		1
+
+cmp output:
+	C Z
+>	0 0
+<	1 0
+=	0 1
+2->4
+>   0001
+<   0100
+=   0010
+
+JA = sum(output (*) input)
+
+
