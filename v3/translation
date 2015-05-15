@@ -1,20 +1,17 @@
 ADDRF ...P.. p address of a parameter
 
-push AP
-subconst[b|w] paramNum
-
+[i]addrf[b] arg
 
 ------
 ADDRG ...P.. p address of a global
 
-constw addr
+constw[i] addr
 
 
 ------
 ADDRL ...P.. p address of a local
 
-push BP
-addconst[b|w] paramNum+frameDataSpace
+[i]addrl[b] (arg+sizeof(argspace))
 
 -------
 CNST FIUP.. fdx csilh csilh p constant
@@ -30,60 +27,69 @@ indir
 --------
 NEG FI.... fdx ilh negation
 
-addconstw 0xffff
+xorconstw 0xffff
+addconstb 1
 
 
 --------
 ADD FIUP.. fdx ilh ilhp p addition
 
-add
+add[const[b|w]]
 
 --------
 BAND .IU... ilh ilh bitwise AND
 
-and
+and[const[b|w]]
 
 --------
 BOR .IU... ilh ilh bitwise inclusive OR
 
-or
+or[const[b|w]]
 
 --------
 BXOR .IU... ilh ilh bitwise exclusive OR
 
-xor
+xor[const[b|w]]
 
 --------
 DIV FIU... fdx ilh ilh division
 
-call __math_div
+callconstw __math_div
 
 
 --------
 LSH .IU... ilh ilh left shift
-.
+
+???????????????????????????????????????????????
 
 --------
 MOD .IU... ilh ilh modulus
 
-constw __math_mod
-call
+callconstw __math_mod
+
 
 --------
 MUL FIU... fdx ilh ilh multiplication
 
-constw  __math_mul
-call
+callconstw  __math_mul
+
 
 
 --------
 RSH .IU... ilh ilh right shift
+
+??????????????????????????????????????????????
+
 --------
 SUB FIU... fdx ilh ilhp p subtraction
+
+
+sub[const[b|w]]
+
 --------
 ASGN FIUP.B fdx csilh csilh p assignment
 
-
+store[const[b|w]]
 
 --------
 EQ FIU... fdx ilh ilhp jump if equal
@@ -92,13 +98,36 @@ GT FIU... fdx ilh ilhp jump if greater than
 LE FIU... fdx ilh ilhp jump if less than or equal
 LT FIU... fdx ilh ilhp jump if less than
 NE FIU... fdx ilh ilhp jump if not equal
+
+
+{je|jge|jg|jle|jl|jne}[constb] destination
+
+--------
 ARG FIUP.B fdx ilh ilh p argument
+
+addrl[b] num
+store[const[b|w]]
+
+--------
 CALL FIUPVB fdx ilh ilh p function call
+
+call[constw]
+
+--------
 RET FIUPVB fdx ilh ilh p function return
+
+ret
+
+-------
 JUMP ....V. unconditional jump
 LABEL ....V. label definition
 
+
+------
 BCOM .IU... ilh ilh bitwise complement
+
+xorconstw 0xffff
+
 CVF FI.... fdx ilh convert from float
 CVI FIU... fdx csilh csilhp convert from signed integer
 CVP ..U... p convert from pointer

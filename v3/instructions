@@ -1,17 +1,146 @@
-|15|14|13|12|11|10|9|8| |7|6|5|4|3|2|1|0|
-|--|--|--|--|--|--|-|-| |P|S|L|B|J|aluop|
-|--|--|--|--|--|--|-|-| |1|1| |ext|xxxxx|
 
-J - jump
-L - long instruction
-B - bp-relative
-P - push
-S - store
+--- allocconstw arg
+allocate arg words on stack
 
-P=S=1 : ext mode
-00 call
-01 ret
-10 indir
+pc++
+pc->ml
+mr->B
+sp->A
+[sub]->aluop
+aluoe->sp
+pc++
+
+--- allocconstb arg
+allocate arg words on stack
+
+IRHigh->B
+sp->A
+[sub]->aluop
+aluoe->sp
+pc++
+
+
+
+=== ARGUMENT FRAME ===
+
+--- addrf arg
+get address of [arg]-function argument
+
+[addrf][arg]
+
+sp++
+pc++
+pc->ml
+mr->T
+sp->ml
+AP/BP=1 TP->mw
+pc++
+
+
+--- addrfb arg
+get address of [arg]-function argument
+
+[arg|addrf]
+
+sp++
+sp->ml
+IRHigh->T
+AP/BP=1 TP->mw
+pc++
+
+
+--- iaddrf arg
+get address of [arg]-function argument, indir it
+
+[addrf][arg]
+
+sp++
+pc++
+pc->ml
+mr->T
+AP/BP=1 TP->ml
+mr->A
+sp->ml
+A->mw
+pc++
+
+
+--- iaddrfb arg
+get address of [arg]-function argument, indir it
+
+[arg|addrf]
+
+sp++
+IRHigh->T
+AP/BP=1 TP->ml
+mr->A
+sp->ml
+A->mw
+pc++
+
+
+
+=== LOCAL FRAME ===
+
+--- addrl arg
+get address of [arg]-function argument
+
+[addrf][arg]
+
+sp++
+pc++
+pc->ml
+mr->T
+sp->ml
+AP/BP=0 TP->mw
+pc++
+
+
+--- addrlb arg
+get address of [arg]-function argument
+
+[arg|addrf]
+
+sp++
+sp->ml
+IRHigh->T
+AP/BP=0 TP->mw
+pc++
+
+
+--- iaddrl arg
+get address of [arg]-function argument, indir it
+
+[addrf][arg]
+
+sp++
+pc++
+pc->ml
+mr->T
+AP/BP=0 TP->ml
+mr->A
+sp->ml
+A->mw
+pc++
+
+
+--- iaddrlb arg
+get address of [arg]-function argument, indir it
+
+[arg|addrf]
+
+sp++
+IRHigh->T
+AP/BP=0 TP->ml
+mr->A
+sp->ml
+A->mw
+pc++
+
+
+
+
+
 
 
 --- constb arg
@@ -60,9 +189,13 @@ pc++
 
 
 --- storeconst arg
-pop data, write to arg address
+pop address, write arg data
 [storeconst][arg]
 
+
+--- storeconstb arg
+pop address, write short  arg data
+[arg|storeconstb]
 
 
 
@@ -127,7 +260,7 @@ sp--
 mr->pc
 
 
---- jmpw arg
+--- jmpconstw arg
 jump to absolute [arg]
 
 [op][arg16]
@@ -199,6 +332,38 @@ A->pc  //jump
 -push bp
 
 
+
+--- callconstw
+
+pc++    //get call addr
+
+pc->ml
+mr->A   //get call addr
+
+pc++    //point to next instr to return
+
+sp++    //store return address
+sp->ml
+pc->mw  
+
+sp++	//store current arg ptr
+sp->ml
+ap->mw
+
+sp++	//store current base ptr
+sp->ml
+bp->mw
+
+bp->ap //set new arg ptr
+
+sp->bp //set new base ptr
+
+A->pc  //jump
+
+-push bp
+
+
+
 --- ret
 
 sp->ml //save retval
@@ -225,7 +390,7 @@ A->mw //place retval
 
 frame
 
-
+WARNING! Ret will return value even for void. Discard if not used for all types!
 
 .
 caller arglist <----- ap
