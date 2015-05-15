@@ -1,0 +1,115 @@
+ADDRF ...P.. p address of a parameter
+
+push AP
+subconst[b|w] paramNum
+
+
+------
+ADDRG ...P.. p address of a global
+
+constw addr
+
+
+------
+ADDRL ...P.. p address of a local
+
+push BP
+addconst[b|w] paramNum+frameDataSpace
+
+-------
+CNST FIUP.. fdx csilh csilh p constant
+
+const[b|w] val
+
+
+--------
+INDIR FIUP.B fdx csilh csilh p fetch
+
+indir
+
+--------
+NEG FI.... fdx ilh negation
+
+addconstw 0xffff
+
+
+--------
+ADD FIUP.. fdx ilh ilhp p addition
+
+add
+
+--------
+BAND .IU... ilh ilh bitwise AND
+
+and
+
+--------
+BOR .IU... ilh ilh bitwise inclusive OR
+
+or
+
+--------
+BXOR .IU... ilh ilh bitwise exclusive OR
+
+xor
+
+--------
+DIV FIU... fdx ilh ilh division
+
+call __math_div
+
+
+--------
+LSH .IU... ilh ilh left shift
+.
+
+--------
+MOD .IU... ilh ilh modulus
+
+constw __math_mod
+call
+
+--------
+MUL FIU... fdx ilh ilh multiplication
+
+constw  __math_mul
+call
+
+
+--------
+RSH .IU... ilh ilh right shift
+--------
+SUB FIU... fdx ilh ilhp p subtraction
+--------
+ASGN FIUP.B fdx csilh csilh p assignment
+
+
+
+--------
+EQ FIU... fdx ilh ilhp jump if equal
+GE FIU... fdx ilh ilhp jump if greater than or equal
+GT FIU... fdx ilh ilhp jump if greater than
+LE FIU... fdx ilh ilhp jump if less than or equal
+LT FIU... fdx ilh ilhp jump if less than
+NE FIU... fdx ilh ilhp jump if not equal
+ARG FIUP.B fdx ilh ilh p argument
+CALL FIUPVB fdx ilh ilh p function call
+RET FIUPVB fdx ilh ilh p function return
+JUMP ....V. unconditional jump
+LABEL ....V. label definition
+
+BCOM .IU... ilh ilh bitwise complement
+CVF FI.... fdx ilh convert from float
+CVI FIU... fdx csilh csilhp convert from signed integer
+CVP ..U... p convert from pointer
+CVU .IUP.. csilh csilh p convert from unsigned integer
+
+
+
+HALT ....V. Stop interpreter
+ARGSTACK ....V. Create argument stack
+VARSTACK ....V. Create local variable stack
+SYSCALL FIUP.. fdx ilh ilh p Call special function
+SAVESTATE ....V. Saves processor state on stack
+NEWSTACK ....V. Creates a new stack
+DISCARD FIUP.. fdx ilh ilh p Discard top of stack

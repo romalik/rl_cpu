@@ -58,6 +58,15 @@ T2->ml
 T->mw
 pc++
 
+
+--- storeconst arg
+pop data, write to arg address
+[storeconst][arg]
+
+
+
+
+
 --- indir
 pop address, push data on address
 
@@ -110,7 +119,135 @@ pc++
 
 -----
 
+--- jmp 
+pop value, jump there
 
+sp->ml
+sp--
+mr->pc
+
+
+--- jmpw arg
+jump to absolute [arg]
+
+[op][arg16]
+
+pc++
+pc->ml
+mr->pc
+
+
+-----
+
+
+--- [je|jne|jl|jle|jg|jge] arg
+pop two vals, compare, jump if possible
+
+[op][arg16]
+sp->ml
+sp--
+mr->A
+sp->ml
+sp--
+mr->B
+pc++
+pc->ml
+pc++ //if not cond load
+mr->pcCondLoad
+
+
+
+--- [je|jne|jl|jle|jg|jge]constb arg
+pop val, compare with short arg, jump if possible
+
+[arg8|op][arg16]
+sp->ml
+sp--
+mr->A
+IRHigh->B
+pc++
+pc->ml
+pc++ //if not cond load
+mr->pcCondLoad
+
+
+
+
+--- call
+
+pc++    //point to next instr to return
+
+sp->ml
+mr->A   //get call addr
+
+pc->mw  //store return address
+
+sp++	//store current arg ptr
+sp->ml
+ap->mw
+
+sp++	//store current base ptr
+sp->ml
+bp->mw
+
+bp->ap //set new arg ptr
+
+sp->bp //set new base ptr
+
+A->pc  //jump
+
+-push bp
+
+
+--- ret
+
+sp->ml //save retval
+mr->A 
+
+bp->sp //rewind stack
+sp--
+
+sp->ml //restore previous frame bp
+mr->bp
+sp--
+
+sp->ml
+mr->ap //restore previous frame ap
+sp--
+
+sp->ml //return
+mr->pc
+
+A->mw //place retval
+
+
+==========
+
+frame
+
+
+
+.
+caller arglist <----- ap
+caller locals
+. |
+. |
+. | - variable stack
+. |
+. |
+return pc
+prev ap
+prev bp 
+callee arglist <----- bp
+local 1
+local 2
+local 3
+.
+.
+.
+
+
+==========
 -----
 
 aluop:
