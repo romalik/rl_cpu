@@ -140,6 +140,21 @@ pc++
 
 
 
+=== SP-RELATIVE FRAME ===
+
+--- addrs arg
+get sp+arg  argument
+
+--- addrsb arg
+get address of [arg]-function argument
+
+
+--- iaddrs arg
+get address of [arg]-function argument, indir it
+
+
+--- iaddrsb arg
+get address of [arg]-function argument, indir it
 
 
 

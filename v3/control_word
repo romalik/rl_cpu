@@ -12,22 +12,24 @@ devices:
   |       [pc++]       |
   |<-------------------'
   |
-  |	[spclk][sp--][spoe]
-  |---c---->SP-----X----
-  |       [sp++]       |
-  |<-------------------'
   |         
   | [Tclk]                adder
-  |--c>T------------------>+++
-  |                        +++
-  |[APClk][AP/BP]          +++-----|
-  |-c>AP--->X              +++     |
-  |[BPClk]  |------------->+++     |
-  |-c>BP--->X      |               X [Tpoe] 
-  |                X [poe]         |
-  |                |               |
-  |                V               V
-=========bus==========================
+  |--c>T------------------------>+++
+  |                              +++
+  |[APClk]          [SP/AP/BP]   +++--|
+  |-c>AP--------------->X        +++  |
+  |[BPClk]              |------->+++  |
+  |-c>BP--------------->X   |         X [Tpoe] 
+  |                     |   |         |
+  |	[spclk][sp--]       |   |         |
+  |---c---->SP--------->X   |         |
+  |       [sp++]            |         |
+  |                         |         |
+  |                         |         |
+  |                         X [poe]   |
+  |                         |         |
+  |                         V         V
+=========bus===========================
 ||  |       ^             ^  ^       ^
 ||  |       |             |  |       |
 ||  |       X[IRHighOE]   |  |       |
@@ -88,11 +90,11 @@ control lines:
 5 [spclk]
 6 [sp--]
 7 [sp++]
-8 [spoe]
-9 [TClk]
-10[APClk]
-11[BPClk]
-12[AP/BP]
+8 [TClk]
+9 [APClk]
+10[BPClk]
+11[AP/BP/SP]
+12[AP/BP/SP]
 13[Poe]
 14[TPoe]
 15[IRClk]
@@ -142,11 +144,10 @@ reads 6bit
 
 000 none
 001 pcoe
-010 spoe
-011 IRHighOE
-100 ALUoe
-101 MR
-110 IntOE -?
+010 IRHighOE
+011 ALUoe
+100 MR
+101 IntOE -?
 
 writes 6bit
 1 [pc load]
@@ -179,14 +180,15 @@ writes 6bit
 101 Bclk
 
 
-control 7 bits
+control 8 bits
 1 [pc++]
 2 [sp--]
 3 [sp++]
-4 [AP/BP]
-5 [Int]
-6 [code/data]
-7 [MCRst] 
+4 [AP/BP/SP]
+5 [AP/BP/SP]
+6 [Int]
+7 [code/data]
+8 [MCRst] 
 
 alu 3 bits
 
