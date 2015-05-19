@@ -7,12 +7,28 @@
 #include <stdlib.h>
 
 
-int dirnum = 4;
+int dirnum = 8;
 char directives[][10] = {
 	"export",
 	"code",
 	"proc",
-	"endproc"
+	"endproc",
+	"lit",
+	"align",
+	"byte",
+	"label"
+};
+
+
+enum directive {
+	EXPORT,
+	CODE,
+	PROC,
+	ENDPROC,
+	LIT,
+	ALIGN,
+	BYTE,
+	LABEL_DIRECTIVE
 };
 
 int opnum = 34;
@@ -51,7 +67,10 @@ char opnames[][10] = {
 		"CVP",
 		"CVU",
 		"DISCARD",
-		"FASTCALL"
+		"FASTCALL",
+		"ALLOC",
+		"DISCARD1",
+		"ALLOC1"
 
 };
 
@@ -98,7 +117,10 @@ enum arg_type {
 		CVP,
 		CVU,
 		DISCARD,
-		FASTCALL
+		FASTCALL,
+		ALLOC,
+		DISCARD1,
+		ALLOC1
 	};
 
 typedef struct Operation_t {
@@ -111,6 +133,20 @@ typedef struct Operation_t {
 	std::string arg;
 	std::string str;
 	Operation_t() : type(0), size(0), name(0), flIndir(0), flArg(0), flInstr(0) {}
+	Operation_t(int _name, int _flInstr, std::string _arg, int _flArg = 0) {
+		name = _name;
+		flInstr = _flInstr;
+		arg = _arg;
+		flArg = _flArg;
+	}
+	Operation_t(int _name, int _flInstr, int _arg, int _flArg = 0) {
+		name = _name;
+		flInstr = _flInstr;
+		char buf[100];
+		sprintf(buf, "%d", _arg);
+		arg = std::string(buf);
+		flArg = _flArg;
+	}
 
 } Operation;
 
@@ -144,7 +180,7 @@ int parseOpType(const char * str, int op) {
 
 
 int parseOpSize(const char * str, int op) {
-	char tp = str[strlen(opnames[op+1])];
+	char tp = str[strlen(opnames[op]) + 1];
 	if(tp > '0' && tp < '9')
 		return tp - '0';
 	return 0;
@@ -183,9 +219,97 @@ int parseArg(const char * s, int off) {
 	return atoi(s+off);
 }
 
+int currentArg = 0;
+int currentArgFrameSize = 0;
+int currentLocalFrameSize = 0;
+
 void addOp(std::vector<Operation> & asmCode, Operation op) {
-	if(op.size > 1) {
+
+	if(op.name == LABEL) {
+		op.flInstr = 0;
+		op.name = LABEL_DIRECTIVE;
+		asmCode.push_back(op);
+		return;
+	}
+
+	if(op.name == ARG) {
+		op.flArg = SHORT_ARG;
+		char buf[100];
+		sprintf(buf, "%d", currentArg);
+		op.arg = std::string(buf);
+		asmCode.push_back(op);
+		currentArg++;
+		return;
+	}
+
+	if(op.name == CALL) {
+		currentArg = 0;
+	}
+
+	if(opIn(op, Sample()(CVI)(CVU)(CVP))) {
+		// if arg(from) > size(to) - discard (arg-size)
+		// if arg(from) < size(to) - alloc (size-arg)
+		int fromSz = atoi(op.arg.c_str());
+		int toSz = op.size;
 		Operation newOp;
+
+
+		char buf[100];
+		if(fromSz > toSz) {
+			newOp.name = DISCARD;
+			int nDiscard = fromSz - toSz;
+			sprintf(buf,"%d",fromSz - toSz);
+			newOp.arg = std::string(buf);
+			newOp.flInstr = 1;
+			if(nDiscard == 1) {
+				newOp.name = DISCARD1;
+			} else if(nDiscard >=0 || nDiscard <= 255) {
+				newOp.flArg = SHORT_ARG;
+			} else {
+				newOp.flArg = LONG_ARG;
+			}
+
+			asmCode.push_back(newOp);
+		} else if(toSz > fromSz) {
+			newOp.name = ALLOC;
+			int nAlloc = toSz - fromSz;
+			sprintf(buf,"%d",toSz - fromSz);
+			newOp.arg = std::string(buf);
+			newOp.flInstr = 1;
+			if(nAlloc == 1) {
+				newOp.name = ALLOC1;
+			} else if(nAlloc >=0 || nAlloc <= 255) {
+				newOp.flArg = SHORT_ARG;
+			} else {
+				newOp.flArg = LONG_ARG;
+			}
+			asmCode.push_back(newOp);
+		}
+		return;
+	}
+
+	if(op.size > 1) {
+		if(op.name == CNST) {
+			unsigned long long mask = 0xffff;
+			for(int i = 0; i<op.size; i++) {
+				int cval = (atol(op.arg.c_str()) >> i*16) & mask;
+				char buf[100];
+				sprintf(buf, "%d", cval);
+				mask = mask << 16;
+				Operation newOp;
+				newOp.flInstr = 1;
+				newOp.name = CNST;
+				newOp.flArg = LONG_ARG;
+				newOp.arg = std::string(buf);
+				asmCode.push_back(newOp);
+			}
+			return;
+		}
+
+
+		Operation newOp;
+		newOp.flInstr = 1;
+		newOp.flArg = LONG_ARG;
 		newOp.name = FASTCALL;
 		newOp.arg = std::string(opnames[op.name]);
 		asmCode.push_back(newOp);
@@ -217,7 +341,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 		}
 	}
 
-	if(opIn(op, Sample()(ADD)(SUB)(BAND)(BOR)(BXOR) )) {
+	if(opIn(op, Sample()(ADD)(SUB)(BAND)(BOR)(BXOR)(JUMP)(CALL) )) {
 		if((*prevOp).name == CNST) {
 			(*prevOp).name = op.name;
 			return;
@@ -266,7 +390,24 @@ std::string getArg(std::string str) {
 	return res;
 }
 
+
+std::string getWord(std::string str) {
+	int i = 0;
+	for(i = 0; i<str.size(); i++) {
+		if(str[i] == ' ') {
+			break;
+		}
+	}
+	std::string res;
+	if(i != str.size()) {
+		res = std::string(str, 0, i);
+	}
+	return res;
+}
+
 int main() {
+
+
 
 	std::vector<Operation> asmCode;
 
@@ -284,12 +425,35 @@ int main() {
 			newOp.name = i;
 			newOp.arg = getArg(line);
 			asmCode.push_back(newOp);
+			if(newOp.name == PROC) {
+				std::string lName = getWord(newOp.arg);
+				asmCode.push_back(Operation(LABEL_DIRECTIVE, 0, lName, LINK_TIME_ARG));
+
+
+				std::string localsStr = getArg(newOp.arg);
+				std::string argsStr = getArg(localsStr);
+				currentLocalFrameSize = atoi(localsStr.c_str());
+				currentArgFrameSize = atoi(argsStr.c_str());
+				if(currentArgFrameSize >=0 && currentArgFrameSize <= 255) {	
+					asmCode.push_back(Operation(ALLOC, 1, currentArgFrameSize, SHORT_ARG));
+				} else {
+					asmCode.push_back(Operation(ALLOC, 1, currentArgFrameSize, LONG_ARG));
+				}
+
+				if(currentLocalFrameSize >=0 && currentLocalFrameSize <= 255) {	
+					asmCode.push_back(Operation(ALLOC, 1, currentLocalFrameSize, SHORT_ARG));
+				} else {
+					asmCode.push_back(Operation(ALLOC, 1, currentLocalFrameSize, LONG_ARG));
+				}
+
+
+
+			}
 
 
 		} else if((i = parseOp(line.c_str())) != -1) {
 			int type = parseOpType(line.c_str(), i);
 			int size = parseOpSize(line.c_str(), i);
-			printf("Opcode: %d type %d size %d\n", i, type, size);
 
 			Operation newOp;
 			newOp.flInstr = 1;
@@ -297,6 +461,7 @@ int main() {
 			newOp.size = size;
 			newOp.name = i;
 			newOp.arg = getArg(line);
+			printf("%s : Opcode: %d type %d size %d arg %s\n", line.c_str(), i, type, size, newOp.arg.c_str());
 			addOp(asmCode, newOp);
 
 		} else {

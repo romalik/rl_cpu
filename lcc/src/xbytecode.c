@@ -178,7 +178,10 @@ static void gen02(Node p) {
 	assert(p);
 	if (generic(p->op) == ARG) {
 		assert(p->syms[0]);
-		argoffset += (p->syms[0]->u.c.v.i < 4 ? 4 : p->syms[0]->u.c.v.i);
+
+/*		argoffset += (p->syms[0]->u.c.v.i < 4 ? 4 : p->syms[0]->u.c.v.i);   */
+		argoffset += (p->syms[0]->u.c.v.i);
+
 	} else if (generic(p->op) == CALL) {
 		maxargoffset = (argoffset > maxargoffset ? argoffset : maxargoffset);
 		argoffset = 0;
