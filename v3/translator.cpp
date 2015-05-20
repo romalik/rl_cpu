@@ -70,7 +70,8 @@ char opnames[][10] = {
 		"FASTCALL",
 		"ALLOC",
 		"DISCARD1",
-		"ALLOC1"
+		"ALLOC1",
+		"STORE"
 
 };
 
@@ -120,7 +121,8 @@ enum arg_type {
 		FASTCALL,
 		ALLOC,
 		DISCARD1,
-		ALLOC1
+		ALLOC1,
+		STORE
 	};
 
 typedef struct Operation_t {
@@ -133,7 +135,7 @@ typedef struct Operation_t {
 	std::string arg;
 	std::string str;
 	Operation_t() : type(0), size(0), name(0), flIndir(0), flArg(0), flInstr(0) {}
-	Operation_t(int _name, int _flInstr, std::string _arg, int _flArg = 0) {
+	Operation_t(int _name, int _flInstr, std::string _arg = std::string(""), int _flArg = 0) {
 		name = _name;
 		flInstr = _flInstr;
 		arg = _arg;
@@ -233,12 +235,20 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 	}
 
 	if(op.name == ARG) {
+		op.name = ADDRL;
 		op.flArg = SHORT_ARG;
 		char buf[100];
 		sprintf(buf, "%d", currentArg);
 		op.arg = std::string(buf);
 		asmCode.push_back(op);
+		asmCode.push_back(Operation(STORE, 1));
 		currentArg++;
+		return;
+	}
+
+	if(op.name == ASGN) {
+		op.name = STORE;
+		asmCode.push_back(op);
 		return;
 	}
 
