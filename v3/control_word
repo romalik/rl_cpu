@@ -149,7 +149,7 @@ reads 6bit
 100 MR
 101 IntOE -?
 
-writes 6bit
+writes 10bit
 1 [pc load]
 2 [pc cond load]
 3 [spclk]
@@ -163,23 +163,6 @@ writes 6bit
 11[MW]
 
 
-6 bit
-000 none
-001 pc load
-010 pc cond load
-011 spclk
-100 MLClk
-101 MW
-110 IRClk
-
-000 none
-001 TClk
-010 APClk
-011 BPClk
-100 Aclk
-101 Bclk
-
-
 control 8 bits
 1 [pc++]
 2 [sp--]
@@ -190,8 +173,11 @@ control 8 bits
 7 [code/data]
 8 [MCRst] 
 
-alu 3 bits
+alu 6 bits
 
 alu0
 alu1
 alu2
+alu3
+alu4
+alu5

@@ -341,6 +341,7 @@ mr->pcCondLoad
 
 
 --- [je|jne|jl|jle|jg|jge]constb arg
+*unsigned*
 pop val, compare with short arg, jump if possible
 
 [arg8|op][arg16]
@@ -354,6 +355,36 @@ pc++ //if not cond load
 mr->pcCondLoad
 
 
+--- [je|jne|jl|jle|jg|jge]u arg
+*unsigned*
+pop two vals, compare, jump if possible
+
+[op][arg16]
+sp->ml
+sp--
+mr->A
+sp->ml
+sp--
+mr->B
+pc++
+pc->ml
+pc++ //if not cond load
+mr->pcCondLoad
+
+
+
+--- [je|jne|jl|jle|jg|jge]uconstb arg
+pop val, compare with short arg, jump if possible
+
+[arg8|op][arg16]
+sp->ml
+sp--
+mr->A
+IRHigh->B
+pc++
+pc->ml
+pc++ //if not cond load
+mr->pcCondLoad
 
 
 --- call

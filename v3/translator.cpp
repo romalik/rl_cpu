@@ -83,6 +83,17 @@ enum arg_type {
 	LINK_TIME_ARG
 };
 
+
+enum op_type {
+	TYPE_NONE,
+	TYPE_I,
+	TYPE_U,
+	TYPE_P,
+	TYPE_F,
+	TYPE_V,
+	TYPE_B
+};
+
 	enum opname {
 		ADDRF,
 		ADDRG,
@@ -165,19 +176,19 @@ int parseOp(const char * str) {
 int parseOpType(const char * str, int op) {
 	char tp = str[strlen(opnames[op])];
 	if(tp == 'I') {
-		return 1;
+		return TYPE_I;
 	} else if(tp == 'U') {
-		return 2;
+		return TYPE_U;
 	} else if(tp == 'P') {
-		return 3;
+		return TYPE_P;
 	} else if(tp == 'F') {
-		return 4;
+		return TYPE_F;
 	} else if(tp == 'V') {
-		return 5;
+		return TYPE_V;
 	} else if(tp == 'B') {
-		return 6;
+		return TYPE_B;
 	}
-	return 0;
+	return TYPE_NONE;
 }
 
 
