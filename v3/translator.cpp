@@ -7,71 +7,85 @@
 #include <stdlib.h>
 
 
-int dirnum = 8;
-char directives[][10] = {
-	"export",
-	"code",
+int dirnum = 12;
+char directives[][12] = {
+    "import",
+    "export",
 	"proc",
 	"endproc",
-	"lit",
-	"align",
-	"byte",
+    "code",
+    "data",
+    "lit",
+    "bss",
+    "align",
+    "skip",
+    "byte",
 	"label"
 };
 
 
 enum directive {
-	EXPORT,
-	CODE,
+    IMPORT,
+    EXPORT,
 	PROC,
 	ENDPROC,
-	LIT,
-	ALIGN,
-	BYTE,
+    CODE,
+    DATA,
+    LIT,
+    BSS,
+    ALIGN,
+    SKIP,
+    BYTE,
 	LABEL_DIRECTIVE
 };
 
-int opnum = 34;
+int opnum = 45;
 char opnames[][10] = {
-		"ADDRF",
-		"ADDRG",
-		"ADDRL",
-		"CNST",
-		"INDIR",
-		"NEG",
-		"ADD",
-		"BAND",
-		"BOR",
-		"BXOR",
-		"DIV",
-		"LSH",
-		"MOD",
-		"MUL",
-		"RSH",
-		"SUB",
-		"ASGN",
-		"EQ",
-		"GE",
-		"GT",
-		"LE",
-		"LT",
-		"NE",
-		"ARG",
-		"CALL",
-		"RET",
-		"JUMP",
-		"LABEL",
-		"BCOM",
-		"CVF",
-		"CVI",
-		"CVP",
-		"CVU",
-		"DISCARD",
-		"FASTCALL",
-		"ALLOC",
-		"DISCARD1",
-		"ALLOC1",
-		"STORE"
+    "ADDRF",
+    "ADDRG",
+    "ADDRL",
+    "CNST",
+    "INDIR",
+    "NEG",
+    "ADD",
+    "BAND",
+    "BOR",
+    "BXOR",
+    "DIV",
+    "LSH",
+    "MOD",
+    "MUL",
+    "RSH",
+    "SUB",
+    "ASGN",
+    "EQ",
+    "GE",
+    "GT",
+    "LE",
+    "LT",
+    "NE",
+    "ARG",
+    "CALL",
+    "RET",
+    "JUMP",
+    "LABEL",
+    "BCOM",
+    "CVF",
+    "CVI",
+    "CVP",
+    "CVU",
+    "DISCARD",
+    "FASTCALL",
+    "ALLOC",
+    "DISCARD1",
+    "ALLOC1",
+    "STORE",
+    "UEQ",
+    "UGE",
+    "UGT",
+    "ULE",
+    "ULT",
+    "UNE",
 
 };
 
@@ -94,47 +108,54 @@ enum op_type {
 	TYPE_B
 };
 
-	enum opname {
-		ADDRF,
-		ADDRG,
-		ADDRL,
-		CNST,
-		INDIR,
-		NEG,
-		ADD,
-		BAND,
-		BOR,
-		BXOR,
-		DIV,
-		LSH,
-		MOD,
-		MUL,
-		RSH,
-		SUB,
-		ASGN,
-		EQ,
-		GE,
-		GT,
-		LE,
-		LT,
-		NE,
-		ARG,
-		CALL,
-		RET,
-		JUMP,
-		LABEL,
-		BCOM,
-		CVF,
-		CVI,
-		CVP,
-		CVU,
-		DISCARD,
-		FASTCALL,
-		ALLOC,
-		DISCARD1,
-		ALLOC1,
-		STORE
-	};
+enum opname {
+    ADDRF,
+    ADDRG,
+    ADDRL,
+    CNST,
+    INDIR,
+    NEG,
+    ADD,
+    BAND,
+    BOR,
+    BXOR,
+    DIV,
+    LSH,
+    MOD,
+    MUL,
+    RSH,
+    SUB,
+    ASGN,
+    EQ,
+    GE,
+    GT,
+    LE,
+    LT,
+    NE,
+    ARG,
+    CALL,
+    RET,
+    JUMP,
+    LABEL,
+    BCOM,
+    CVF,
+    CVI,
+    CVP,
+    CVU,
+    DISCARD,
+    FASTCALL,
+    ALLOC,
+    DISCARD1,
+    ALLOC1,
+    STORE,
+    UEQ,
+    UGE,
+    UGT,
+    ULE,
+    ULT,
+    UNE
+
+};
 
 typedef struct Operation_t {
 	int flInstr; // 0 - directive, 1 - instruction
@@ -151,6 +172,7 @@ typedef struct Operation_t {
 		flInstr = _flInstr;
 		arg = _arg;
 		flArg = _flArg;
+        flIndir = 0;
 	}
 	Operation_t(int _name, int _flInstr, int _arg, int _flArg = 0) {
 		name = _name;
@@ -159,6 +181,7 @@ typedef struct Operation_t {
 		sprintf(buf, "%d", _arg);
 		arg = std::string(buf);
 		flArg = _flArg;
+        flIndir = 0;
 	}
 
 } Operation;
@@ -238,6 +261,13 @@ int currentLocalFrameSize = 0;
 
 void addOp(std::vector<Operation> & asmCode, Operation op) {
 
+
+    if(op.type == TYPE_B) {
+        //structure
+
+        return;
+    }
+
 	if(op.name == LABEL) {
 		op.flInstr = 0;
 		op.name = LABEL_DIRECTIVE;
@@ -309,7 +339,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 		return;
 	}
 
-	if(op.size > 1) {
+    if(op.size > 1 || opIn(op, Sample()(DIV)(MOD)(MUL))) {
 		if(op.name == CNST) {
 			unsigned long long mask = 0xffff;
 			for(int i = 0; i<op.size; i++) {
@@ -332,7 +362,9 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 		newOp.flInstr = 1;
 		newOp.flArg = LONG_ARG;
 		newOp.name = FASTCALL;
-		newOp.arg = std::string(opnames[op.name]);
+        char buf[100];
+        sprintf(buf, "%s%d%d", opnames[op.name], op.type, op.size);
+        newOp.arg = std::string(buf);
 		asmCode.push_back(newOp);
 		return;
 	}
@@ -369,26 +401,53 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 		}
 	}
 
-	if(op.name == NEG) {
-		Operation op1;
-		op1.name = BXOR;
-		op1.flArg = LONG_ARG;
-		op1.arg = "0xffff";
-		asmCode.push_back(op1);
-		Operation op2;
-		op2.name = ADD;
-		op2.flArg = SHORT_ARG;
-		op2.arg = "1";
-		asmCode.push_back(op2);
-		return;
-	}
+    if(op.name == NEG) {
+        Operation op1;
+        op1.name = BXOR;
+        op1.flArg = LONG_ARG;
+        op1.flInstr = 1;
+        op1.arg = "0xffff";
+        asmCode.push_back(op1);
+        Operation op2;
+        op2.name = ADD;
+        op2.flArg = SHORT_ARG;
+        op2.flInstr = 1;
+        op2.arg = "1";
+        asmCode.push_back(op2);
+        return;
+    }
 
+    if(op.name == BCOM) {
+        Operation op1;
+        op1.name = BXOR;
+        op1.flArg = LONG_ARG;
+        op1.flInstr = 1;
+        op1.arg = "0xffff";
+        asmCode.push_back(op1);
+        return;
+    }
+
+    if(op.type == TYPE_U) {
+        if(opIn(op, Sample()(EQ)(GE)(GT)(LE)(LT)(NE))) {
+            //explicitly convert to unsigned comparison
+            op.name += UEQ - EQ;
+        }
+    }
+
+
+    if(opIn(op, Sample()(EQ)(GE)(GT)(LE)(LT)(NE)(UEQ)(UGE)(UGT)(ULE)(ULT)(UNE))) {
+        //check comparison for immediate arg
+    }
 	
 
 
 	if(op.name == ADDRG) {
 		op.name = CNST;
 	}
+
+
+
+
 
 	asmCode.push_back(op);
 
@@ -440,7 +499,7 @@ int main() {
 			break;
 		int i = 0;
 		if((i = parseDirective(line.c_str())) != -1) {
-			printf("Directive %d\n", i);
+            //printf("Directive %d\n", i);
 			Operation newOp;
 			newOp.flInstr = 0;	
 			newOp.name = i;
@@ -455,13 +514,17 @@ int main() {
 				std::string argsStr = getArg(localsStr);
 				currentLocalFrameSize = atoi(localsStr.c_str());
 				currentArgFrameSize = atoi(argsStr.c_str());
-				if(currentArgFrameSize >=0 && currentArgFrameSize <= 255) {	
+                if(currentArgFrameSize == 0) {
+                  //do nothing
+                } else if(currentArgFrameSize >0 && currentArgFrameSize <= 255) {
 					asmCode.push_back(Operation(ALLOC, 1, currentArgFrameSize, SHORT_ARG));
 				} else {
 					asmCode.push_back(Operation(ALLOC, 1, currentArgFrameSize, LONG_ARG));
 				}
 
-				if(currentLocalFrameSize >=0 && currentLocalFrameSize <= 255) {	
+                if(currentLocalFrameSize == 0) {
+                    //do nothing
+                } else if(currentLocalFrameSize >0 && currentLocalFrameSize <= 255) {
 					asmCode.push_back(Operation(ALLOC, 1, currentLocalFrameSize, SHORT_ARG));
 				} else {
 					asmCode.push_back(Operation(ALLOC, 1, currentLocalFrameSize, LONG_ARG));
@@ -482,19 +545,20 @@ int main() {
 			newOp.size = size;
 			newOp.name = i;
 			newOp.arg = getArg(line);
-			printf("%s : Opcode: %d type %d size %d arg %s\n", line.c_str(), i, type, size, newOp.arg.c_str());
+            //printf("%s : Opcode: %d type %d size %d arg %s\n", line.c_str(), i, type, size, newOp.arg.c_str());
 			addOp(asmCode, newOp);
 
 		} else {
 			printf("Unknown text [%s]!\n", line.c_str());
+            exit(1);
 		}
 	}
 
+    /*
 	for(int i = 0; i<asmCode.size(); i++) {
 		printf("%s i%d s%d t%d arg%d %s\n", opnames[asmCode[i].name], asmCode[i].flIndir, asmCode[i].size, asmCode[i].type, asmCode[i].flArg, asmCode[i].arg.c_str() );
 	}
-
-	printf("\n---code===\n");
+    */
 
 	for(int i = 0; i<asmCode.size(); i++) {
 		char tmp[100];
@@ -528,7 +592,7 @@ int main() {
 			} else if(argType == LONG_ARG) {
 				printf("_w %s\n", asmCode[i].arg.c_str());
 			} else if(argType == LINK_TIME_ARG) {
-				printf("_w link %s\n", asmCode[i].arg.c_str());
+                printf("_w %s\n", asmCode[i].arg.c_str());
 			} 
 		}
 	}
