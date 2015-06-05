@@ -1,7 +1,7 @@
 #Id: makefile,v 2.3 2002/09/03 23:39:22 drh Exp $
 BUILDDIR=build
 TARGET=xbytecode
-HOSTFILE=etc/linux.c
+HOSTFILE=etc/rl_cpu.c
 
 
 A=.a
