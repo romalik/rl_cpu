@@ -101,6 +101,11 @@ public:
         for(std::map<std::string, LabelEntry>::iterator it = labels.begin(); it!= labels.end(); it++) {
             std::string labelName = it->first;
             LabelEntry entry = it->second;
+
+            if(entry.position < 0)
+                entry.needImport = 1;
+
+
             int skip = sprintf(p, "%s", labelName.c_str());
             p+=skip;
             p++; // skip null-terminator
@@ -140,8 +145,8 @@ public:
         char header[] = "ROBJ";
         char textSizeHigh = ((sections[0].code.size() & 0xff00) >> 8);
         char textSizeLow = (sections[0].code.size() & 0xff);
-        char dataSizeHigh = ((sections[0].code.size() & 0xff00) >> 8);
-        char dataSizeLow = (sections[0].code.size() & 0xff);
+        char dataSizeHigh = ((sections[1].code.size() & 0xff00) >> 8);
+        char dataSizeLow = (sections[1].code.size() & 0xff);
         char textFull[0xffff * 2];
         char dataFull[0xffff * 2];
         char labelFull[0xffff];
@@ -166,6 +171,13 @@ public:
         file.write(sections[1].labelMap, 0xffff);
         file.write(dataFull, 0xffff*2);
         file.close();
+
+
+        int textSize = ((textSizeHigh << 8) | textSizeLow);
+        int dataSize = ((dataSizeHigh << 8) | dataSizeLow);
+        printf("%s:\n  textSize: %d words\n  dataSize: %d words\n  labelLength: %d\n", filename.c_str(), textSize, dataSize, labelFullLen);
+
+
     }
 
 };
@@ -185,6 +197,11 @@ int getOpIndex(std::string & op) {
 
 int main(int argc, char ** argv) {
     std::ifstream file;
+
+    if(argc < 2) {
+        printf("No input files\n");
+        exit(1);
+    }
     file.open(argv[1], std::ios_base::in);
 
     Assembly assembly;
@@ -252,7 +269,7 @@ int main(int argc, char ** argv) {
                 std::string arg;
                 ss >> arg;
                 //printf("Arg: [%s]\n", arg.c_str());
-                if(isdigit(arg[0])) {
+                if(isdigit(arg[0]) || arg[0] == '-') {
                     int argNum = strtol(arg.c_str(), NULL, 0);
                     if(argType == 1) {
                         opcode = opcode | (argNum << 8);
@@ -278,7 +295,7 @@ int main(int argc, char ** argv) {
 
 
     }
-
+/*
     printf("Labels:\n");
     for(std::map<std::string, LabelEntry>::iterator it = assembly.labels.begin(); it!= assembly.labels.end(); it++) {
         std::string labelName = it->first;
@@ -287,6 +304,9 @@ int main(int argc, char ** argv) {
         printf("%s uid: %d pos: %d import: %d export: %d, section: %d\n", labelName.c_str(), entry.uid, entry.position, entry.needImport, entry.needExport, entry.section);
     }
     printf("\n");
+    */
+
+/*
     for(int sect = 0; sect < 2; sect++) {
         printf("Section %d:\n", sect);
         for(int i = 0; i<assembly.sections[sect].code.size(); i++) {
@@ -298,8 +318,10 @@ int main(int argc, char ** argv) {
         }
         printf("\n\n");
     }
+*/
 
-    printf("Text section size: %zu words\nData section size: %zu words\n", assembly.sections[0].code.size(), assembly.sections[1].code.size());
-    assembly.writeToFile("out.o");
+    if(argc > 2) {
+        assembly.writeToFile(argv[2]);
+    }
 
 }

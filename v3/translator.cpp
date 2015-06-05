@@ -252,7 +252,7 @@ int parseArg(const char * s, int off) {
 	if(strlen(s) <= off)
 		return 0;
 
-	return atoi(s+off);
+    return strtol(s+off, NULL, 0);
 }
 
 int currentArg = 0;
