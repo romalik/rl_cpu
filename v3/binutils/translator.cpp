@@ -39,7 +39,7 @@ enum directive {
 	LABEL_DIRECTIVE
 };
 
-int opnum = 45;
+int opnum = 46;
 char opnames[][10] = {
     "ADDRF",
     "ADDRG",
@@ -80,6 +80,7 @@ char opnames[][10] = {
     "DISCARD1",
     "ALLOC1",
     "STORE",
+    "RSTORE",
     "UEQ",
     "UGE",
     "UGT",
@@ -148,6 +149,7 @@ enum opname {
     DISCARD1,
     ALLOC1,
     STORE,
+    RSTORE,
     UEQ,
     UGE,
     UGT,
@@ -282,7 +284,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 		sprintf(buf, "%d", currentArg);
 		op.arg = std::string(buf);
 		asmCode.push_back(op);
-		asmCode.push_back(Operation(STORE, 1));
+        asmCode.push_back(Operation(RSTORE, 1));
 		currentArg++;
 		return;
 	}
@@ -389,8 +391,10 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 
 	if(op.name == INDIR) {
 		if(opIn(*prevOp, Sample()(ADDRF)(ADDRG)(ADDRL)(CNST))) {
-			(*prevOp).flIndir = 1;
-			return;
+            if((*prevOp).flIndir == 0) {
+                (*prevOp).flIndir = 1;
+                return;
+            }
 		}
 	}
 
@@ -445,6 +449,13 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 		op.name = CNST;
 	}
 
+
+    if(op.name == ADDRL) {
+        int cArg = strtol(op.arg.c_str(), NULL, 0);
+        char buf[100];
+        sprintf(buf,"%d",cArg + currentArgFrameSize);
+        op.arg = std::string(buf);
+    }
 
 
 

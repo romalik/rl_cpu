@@ -5,7 +5,7 @@
 static char rcsid[] = "";                                                                                    
                                                                                                              
 #ifndef LCCDIR                                                                                               
-#define LCCDIR "/usr/local/bin/"                                                                             
+#define LCCDIR "/usr/local/rl_cpu/bin/"                                                                             
 #endif                                                                                                       
                                                                                                              
 char *suffixes[] = { ".c", ".i", ".s", ".o", ".out", 0 };                                                    
@@ -16,8 +16,8 @@ char *cpp[] = { LCCDIR "cpp",
 char *include[] = { "-I" LCCDIR "include", 0 };                                                              
 char *com[] = { LCCDIR "rcc", "-target=xbytecode",                                                             
    "$1", "$2", "$3", 0 };                                                                                    
-char *as[] = { "/usr/local/bin/asm_bc", "$1", "$2", "$3", 0 };     
-char *ld[] = { "/usr/local/bin/link", "-o", "$3", "$1", "$2"};                                             
+char *as[] = { LCCDIR "asm_bc", "$1", "$2", "$3", 0 };     
+char *ld[] = { LCCDIR "link", "-o", "$3", "$1", "$2"};                                             
                                                                                                              
 extern char *concat(char *, char *);                                                                         
                                                                                                              

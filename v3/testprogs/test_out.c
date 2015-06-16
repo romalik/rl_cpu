@@ -1,17 +1,23 @@
-void putc(char c) {
-	*(char *)(0x1000) = c;
+int putc(char c) {
+	*(char *)(0xffff) = c;
+	return 0;
 }
 
-void puts(char *s) {
+int  puts(char *s) {
 	while(*s) {
 		putc(*s);
 		s++;
 	}
+	return 0;
 }
 
+char myString[] = "Hello from rlCPU!";
+
 int main() {
-	char myString[] = "Hello from rlCPU!";
 	puts(myString);
+	
+	while(1) {}
+
 	return 0;
 }
 
