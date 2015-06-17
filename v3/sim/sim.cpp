@@ -326,12 +326,22 @@ void Cpu::execute() {
     PC = target;
 
   } else if(op == ret) {
-    w retval = pop();
+    RA = pop();
     SP = BP;
     BP = pop();
     AP = pop();
     w target = pop();
-    push(retval);
+    push(RA);
+    PC = target;
+  } else if(op == ret2) {
+      RA = pop();
+      RB = pop();
+    SP = BP;
+    BP = pop();
+    AP = pop();
+    w target = pop();
+    push(RB);
+    push(RA);
     PC = target;
 
   } else if(op == jump_w) {
@@ -365,6 +375,30 @@ void Cpu::execute() {
       w target = pop();
       w val = pop();
       memWrite(target, val);
+  } else if(op == fastcall_w) {
+      w target = memRead(PC);
+      PC++;
+      push(PC);
+      PC = target;
+
+  } else if(op == fastcall) {
+      w target = pop();
+      push(PC);
+      PC = target;
+
+  } else if(op == fastret) {
+      w retval = pop();
+      w target = pop();
+      push(retval);
+      PC = target;
+  } else if(op == fastret2) {
+      RA = pop();
+      RB = pop();
+      w target = pop();
+      push(RB);
+      push(RA);
+      PC = target;
+
   }
 
 

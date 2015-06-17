@@ -15,8 +15,6 @@ char myString[] = "Hello from rlCPU!";
 
 int main() {
 	puts(myString);
-	
-	while(1) {}
 
 	return 0;
 }

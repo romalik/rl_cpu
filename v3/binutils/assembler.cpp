@@ -212,7 +212,9 @@ int main(int argc, char ** argv) {
         std::stringstream ss(line);
         std::string word;
         ss >> word;
-        if(word[0] == '.') {
+        if(word == "" || word[0] == ';') {
+            //empty line or comment
+        } else if(word[0] == '.') {
             if(word == ".label") {
                 ss >> word;
                 assembly.regLabel(word);

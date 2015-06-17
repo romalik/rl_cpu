@@ -71,6 +71,7 @@ enum opname {
     call,
 
     ret,
+    ret2,
 
     jump_w,
     jump,
@@ -85,6 +86,9 @@ enum opname {
 
     fastcall,
     fastcall_w,
+
+    fastret,
+    fastret2,
 
     store,
     rstore
@@ -163,6 +167,7 @@ char oplist[][16] = {
     "call",
 
     "ret",
+    "ret2",
 
     "jump_w",
     "jump",
@@ -177,6 +182,9 @@ char oplist[][16] = {
 
     "fastcall",
     "fastcall_w",
+
+    "fastret",
+    "fastret2",
 
     "store",
     "rstore",

@@ -39,7 +39,7 @@ enum directive {
 	LABEL_DIRECTIVE
 };
 
-int opnum = 46;
+int opnum = 47;
 char opnames[][10] = {
     "ADDRF",
     "ADDRG",
@@ -67,6 +67,7 @@ char opnames[][10] = {
     "ARG",
     "CALL",
     "RET",
+    "RET2",
     "JUMP",
     "LABEL",
     "BCOM",
@@ -136,6 +137,7 @@ enum opname {
     ARG,
     CALL,
     RET,
+    RET2,
     JUMP,
     LABEL,
     BCOM,
@@ -357,7 +359,13 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 				asmCode.push_back(newOp);
 			}
 			return;
-		}
+        } else if(op.name == RET) {
+            if(op.size == 2) {
+                op.name == RET2;
+                asmCode.push_back(op);
+                return;
+            }
+        }
 
 
 		Operation newOp;
