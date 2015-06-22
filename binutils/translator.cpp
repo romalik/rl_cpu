@@ -110,6 +110,17 @@ enum op_type {
 	TYPE_B
 };
 
+int typenum = 7;
+char typenames[][10] = {
+    "N",
+    "I",
+    "U",
+    "P",
+    "F",
+    "V",
+    "B"
+};
+
 enum opname {
     ADDRF,
     ADDRG,
@@ -265,9 +276,39 @@ int currentLocalFrameSize = 0;
 
 void addOp(std::vector<Operation> & asmCode, Operation op) {
 
+    std::vector<Operation>::reverse_iterator prevOp = asmCode.rbegin();
 
     if(op.type == TYPE_B) {
         //structure
+        if(op.name == INDIR) {
+            asmCode.push_back(op);
+            return;
+        } else if(op.name == ASGN) {
+            if(prevOp == asmCode.rend() || (*prevOp).name != INDIR) {
+                printf("Structure assign fail");
+                exit(1);
+            }
+            asmCode.pop_back();
+
+            int wordsToCopy = strtol(op.arg.c_str(), NULL, 0);
+
+            Operation loadSizeOp(CNST, 1, op.arg);
+
+            if(wordsToCopy > 0 && wordsToCopy <= 255) {
+                loadSizeOp.flArg = SHORT_ARG;
+            } else {
+                loadSizeOp.flArg = LONG_ARG;
+            }
+            asmCode.push_back(loadSizeOp);
+            Operation constMemcpyAddr(CNST, 1, "memcpy_r", LINK_TIME_ARG);
+            asmCode.push_back(constMemcpyAddr);
+            Operation callFastcallAdaptor(CALL, 1, "fastcall3", LINK_TIME_ARG);
+            asmCode.push_back(callFastcallAdaptor);
+
+            return;
+        }
+
+
 
         return;
     }
@@ -368,6 +409,22 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
         }
 
 
+        char funcName[100];
+        sprintf(funcName, "%s%s%d", opnames[op.name], typenames[op.type], op.size);
+
+        char adaptorName[100];
+        if(op.size > 1) {
+            sprintf(adaptorName, "fastcall2_%d", op.size);
+        } else {
+            sprintf(adaptorName, "fastcall2");
+        }
+
+        Operation constMemcpyAddr(CNST, 1, std::string(funcName), LINK_TIME_ARG);
+        asmCode.push_back(constMemcpyAddr);
+        Operation callFastcallAdaptor(CALL, 1, std::string(adaptorName), LINK_TIME_ARG);
+        asmCode.push_back(callFastcallAdaptor);
+ /*
+
 		Operation newOp;
 		newOp.flInstr = 1;
 		newOp.flArg = LONG_ARG;
@@ -376,10 +433,10 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
         sprintf(buf, "%s%d%d", opnames[op.name], op.type, op.size);
         newOp.arg = std::string(buf);
 		asmCode.push_back(newOp);
+        */
 		return;
 	}
 
-	std::vector<Operation>::reverse_iterator prevOp = asmCode.rbegin();
 	
 	//parse arg
 

@@ -221,7 +221,7 @@ public:
                 std::string labelName = it->first;
                 LabelEntry entry = it->second;
 
-                printf("%s uid: %d pos: %d import: %d export: %d, section: %d\n", labelName.c_str(), entry.uid, entry.position, entry.needImport, entry.needExport, entry.section);
+                printf("%s obj: %d uid: %d pos: %d import: %d export: %d, section: %d\n", labelName.c_str(), i, entry.uid, entry.position, entry.needImport, entry.needExport, entry.section);
             }
         }
     }
@@ -246,6 +246,7 @@ public:
                         printf("Label with uid %d not found!\n", labelUid);
                         exit(1);
                     }
+                    //printf("Obj %d uid %d pos %d\n", i, labelUid, entry.position);
                     sections[i][0].code[j] = entry.position;
                 }
             }
@@ -338,13 +339,16 @@ int main(int argc, char ** argv) {
         linker.loadFile(inFiles[i]);
     }
 
-//    printf("Compute offsets..\n");
+
+
+    //linker.dumpLabels();
+    //printf("Compute offsets..\n");
     linker.computeOffsets();
-//    printf("Resolve symbols..\n");
+    //printf("Resolve symbols..\n");
     linker.resolveNames();
 
     //linker.dumpLabels();
-//    printf("Linking..\n");
+    //printf("Linking..\n");
     linker.link();
 //    printf("Writing to %s..\n", outFile.c_str());
     linker.writeBin(outFile);

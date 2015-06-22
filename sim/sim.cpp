@@ -26,7 +26,7 @@ w Cpu::memRead(w addr) {
     for(int i = 0; i<this->devices.size(); i++) {
       if(this->devices[i]->canOperate(addr)) {
           w res = this->devices[i]->read(addr);
-          if(flDebug) printf("memRead [0x%04x] : 0x%04x\n", addr, res);
+          //if(flDebug) printf("memRead [0x%04x] : 0x%04x\n", addr, res);
           return res;
       }
     }
@@ -41,13 +41,13 @@ void Cpu::tick() {
 void Cpu::push(w val) {
     tick();
     memWrite(SP, val);
-    SP--;
+    SP++;
     tick();
 }
 
 w Cpu::pop() {
     tick();
-    SP++;
+    SP--;
     w res = memRead(SP);
     tick();
     return res;
@@ -59,7 +59,17 @@ w Cpu::IRHigh() {
 
 void Cpu::execute() {
   this->IR = this->memRead(PC);
-  if(flDebug) printf("PC: 0x%04X, IR: 0x%04X ('%s')\n", PC, IR, oplist[IR&0xff]);
+  if(flDebug) {
+
+      printf("PC: 0x%04X, IR: 0x%04X ('%s')\n", PC, IR, oplist[IR&0xff]);
+      printf("Stack: ");
+      for(int i = 0; i<10; i++) {
+          w val =  memRead(SP + i - 9);
+         printf("0x%04X(%c) ", val, (val > 32 && val < 127)?(char)val:'-');
+      }
+      printf("\n");
+  }
+
   tick();
   this->PC++;
   
@@ -68,31 +78,31 @@ void Cpu::execute() {
   if(op == nop){
       //this is nop, come on
   } else if(op == addrf_b) {
-    this->push(this->AP - IRHigh());
+    this->push(this->AP + IRHigh());
   } else if(op == addrf_w) {
       w tmp = this->memRead(PC);
       this->PC++;
-      this->push(this->AP - tmp);
+      this->push(this->AP + tmp);
   } else if(op == iaddrf_b) {
-    this->push(memRead(this->AP - IRHigh()));
+    this->push(memRead(this->AP + IRHigh()));
   } else if(op == iaddrf_w) {
       w tmp = this->memRead(PC);
       this->PC++;
-      this->push(memRead(this->AP - tmp));
+      this->push(memRead(this->AP + tmp));
 
 
   } else if(op == addrl_b) {
-    this->push(this->BP - IRHigh());
+    this->push(this->BP + IRHigh());
   } else if(op == addrl_w) {
       w tmp = this->memRead(PC);
       this->PC++;
-      this->push(this->BP - tmp);
+      this->push(this->BP + tmp);
   } else if(op == iaddrl_b) {
-    this->push(memRead(this->BP - IRHigh()));
+    this->push(memRead(this->BP + IRHigh()));
   } else if(op == iaddrl_w) {
       w tmp = this->memRead(PC);
       this->PC++;
-      this->push(memRead(this->BP - tmp));
+      this->push(memRead(this->BP + tmp));
 
 
   } else if(op == cnst_b) {
@@ -110,17 +120,17 @@ void Cpu::execute() {
 
 
   } else if(op == addrs_b) {
-    this->push(this->SP - IRHigh());
+    this->push(this->SP + IRHigh());
   } else if(op == addrs_w) {
       w tmp = this->memRead(PC);
       this->PC++;
-      this->push(this->SP - tmp);
+      this->push(this->SP + tmp);
   } else if(op == iaddrs_b) {
-    this->push(memRead(this->SP - IRHigh()));
+    this->push(memRead(this->SP + IRHigh()));
   } else if(op == iaddrs_w) {
       w tmp = this->memRead(PC);
       this->PC++;
-      this->push(memRead(this->SP - tmp));
+      this->push(memRead(this->SP + tmp));
 
 
   } else if(op == indir) {
@@ -354,19 +364,19 @@ void Cpu::execute() {
   } else if(op == discard1) {
       pop();
   } else if(op == discard_b) {
-      SP += IRHigh();
+      SP -= IRHigh();
   } else if(op == discard_w) {
       w discardAmount = memRead(PC);
       PC++;
-      SP += discardAmount;
+      SP -= discardAmount;
   } else if(op == alloc1) {
-      SP -= 1;
+      SP += 1;
   } else if(op == alloc_b) {
-      SP -= IRHigh();
+      SP += IRHigh();
   } else if(op == alloc_w) {
       w allocAmount = memRead(PC);
       PC++;
-      SP -= allocAmount;
+      SP += allocAmount;
   } else if(op == store) {
       w val = pop();
       w target = pop();
@@ -420,7 +430,7 @@ void Cpu::loadBin(w addr, std::string filename) {
     file.read(image, 0xffff*2);
     setSeqWriterPos(addr);
     for(int i = 0; i<=0xffff; i++) {
-        writeSeq(((w)(image[i*2]) << 8) | image[i*2 + 1] );
+        writeSeq(((w)((uint8_t)image[i*2]) << 8) | (uint8_t)image[i*2 + 1] );
     }
 }
 
