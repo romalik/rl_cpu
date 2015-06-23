@@ -20,12 +20,21 @@ int main() {
 	char myString[] = "Hello from rlCPU!\n";
 	int i = 0;
 
-	char buf[100];
+	char buf[] = "This string will contain num";
 	
 	char myString2[] = "And the second string!\n";
 	puts("Try some text..\n");
 	puts(myString);
+	puts("Change some letters\n");
+	myString[5] = '!';
+	puts(myString);
+	
 	puts(myString2);
+
+	for(i = 9; i>=0; i--) {
+		putNum(i);
+		putc('\n');
+	}
 
 	puts("Try to write 2: ");
 	i = 2;
@@ -37,24 +46,71 @@ int main() {
 	putNum(i*3);
 	puts(" done\n");
 
-	puts("Try to write 6/3: ");
-	i = 6;
+	puts("Try to write 0*3: ");
+	i = 0;	
+	putNum(i*3);
+	puts(" done\n");
+
+	puts(" 4 > 5? ");
+	i = 4;
+	if(i > 5) {
+		puts("YES!\n");
+	} else {
+		puts("NO!\n");
+	}
+
+	puts(" 8 > 5? ");
+	i = 8;
+	if(i > 5) {
+		puts("YES!\n");
+	} else {
+		puts("NO!\n");
+	}
+
+
+
+	puts("Try to write 5-3: ");
+	i = 5;
+	putNum(i-3);
+	puts(" done\n");
+
+
+	puts("Try to write 3-5: ");
+	i = 3;
+	putNum(i-5);
+	puts(" done\n");
+
+
+	puts("Try to write 5/3: ");
+	i = 5;
 	putNum(i/3);
 	puts(" done\n");
 
-	puts("Try to write 16/5: ");
-	i = 16;
+	puts("Try to write 9/5: ");
+	i = 9;
 	putNum(i/5);
 	puts(" done\n");
 
 
-	puts("Try to write 16%5: ");
-	i = 16;
+	puts("Try to write 9%5: ");
+	i = 9;
 	putNum(i%5);
 	puts(" done\n");
 
+	puts("Try to write 105%33: ");
+	i = 105;
+	putNum(i%33);
+	puts(" done\n");
+
 	puts("Now let's try itoa. Try to write 150: ");
-	itoa(150, buf);
+	i = 150;
+	itoa(i, buf);
+	puts(buf);
+	puts(" done!\n");
+
+	puts("Now let's try itoa. Try to write -250: ");
+	i = -250;
+	itoa(i, buf);
 	puts(buf);
 	puts(" done!\n");
 

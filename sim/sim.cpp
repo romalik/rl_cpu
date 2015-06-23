@@ -209,8 +209,8 @@ void Cpu::execute() {
 
 
   } else if(op == eq_w) {
-    int v2 = (int)pop();
-    int v1 = (int)pop();
+    int v2 = (ws)pop();
+    int v1 = (ws)pop();
     w addr = this->memRead(PC);
     PC++;
     if(v1 == v2) {
@@ -218,8 +218,8 @@ void Cpu::execute() {
     }
 
   } else if(op == ge_w) {
-    int v2 = (int)pop();
-    int v1 = (int)pop();
+    int v2 = (ws)pop();
+    int v1 = (ws)pop();
     w addr = this->memRead(PC);
     PC++;
     if(v1 >= v2) {
@@ -227,8 +227,8 @@ void Cpu::execute() {
     }
 
   } else if(op == gt_w) {
-    int v2 = (int)pop();
-    int v1 = (int)pop();
+    int v2 = (ws)pop();
+    int v1 = (ws)pop();
     w addr = this->memRead(PC);
     PC++;
     if(v1 > v2) {
@@ -236,8 +236,8 @@ void Cpu::execute() {
     }
 
   } else if(op == le_w) {
-    int v2 = (int)pop();
-    int v1 = (int)pop();
+    int v2 = (ws)pop();
+    int v1 = (ws)pop();
     w addr = this->memRead(PC);
     PC++;
     if(v1 <= v2) {
@@ -245,8 +245,8 @@ void Cpu::execute() {
     }
 
   } else if(op == lt_w) {
-    int v2 = (int)pop();
-    int v1 = (int)pop();
+    int v2 = (ws)pop();
+    int v1 = (ws)pop();
     w addr = this->memRead(PC);
     PC++;
     if(v1 < v2) {
@@ -254,8 +254,8 @@ void Cpu::execute() {
     }
 
   } else if(op == ne_w) {
-    int v2 = (int)pop();
-    int v1 = (int)pop();
+    int v2 = (ws)pop();
+    int v1 = (ws)pop();
     w addr = this->memRead(PC);
     PC++;
     if(v1 != v2) {

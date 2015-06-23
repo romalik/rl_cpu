@@ -480,7 +480,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 	
 	//parse arg
 
-	if(isdigit(op.arg[0])) {
+    if(isdigit(op.arg[0]) && op.arg.find('+') == std::string::npos) {
 		int val = atoi(op.arg.c_str());
 		if(val >=0 && val <= 255) {
 			op.flArg = SHORT_ARG;
@@ -559,6 +559,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
         int cArg = strtol(op.arg.c_str(), NULL, 0);
         char buf[100];
         sprintf(buf,"%d",cArg + currentArgFrameSize);
+//        sprintf(buf,"%s+%d",op.arg.c_str(), currentArgFrameSize);
         op.arg = std::string(buf);
     }
 
@@ -617,8 +618,12 @@ int main() {
 		if((i = parseDirective(line.c_str())) != -1) {
             //printf("Directive %d\n", i);
 			Operation newOp;
-			newOp.flInstr = 0;	
-			newOp.name = i;
+            newOp.flInstr = 0;
+            newOp.name = i;
+            if(i == LIT || i == BSS || i == DATA) {
+                newOp.name = DATA;
+            }
+
 			newOp.arg = getArg(line);
 			asmCode.push_back(newOp);
 			if(newOp.name == PROC) {

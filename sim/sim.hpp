@@ -10,6 +10,7 @@
 #include <math.h>
 #include "oplist.h"
 typedef uint16_t w;
+typedef int16_t ws;
 
 
 class VMemDevice {

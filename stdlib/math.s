@@ -40,65 +40,79 @@ ret
 .code 
 .label DIVI1
 .label DIVU1
-alloc_b 1
+
+alloc_b 2
 addrf_b 0
 iaddrf_b 0
 store
 addrf_b 1
 iaddrf_b 1
+store
+addrl_b 1
+cnst_b 0
 store
 addrl_b 0
 cnst_b 0
 store
 jump_w $3
 .label $2
-addrf_b 0
-iaddrf_b 0
-iaddrf_b 1
-sub
+addrl_b 1
+iaddrl_b 1
+add_b 1
 store
 addrl_b 0
 iaddrl_b 0
-add_b 1
+iaddrf_b 1
+add
 store
 .label $3
-iaddrf_b 0
-iaddrf_b 1
-ge_w $2
 iaddrl_b 0
+iaddrf_b 0
+le_w $2
+addrl_b 1
+iaddrl_b 1
+sub_b 1
+store
+iaddrl_b 1
 ret
 .label $1
+
+
+
 .endproc DIV 1 0
 .export MODI1
 .export MODU1
 .label MODI1
 .label MODU1
-alloc_b 1
-addrf_b 0
+
+alloc_b 2
+
+;iaddrf_b 0 ;load A
+
+
+addrl_b 0 ;A -> arg0
 iaddrf_b 0
 store
-addrf_b 1
+
+addrl_b 1 ;B ->arg 1
 iaddrf_b 1
 store
+
+call_w DIVI1 ;Q = A/B
+
 addrl_b 0
-cnst_b 0
-store
-jump_w $7
-.label $6
-addrf_b 0
+rstore ;Q -> arg0
+
+addrl_b 1
+iaddrf_b 1 ;load B
+store ;B -> arg 1
+
+call_w MULI1 ;Z = B*Q
+
 iaddrf_b 0
-iaddrf_b 1
-sub
-store
-addrl_b 0
-iaddrl_b 0
-add_b 1
-store
-.label $7
-iaddrf_b 0
-iaddrf_b 1
-ge_w $6
-iaddrf_b 0
+
+sub ;res = A - Z
 ret
-.label $5
+
+
 .endproc MOD 1 0

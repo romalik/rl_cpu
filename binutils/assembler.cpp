@@ -246,6 +246,8 @@ int main(int argc, char ** argv) {
                 assembly.cSection = 1;
             } else if(word == ".bss") {
                 assembly.cSection = 1;
+            } else if(word == ".endproc") {
+                assembly.output(ret);
             }
         } else {
             //printf("Opcode: [%s]\n", word.c_str());
