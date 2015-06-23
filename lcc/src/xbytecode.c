@@ -145,7 +145,7 @@ static void dumptree(Node p) {
 static void I(emit)(Node p) {
 	for (; p; p = p->link) {
 		dumptree(p);
-		if (generic(p->op) == CALL && optype(p->op) != VOID) {
+		if (generic(p->op) == CALL) {
 			print("DISCARD%s%d\n", " "/*suffixes[optype(p->op)]*/, opsize(p->op));
 		}
 	}

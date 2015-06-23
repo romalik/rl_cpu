@@ -39,7 +39,7 @@ enum directive {
 	LABEL_DIRECTIVE
 };
 
-int opnum = 47;
+int opnum = 48;
 char opnames[][10] = {
     "ADDRF",
     "ADDRG",
@@ -88,7 +88,7 @@ char opnames[][10] = {
     "ULE",
     "ULT",
     "UNE",
-
+    "ADDRS"
 };
 
 
@@ -168,7 +168,8 @@ enum opname {
     UGT,
     ULE,
     ULT,
-    UNE
+    UNE,
+    ADDRS
 
 };
 
@@ -305,6 +306,25 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
             Operation callFastcallAdaptor(CALL, 1, "fastcall3", LINK_TIME_ARG);
             asmCode.push_back(callFastcallAdaptor);
 
+            //okay.. now we have:
+            // ... arg1|arg2|arg3|funcAddr|result| <SP>
+            //so, we should push SP-5
+            // ... arg1|arg2|arg3|funcAddr|result|&arg1| <SP>
+            //rstore
+            // ... result|arg2|arg3|funcAddr| <SP>
+            //discard_b 3
+            // ... result| <SP>
+
+
+            Operation pushTarget(ADDRS, 1, "-5", LONG_ARG);
+            Operation rstore(RSTORE, 1, "", NO_ARG);
+            Operation discard(DISCARD, 1, "3", SHORT_ARG);
+
+            asmCode.push_back(pushTarget);
+            asmCode.push_back(rstore);
+            asmCode.push_back(discard);
+
+
             return;
         }
 
@@ -423,6 +443,26 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
         asmCode.push_back(constMemcpyAddr);
         Operation callFastcallAdaptor(CALL, 1, std::string(adaptorName), LINK_TIME_ARG);
         asmCode.push_back(callFastcallAdaptor);
+
+        //okay.. now we have:
+        // ... arg1|arg2|funcAddr|result| <SP>
+        //so, we should push SP-4
+        // ... arg1|arg2|funcAddr|result|&arg1| <SP>
+        //rstore
+        // ... result|arg2|funcAddr| <SP>
+        //discard_b 2
+        // ... result| <SP>
+
+
+        Operation pushTarget(ADDRS, 1, "-4", LONG_ARG);
+        Operation rstore(RSTORE, 1, "", NO_ARG);
+        Operation discard(DISCARD, 1, "2", SHORT_ARG);
+
+        asmCode.push_back(pushTarget);
+        asmCode.push_back(rstore);
+        asmCode.push_back(discard);
+
+
  /*
 
 		Operation newOp;

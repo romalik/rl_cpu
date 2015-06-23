@@ -14,12 +14,13 @@
 
 
 typedef struct LabelEntry_t {
-    LabelEntry_t() {uid = -1; position = -1; needExport = 0; needImport = 0; section = 0;}
+    LabelEntry_t() {uid = -1; position = -1; needExport = 0; needImport = 0; section = 0; shift = 0;}
     int section;
     int uid;
     int position;
     int needExport;
     int needImport;
+    int shift;
 } LabelEntry;
 
 
@@ -60,11 +61,50 @@ class Linker {
             char im = *p; p++;
             char ex = *p; p++;
 
+            int labelShift = 0;
+            size_t found = std::min(labelName.find("+"),labelName.find("-"));
+            if (found!=std::string::npos) {
+                std::string shiftStr = std::string(labelName, found);
+                const char *p = shiftStr.c_str();
+                int cSub = 0; // 0 for +, 1 for -
+                int shRes = 0;
+                int cOp = 0;
+                while(1) {
+                    if(isdigit(*p)) {
+                        cOp = cOp*10 + (*p-'0');
+                    } else {
+                        if(cSub == 0) { //current +
+                            shRes = shRes + cOp;
+                        } else {
+                            shRes = shRes - cOp;
+                        }
+                        if(!*p) {
+                            break;
+                        } else if(*p == '-') {
+                            cSub = 1;
+                            cOp = 0;
+                        } else if(*p == '+') {
+                            cSub = 0;
+                            cOp = 0;
+                        } else {
+                            printf("Bad shift for label! %s\n", shiftStr.c_str());
+                            exit(1);
+                        }
+                    }
+                    p++;
+                }
+
+                labelName = std::string(labelName, 0, found);
+                printf("Found complex label! Name: [%s] shift: [%s] eval: [%d]\n", labelName.c_str(), shiftStr.c_str(), shRes);
+                labelShift = shRes;
+            }
+
             entry.uid = (((uint8_t)uidH << 8) | (uint8_t)uidL);
             entry.position = (((uint8_t)posH << 8) | (uint8_t)posL);
             entry.section = (uint8_t)sect;
             entry.needImport = (uint8_t)im;
             entry.needExport = (uint8_t)ex;
+            entry.shift = labelShift;
             labels[labelName] = entry;
         }
 

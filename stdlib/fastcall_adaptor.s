@@ -13,6 +13,7 @@ ret
 .code
 .label fastcall2
 ; stack : ....|arg1|arg2|func_addr>
+
 alloc_b 2    
 addrl_b 0    
 iaddrl_w -6  
@@ -24,6 +25,7 @@ store
 
 iaddrl_w -4  
 call
+
 ret
 
 
