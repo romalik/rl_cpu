@@ -1,7 +1,7 @@
 int main() {
-	char myString[] = "Hello from rlCPU!\n";
 	int i = 0;
 	int j = 0;
+	char myString[] = "Hello from rlCPU!\n";
 	char buf[] = "This string will contain num";
 	
 	char myString2[] = "And the second string!\n";
@@ -13,15 +13,103 @@ int main() {
 	
 	puts(myString2);
 
-	for(i = 25; i>=0; i--) {
-		putNum(i);
-		putc('\t');
-		putNum(i / 10);
-		putc('\t');
-		putNum(i % 10);
 
-		putc('\n');
+	puts(" 4 > 0? ");
+	i = 4;
+	if(i > 0) {
+		puts("YES!\n");
+	} else {
+		puts("NO!\n");
 	}
+
+	puts(" 4 < 0? ");
+	i = 4;
+	if(i < 0) {
+		puts("YES!\n");
+	} else {
+		puts("NO!\n");
+	}
+
+
+
+	puts(" -4 > 0? ");
+	i = -4;
+	if(i > 0) {
+		puts("YES!\n");
+	} else {
+		puts("NO!\n");
+	}
+
+	puts(" -4 < 0? ");
+	i = -4;
+	if(i < 0) {
+		puts("YES!\n");
+	} else {
+		puts("NO!\n");
+	}
+
+
+
+	puts("Try to put digit 0: ");
+	i = 0;	
+	putDigit(i);
+	puts(" done\n");
+
+	puts("Try to put digit -0: ");
+	i = 0;	
+	putDigit(-i);
+	puts(" done\n");
+
+	puts("Try to put digit 2: ");
+	i = 2;	
+	putDigit(i);
+	puts(" done\n");
+
+
+	puts("Try to put digit 2 - 0: ");
+	j = 0;
+	i = 2;	
+	putDigit(i - 0);
+	puts(" done\n");
+
+
+	puts("Try to put digit 2 * 0: ");
+	j = 0;
+	i = 2;	
+	putDigit(i * j);
+	puts(" done\n");
+
+
+	puts("Try to put digit 2%10: ");
+	i = 2;	
+	putDigit(i%10);
+	puts(" done\n");
+
+	puts("Try to put num 2%10: ");
+	i = 2;	
+	putNum(i%10);
+	puts(" done\n");
+
+	puts("Try to put num (i = 3) i * 2: ");
+	i = 3;	
+	putNum(i*2);
+	puts(" done\n");
+
+	puts("Try to put num 218: ");
+	i = 2;	
+	putNum(218);
+	puts(" done\n");
+	
+	puts("Try to put num -356: ");
+	i = 2;	
+	putNum(-356);
+	puts(" done\n");
+
+    puts("Try to put digit -2: ");
+	i = -2;	
+	putDigit(i);
+	puts(" done\n");
+
 
 
 	puts("Try to write 2: ");
@@ -108,6 +196,11 @@ int main() {
 	puts("Try to write 105%33: ");
 	i = 105;
 	putNum(i%33);
+	puts(" done\n");
+
+	puts("Try to write 2%10: ");
+	i = 2;
+	putNum(i%10);
 	puts(" done\n");
 
 	puts("Now let's try itoa. Try to write 150: ");

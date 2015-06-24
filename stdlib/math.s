@@ -1,6 +1,7 @@
 .code
 .label MULI1
-cnst_b 0                       ;here we keep the result, accessable as local 0
+	
+cnst_b 0                       ;here we keep the result, accessable as local 1
 .label mult_begin
 iaddrf_b 0                     ;load A
 cnst_b 0                       ;compare with 0
@@ -17,13 +18,15 @@ add                                    ;sum them
 addrl_b 0                      ;store new result
 rstore                         ;
 
+
+
+.label skip
+
 iaddrf_b 1                     ;load B again
 lsh_b 1                                ;shift it left
 addrf_b 1                      ;store it back
 rstore
 
-
-.label skip
 iaddrf_b 0                     ;load A
 rsh_b 1                                ;shift it right
 addrf_b 0                      ;store A back
@@ -84,35 +87,26 @@ ret
 .export MODU1
 .label MODI1
 .label MODU1
-
-alloc_b 2
-
-;iaddrf_b 0 ;load A
-
-
-addrl_b 0 ;A -> arg0
+alloc_b 5
+alloc_b 1
+addrl_b 0+5
 iaddrf_b 0
-store
-
-addrl_b 1 ;B ->arg 1
 iaddrf_b 1
+cnst_w DIVI1
+call_w fastcall2
+addrs_w -4
+rstore
+discard_b 2
 store
-
-call_w DIVI1 ;Q = A/B
-
-addrl_b 0
-rstore ;Q -> arg0
-
-addrl_b 1
+iaddrf_b 0 ;load A
+iaddrl_b 0+5 ;load C
 iaddrf_b 1 ;load B
-store ;B -> arg 1
-
-call_w MULI1 ;Z = B*Q
-
-iaddrf_b 0
-
-sub ;res = A - Z
+cnst_w MULI1
+call_w fastcall2 ;C*B
+addrs_w -4
+rstore
+discard_b 2
+sub ; A - C*B
 ret
-
 
 .endproc MOD 1 0

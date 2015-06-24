@@ -1,3 +1,6 @@
+
+void itoa(int n, char s[]);
+
 int putc(char c) {
 	*(char *)(0xffff) = c;
 	return 0;

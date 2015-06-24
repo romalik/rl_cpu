@@ -178,7 +178,10 @@ void Cpu::execute() {
 
 
   } else if(op == lsh) {
-    push(pop()<<pop());
+      //BUG!
+      RA = pop();
+      RB = pop();
+    push(RB<<RA);
   } else if(op == lsh_b) {
     push(pop()<<IRHigh());
   } else if(op == lsh_w) {
@@ -188,7 +191,10 @@ void Cpu::execute() {
 
 
   } else if(op == rsh) {
-    push(pop()>>pop());
+      //BUG!
+      RA = pop();
+      RB = pop();
+    push(RB>>RA);
   } else if(op == rsh_b) {
     push(pop()>>IRHigh());
   } else if(op == rsh_w) {
@@ -198,7 +204,10 @@ void Cpu::execute() {
 
 
   } else if(op == sub) {
-    push(pop()-pop());
+      //BUG!
+        RA = pop();
+        RB = pop();
+      push(RB - RA);
   } else if(op == sub_b) {
     push(pop()-IRHigh());
   } else if(op == sub_w) {
@@ -408,6 +417,11 @@ void Cpu::execute() {
       push(RB);
       push(RA);
       PC = target;
+
+  } else if(op == dup_op) {
+      RA = pop();
+      push(RA);
+      push(RA);
 
   }
 

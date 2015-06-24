@@ -91,7 +91,9 @@ enum opname {
     fastret2,
 
     store,
-    rstore
+    rstore,
+
+    dup_op
 };
 
 char oplist[][16] = {
@@ -189,6 +191,7 @@ char oplist[][16] = {
     "store",
     "rstore",
 
+    "dup",
     ""
 
 };
