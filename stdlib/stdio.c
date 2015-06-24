@@ -1,3 +1,32 @@
+int putc(char c) {
+	*(char *)(0xffff) = c;
+	return 0;
+}
+
+int  puts(char *s) {
+	while(*s) {
+		putc(*s);
+		s++;
+	}
+	return 0;
+}
+
+
+void putDigit(int a) {
+	if(a < 0) {
+		a = -a;
+		putc('-');
+	}
+	putc('0' + a);
+	
+}
+
+void putNum(int a) {
+	char buffer[20];
+	itoa(a, buffer);
+	puts(buffer);
+}
+
 int strlen(char *s) {
 	char * p = s;
 	int n = 0;
@@ -18,43 +47,29 @@ int strlen(char *s) {
          s[i] = s[j];
          s[j] = c;
 
-			putNum(i);
-			puts(" <-> ");
-			putNum(j);
-
-			puts("  Reverse iteration ");
-			puts(s);
-			putc('\n');
 			
 
      }
-	puts("result:\n");
-	puts(s);
-	puts("\nok\n");
  }
 
  /* itoa:  convert n to characters in s */
  void itoa(int n, char s[])
  {
-     int i, sign;
-     if ((sign = n) < 0)  /* record sign */
-         n = -n;          /* make n positive */
+     int i, sign = 0;
+     if (n < 0) { /* record sign */
+	s[0] = '-';
+	itoa(-n, s+1);
+	return;
+     }
      i = 0;
      do {       /* generate digits in reverse order */
-		 putc(n%10 + '0'); putc('\n');
+		 
          s[i++] = n % 10 + '0';   /* get next digit */
      } while ((n /= 10) > 0);     /* delete it */
-/*     if (sign < 0)
+     if (sign == 1) {
          s[i++] = '-';
-*/
+     }
      s[i] = '\0';
-	puts("len: ");
-	putNum(strlen(s));
-	puts("\n");
-	puts(s);
-	puts("\nreverse:\n");
      reverse(s);
-	puts(s);
-	puts("\n");
  }
 

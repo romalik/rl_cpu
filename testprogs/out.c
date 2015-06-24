@@ -1,25 +1,7 @@
-int putc(char c) {
-	*(char *)(0xffff) = c;
-	return 0;
-}
-
-int  puts(char *s) {
-	while(*s) {
-		putc(*s);
-		s++;
-	}
-	return 0;
-}
-
-
-int putNum(int a) {
-	putc('0' + a);
-	return 0;
-}
 int main() {
 	char myString[] = "Hello from rlCPU!\n";
 	int i = 0;
-
+	int j = 0;
 	char buf[] = "This string will contain num";
 	
 	char myString2[] = "And the second string!\n";
@@ -31,19 +13,45 @@ int main() {
 	
 	puts(myString2);
 
-	for(i = 9; i>=0; i--) {
+	for(i = 25; i>=0; i--) {
 		putNum(i);
+		putc('\t');
+		putNum(i / 10);
+		putc('\t');
+		putNum(i % 10);
+
 		putc('\n');
 	}
+
 
 	puts("Try to write 2: ");
 	i = 2;
 	putNum(i);
 	puts(" done\n");
 
+	puts("Try to write -2: ");
+	i = -2;
+	putNum(i);
+	puts(" done\n");
+
+	puts("Try to write -(2): ");
+	i = 2;
+	putNum(-i);
+	puts(" done\n");
+
+	puts("Try to write -(-2): ");
+	i = -2;
+	putNum(-i);
+	puts(" done\n");
+
 	puts("Try to write 2*3: ");
-	
+	i = 2;	
 	putNum(i*3);
+	puts(" done\n");
+
+	puts("Try to write (-2)*(-3): ");
+	i = -2;	
+	putNum(-3*i);
 	puts(" done\n");
 
 	puts("Try to write 0*3: ");
@@ -108,12 +116,19 @@ int main() {
 	puts(buf);
 	puts(" done!\n");
 
-	puts("Now let's try itoa. Try to write -250: ");
-	i = -250;
+	puts("Now let's try itoa. Try to write -50: ");
+	i = -50;
 	itoa(i, buf);
 	puts(buf);
 	puts(" done!\n");
 
+	for(i = 1; i<=10; i++) {
+		for(j = 1; j<=10; j++) {
+			putNum(i*j);
+			putc('\t');
+		}
+		putc('\n');
+	}
 	return 0;
 }
 

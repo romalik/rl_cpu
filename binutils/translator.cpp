@@ -479,8 +479,10 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 
 	
 	//parse arg
-
-    if(isdigit(op.arg[0]) && op.arg.find('+') == std::string::npos) {
+/*
+    if(op.arg.find('+') != std::string::npos) {
+        op.flArg = LINK_TIME_ARG;
+    } else*/ if(isdigit(op.arg[0])) {
 		int val = atoi(op.arg.c_str());
 		if(val >=0 && val <= 255) {
 			op.flArg = SHORT_ARG;
@@ -558,8 +560,8 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
     if(op.name == ADDRL) {
         int cArg = strtol(op.arg.c_str(), NULL, 0);
         char buf[100];
-        sprintf(buf,"%d",cArg + currentArgFrameSize);
-//        sprintf(buf,"%s+%d",op.arg.c_str(), currentArgFrameSize);
+//        sprintf(buf,"%d",cArg + currentArgFrameSize);
+        sprintf(buf,"%s+%d",op.arg.c_str(), currentArgFrameSize);
         op.arg = std::string(buf);
     }
 

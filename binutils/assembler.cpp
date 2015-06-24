@@ -195,6 +195,39 @@ int getOpIndex(std::string & op) {
     }
 }
 
+int evaluateExpr(const char *s) {
+    int cSub = 0; // 0 for +, 1 for -
+    int shRes = 0;
+    int cOp = 0;
+    const char * p = s;
+    while(1) {
+
+        char * next;
+        cOp = strtol(p, &next, 0);
+        p = next;
+
+        if(cSub == 0) { //current +
+            shRes = shRes + cOp;
+        } else {
+            shRes = shRes - cOp;
+        }
+        if(!*p) {
+            break;
+        } else if(*p == '-') {
+            cSub = 1;
+            cOp = 0;
+        } else if(*p == '+') {
+            cSub = 0;
+            cOp = 0;
+        } else {
+            printf("Bad shift for label! %s\n", s);
+            exit(1);
+        }
+        p++;
+    }
+    return shRes;
+}
+
 int main(int argc, char ** argv) {
     std::ifstream file;
 
@@ -274,7 +307,7 @@ int main(int argc, char ** argv) {
                 ss >> arg;
                 //printf("Arg: [%s]\n", arg.c_str());
                 if(isdigit(arg[0]) || arg[0] == '-') {
-                    int argNum = strtol(arg.c_str(), NULL, 0);
+                    int argNum = evaluateExpr(arg.c_str());
                     if(argType == 1) {
                         opcode = opcode | (argNum << 8);
                         assembly.output(opcode);
