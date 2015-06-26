@@ -34,8 +34,8 @@ w Cpu::memRead(w addr) {
 
 void Cpu::tick() {
   //insert delay here
-    //100 kHz
-    usleep(10);
+    //1000 kHz
+    usleep(1);
 }
 
 void Cpu::push(w val) {
@@ -59,7 +59,7 @@ w Cpu::IRHigh() {
 
 void Cpu::execute() {
   this->IR = this->memRead(PC);
-  if(flDebug) {
+  if(flDebug /* || (IR&0xff) == ret2|| (IR&0xff) == le_w|| (IR&0xff) == lt_w */) {
 
       printf("PC: 0x%04X, IR: 0x%04X ('%s')\n", PC, IR, oplist[IR&0xff]);
       printf("Stack: ");
