@@ -21,7 +21,7 @@ char *include[] = { "-I" LCCDIR "include", 0 };
 char *com[] = { LCCDIR "rcc", "-target=xbytecode",                                                             
    "$1", "$2", "$3", 0 };                                                                                    
 char *as[] = { LCCDIR "asm_bc", "$1", "$2", "$3", 0 };     
-char *ld[] = { LCCDIR "link", "-o", "$3", LCCLIBDIR "progbeg.o", LCCLIBDIR "rt.o", "$1", "$2", 0};                                             
+char *ld[] = { LCCDIR "link", "-o", "$3", LCCLIBDIR "progbeg.o", LCCLIBDIR "rt.o", LCCLIBDIR "math.o", "$1", "$2", 0};                                             
                                                                                                              
 extern char *concat(char *, char *);                                                                         
                                                                                                              

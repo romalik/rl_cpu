@@ -475,7 +475,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 				int cval = (atol(op.arg.c_str()) >> i*16) & mask;
 				char buf[100];
 				sprintf(buf, "%d", cval);
-				mask = mask << 16;
+                //mask = mask << 16;
 				Operation newOp;
 				newOp.flInstr = 1;
 				newOp.name = CNST;
@@ -509,7 +509,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
                 // |val_l|val_h|...|val_l|val_h| SP
 
                 Operation dup(DUP, 1, "", NO_ARG);
-                Operation indir(DUP, 1, "", NO_ARG);
+                Operation indir(INDIR, 1, "", NO_ARG);
                 Operation rstore(RSTORE, 1, "", NO_ARG);
                 Operation addrs(ADDRS, 1, "-3", LONG_ARG);
                 Operation add(ADD, 1, "1", SHORT_ARG);
@@ -526,6 +526,13 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 
                 return;
             }
+        } else if(op.name == CALL) {
+            if((*prevOp).name == CNST) {
+                (*prevOp).name = op.name;
+                return;
+            } else {
+                asmCode.push_back(op);
+            }
         }
 
 
@@ -533,6 +540,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
         sprintf(funcName, "%s%s%d", opnames[op.name], typenames[op.type], op.size);
 
         char adaptorName[100];
+
         if(op.size > 1) {
             sprintf(adaptorName, "fastcall2_long");
 
@@ -589,6 +597,19 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
             asmCode.push_back(pushTarget);
             asmCode.push_back(rstore);
             asmCode.push_back(discard);
+        }
+
+        if(opIn(op, Sample()(GT)(GE)(LT)(LE)(EQ)(NE)(UGT)(UGE)(ULT)(ULE)(UEQ)(UNE))) {
+            Operation pushConstZero(CNST, 1, "0", SHORT_ARG);
+            Operation jumpIfNotZero(NE, 1, op.arg, LINK_TIME_ARG);
+            Operation discard(DISCARD, 1, "1", SHORT_ARG);
+
+
+            asmCode.push_back(discard); // remove high-word of conditional result
+            asmCode.push_back(pushConstZero);
+            asmCode.push_back(jumpIfNotZero);
+
+
         }
 		return;
 	}

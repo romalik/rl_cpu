@@ -241,3 +241,24 @@ int sprintf(char *out, const char *format, ...)
 	int *varg = (int *)(&format);
 	return print(&out, varg);
 }
+int memcpy(unsigned int * dest, unsigned int * src, int n) {
+	int k = n;
+	while(k--) {
+		*dest = *src;
+		dest++;
+		src++;
+	}
+	return n;
+}
+
+
+int memcpy_r(unsigned int * dest, unsigned int * src, int n) {
+	int k = n;
+	while(k--) {
+		*dest = *src;
+		dest++;
+		src++;
+	}
+	return n;
+}
+

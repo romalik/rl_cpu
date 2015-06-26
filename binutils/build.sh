@@ -6,3 +6,4 @@ g++ -o link ./linker.cpp
 
 ./asm progbeg.s progbeg.o
 ./asm rt.s rt.o
+./asm math.s ./math.o

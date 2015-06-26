@@ -169,7 +169,7 @@ public:
                     LabelEntry entry;
                     if(findGlobalLabel(it->first, entry) == 0) {
                         printf("Unresolved symbol %s\n", it->first.c_str());
-                        //exit(1);
+                        exit(1);
                     } else {
 						it->second.position = entry.position;
 						it->second.section = entry.section;
@@ -285,7 +285,7 @@ public:
                     uint16_t labelUid = sections[i][0].code[j];
                     if(!findLabelByUid(labelUid, labelsPerObj[i], entry)) {
                         printf("Label with uid %d not found!\n", labelUid);
-                        //exit(1);
+                        exit(1);
                     } else {
                     //printf("Obj %d uid %d pos %d\n", i, labelUid, entry.position);
 						sections[i][0].code[j] = entry.position;

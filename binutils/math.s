@@ -1,4 +1,22 @@
 .code
+.label LEI2
+iaddrf_b 1 ; load A_high
+iaddrf_b 3 ; load B_high
+gt_w lei2_ret_0
+iaddrf_b 0 ; load A_low
+iaddrf_b 2 ; load B_low
+gt_w lei2_ret_0
+cnst_b 1
+cnst_b 0
+ret2
+.label lei2_ret_0
+cnst_b 0
+cnst_b 0
+ret2
+
+
+
+.code
 .label MULI1
 	
 cnst_b 0                       ;here we keep the result, accessable as local 1

@@ -721,19 +721,25 @@ static Symbol icon(unsigned long n, int overflow, int base) {
 		tval.type = inttype;
 	switch (tval.type->op) {
 	case INT:
+/* HACK */
+/*
 		if (overflow || n > tval.type->u.sym->u.limits.max.i) {
 			warning("overflow in constant `%S'\n", token,
 				(char*)cp - token);
 			tval.u.c.v.i = tval.type->u.sym->u.limits.max.i;
 		} else
+*/
 			tval.u.c.v.i = n;
 		break;
 	case UNSIGNED:
+/* HACK */
+/*
 		if (overflow || n > tval.type->u.sym->u.limits.max.u) {
 			warning("overflow in constant `%S'\n", token,
 				(char*)cp - token);
 			tval.u.c.v.u = tval.type->u.sym->u.limits.max.u;
 		} else
+*/
 			tval.u.c.v.u = n;
 		break;
 	default: assert(0);
