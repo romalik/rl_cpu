@@ -451,6 +451,7 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 
 			asmCode.push_back(newOp);
 		} else if(toSz > fromSz) {
+/*
 			newOp.name = ALLOC;
 			int nAlloc = toSz - fromSz;
 			sprintf(buf,"%d",toSz - fromSz);
@@ -464,6 +465,11 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
 				newOp.flArg = LONG_ARG;
 			}
 			asmCode.push_back(newOp);
+*/
+			for(int i = 0; i<toSz - fromSz; i++) {
+                Operation push_zero(CNST, 1, "0", SHORT_ARG);
+				asmCode.push_back(push_zero);
+			}
 		}
 		return;
 	}

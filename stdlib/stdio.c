@@ -1,4 +1,5 @@
-
+#include "string.h"
+#include "stdio.h"
 void itoa(int n, char s[]);
 
 int putc(char c) {
@@ -30,54 +31,7 @@ void putNum(int a) {
 	puts(buffer);
 }
 
-int strlen(char *s) {
-	char * p = s;
-	int n = 0;
-	while(*p) {
-		p++;
-		n++;
-	}
-	return n;
-}
-
- void reverse(char *s)
- {
-     int i, j;
-     char c;
- 
-     for (i = 0, j = strlen(s)-1; i<j; i++, j--) {
-         c = s[i];
-         s[i] = s[j];
-         s[j] = c;
-
-			
-
-     }
- }
-
- /* itoa:  convert n to characters in s */
- void itoa(int n, char s[])
- {
-     int i, sign = 0;
-     if (n < 0) { /* record sign */
-	s[0] = '-';
-	itoa(-n, s+1);
-	return;
-     }
-     i = 0;
-     do {       /* generate digits in reverse order */
-		 
-         s[i++] = n % 10 + '0';   /* get next digit */
-     } while ((n /= 10) > 0);     /* delete it */
-     if (sign == 1) {
-         s[i++] = '-';
-     }
-     s[i] = '\0';
-     reverse(s);
- }
-
-static void printchar(char **str, int c)
-{
+static void printchar(char **str, int c) {
 	if (str) {
 		**str = c;
 		++(*str);
@@ -88,8 +42,7 @@ static void printchar(char **str, int c)
 #define PAD_RIGHT 1
 #define PAD_ZERO 2
 
-static int prints(char **out, const char *string, int width, int pad)
-{
+static int prints(char **out, const char *string, int width, int pad) {
 	int pc = 0, padchar = ' ';
 
 	if (width > 0) {
@@ -121,8 +74,7 @@ static int prints(char **out, const char *string, int width, int pad)
 /* the following should be enough for 32 bit int */
 #define PRINT_BUF_LEN 12
 
-static int printi(char **out, int i, int b, int sg, int width, int pad, int letbase)
-{
+static int printi(char **out, int i, int b, int sg, int width, int pad, int letbase) {
 	char print_buf[PRINT_BUF_LEN];
 	char *s;
 	int t, neg = 0, pc = 0;
@@ -164,8 +116,7 @@ static int printi(char **out, int i, int b, int sg, int width, int pad, int letb
 	return pc + prints (out, s, width, pad);
 }
 
-static int print(char **out, int *varg)
-{
+static int print(char **out, int *varg) {
 	int width, pad;
 	int pc = 0;
 	char *format = (char *)(*varg++);
@@ -230,35 +181,13 @@ static int print(char **out, int *varg)
 
 /* assuming sizeof(void *) == sizeof(int) */
 
-int printf(const char *format, ...)
-{
+int printf(const char *format, ...) {
 	int *varg = (int *)(&format);
 	return print(0, varg);
 }
 
-int sprintf(char *out, const char *format, ...)
-{
+int sprintf(char *out, const char *format, ...) {
 	int *varg = (int *)(&format);
 	return print(&out, varg);
-}
-int memcpy(unsigned int * dest, unsigned int * src, int n) {
-	int k = n;
-	while(k--) {
-		*dest = *src;
-		dest++;
-		src++;
-	}
-	return n;
-}
-
-
-int memcpy_r(unsigned int * dest, unsigned int * src, int n) {
-	int k = n;
-	while(k--) {
-		*dest = *src;
-		dest++;
-		src++;
-	}
-	return n;
 }
 
