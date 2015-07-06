@@ -178,6 +178,7 @@ ret2
 
 .code
 .label MULI1
+.label MULU1
 	
 cnst_b 0                       ;here we keep the result, accessable as local 1
 .label mult_begin
@@ -294,5 +295,40 @@ sub ; A - C*B
 ret
 
 ;;;;; two word
+
+
+.code
+.export ADDU2
+.label ADDU2
+.export ADDI2
+.label ADDI2
+
+iaddrf_b 0
+iaddrf_b 2
+add
+dup
+iaddrf_b 0
+uge_w addu2_no_overflow
+
+addrf_b 1
+iaddrf_b 1
+add_b 1
+store
+
+.label addu2_no_overflow 
+iaddrf_b 1
+iaddrf_b 3
+add
+
+ret2
+
+.code
+.export MULU2
+.export MULI2
+.label MULU2
+.label MULI2
+
+;;;; (AH * 2^16 + AL) * (BH * 2^16 + BL) = AH * BH * 2^32 + AH * BL * 2^16 + AL * BH * 2^16 + AL * BL
+ret
 
 

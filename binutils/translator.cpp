@@ -7,8 +7,8 @@
 #include <stdlib.h>
 
 
-int dirnum = 12;
-char directives[][12] = {
+int dirnum = 13;
+char directives[][13] = {
     "import",
     "export",
 	"proc",
@@ -20,7 +20,8 @@ char directives[][12] = {
     "align",
     "skip",
     "byte",
-	"label"
+	"label",
+	"address"
 };
 
 
@@ -36,7 +37,8 @@ enum directive {
     ALIGN,
     SKIP,
     BYTE,
-	LABEL_DIRECTIVE
+	LABEL_DIRECTIVE,
+	ADDRESS
 };
 
 int opnum = 49;
