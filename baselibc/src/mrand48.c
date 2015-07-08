@@ -4,10 +4,13 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-
-extern unsigned short __rand48_seed[3];	/* Common with lrand48.c, srand48.c */
-
+/*
+extern unsigned short __rand48_seed[3];
+*/
 long mrand48(void)
 {
+/*	STUB
 	return jrand48(__rand48_seed);
+*/
+	return 0;
 }

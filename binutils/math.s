@@ -323,6 +323,55 @@ add
 ret2
 
 .code
+.export SUBU2
+.label SUBU2
+.export SUBI2
+.label SUBI2
+
+iaddrf_b 0
+iaddrf_b 2
+sub
+dup
+iaddrf_b 0
+ule_w subu2_no_overflow
+
+addrf_b 1
+iaddrf_b 1
+sub_b 1
+store
+
+.label subu2_no_overflow 
+iaddrf_b 1
+iaddrf_b 3
+sub
+
+ret2
+
+
+.code
+.export NEGU2
+.export NEGI2
+.label NEGU2
+.label NEGI2
+
+cnst_b 0
+cnst_b 0
+alloc_b 2
+
+addrl_b 2
+iaddrf_b 0
+store
+
+addrl_b 3
+iaddrf_b 0
+store
+
+call SUBI2
+
+ret2
+
+
+.code
 .export MULU2
 .export MULI2
 .label MULU2

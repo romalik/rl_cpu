@@ -29,6 +29,7 @@ typedef struct Section_t {
     char labelMap[0xffff];
     int offset;
     std::vector<uint16_t> code;
+    std::string filename;
 } Section;
 
 class Linker {
@@ -168,7 +169,8 @@ public:
                 if(it->second.needImport == 1) {
                     LabelEntry entry;
                     if(findGlobalLabel(it->first, entry) == 0) {
-                        printf("Unresolved symbol %s\n", it->first.c_str());
+                        printf("Unresolved symbol %s in file %s\n", it->first.c_str(), sections[i][0].filename.c_str());
+
                         exit(1);
                     } else {
 						it->second.position = entry.position;
@@ -187,6 +189,9 @@ public:
 
         Section textSection;
         Section dataSection;
+
+        textSection.filename = filename;
+        dataSection.filename = filename;
 
 
 

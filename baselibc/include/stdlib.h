@@ -15,9 +15,11 @@ __extern_inline int abs(int __n)
 	return (__n < 0) ? -__n : __n;
 }
 
+/* STUB
 __extern int atoi(const char *);
 __extern long atol(const char *);
 __extern long long atoll(const char *);
+*/
 
 __extern_inline long labs(long __n)
 {
@@ -56,13 +58,14 @@ __extern int *bsearch(const int *, const int *, size_t, size_t,
 		       __comparefunc_t);
 __extern void qsort(void *, size_t, size_t, __comparefunc_t);
 
+/*
 __extern long jrand48(unsigned short *);
 __extern long mrand48(void);
 __extern long nrand48(unsigned short *);
 __extern long lrand48(void);
 __extern unsigned short *seed48(const unsigned short *);
 __extern void srand48(long);
-
+*/
 #define RAND_MAX 0x7fffffff
 __extern_inline int rand(void)
 {

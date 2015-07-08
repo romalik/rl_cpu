@@ -34,9 +34,14 @@ struct File
 #endif
 
 /* Standard file descriptors - implement these globals yourself. */
-extern FILE* const stdin;
-extern FILE* const stdout;
-extern FILE* const stderr;
+struct File _stdin;
+struct File _stdout;
+struct File _stderr;
+
+
+extern FILE* const stdin = &_stdin;
+extern FILE* const stdout = &_stdout;
+extern FILE* const stderr = &_stderr;
 
 /* Wrappers around stream write and read */
 __extern_inline size_t fread(void *buf, size_t size, size_t nmemb, FILE *stream)
@@ -87,9 +92,11 @@ __extern int sprintf(char *, const char *, ...);
 __extern int vsprintf(char *, const char *, va_list);
 __extern int snprintf(char *, size_t n, const char *, ...);
 __extern int vsnprintf(char *, size_t n, const char *, va_list);
+
+/* STUB!
 __extern int asprintf(char **, const char *, ...);
 __extern int vasprintf(char **, const char *, va_list);
-
+*/
 __extern int sscanf(const char *, const char *, ...);
 __extern int vsscanf(const char *, const char *, va_list);
 
