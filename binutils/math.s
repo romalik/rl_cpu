@@ -363,7 +363,7 @@ iaddrf_b 0
 store
 
 addrl_b 3
-iaddrf_b 0
+iaddrf_b 1
 store
 
 call SUBI2
@@ -379,5 +379,7 @@ ret2
 
 ;;;; (AH * 2^16 + AL) * (BH * 2^16 + BL) = AH * BH * 2^32 + AH * BL * 2^16 + AL * BH * 2^16 + AL * BL
 ret
+
+
 
 
