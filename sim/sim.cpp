@@ -136,6 +136,13 @@ void Cpu::execute() {
   } else if(op == indir) {
     this->push(memRead(this->pop()));
 
+  } else if(op == indir2) {
+
+
+      w tmp = this->pop();
+      this->push(memRead(tmp));
+      this->push(memRead(tmp+1));
+
 
   } else if(op == add) {
     push(pop()+pop());
@@ -145,6 +152,14 @@ void Cpu::execute() {
       w tmp = this->memRead(PC);
       this->PC++;
     push(pop()+tmp);
+  } else if(op == add2) {
+      w ah = pop();
+      w al = pop();
+      w bh = pop();
+      w bl = pop();
+      long res = (((long)ah<<16) | (long)al) + (((long)bh<<16) | (long)bl);
+      push(res&0xffff);
+      push((res>>16)&0xffff);
 
 
   } else if(op == band) {
@@ -155,6 +170,14 @@ void Cpu::execute() {
       w tmp = this->memRead(PC);
       this->PC++;
     push(pop()&tmp);
+  } else if(op == band2) {
+      w ah = pop();
+      w al = pop();
+      w bh = pop();
+      w bl = pop();
+      long res = (((long)ah<<16) | (long)al) & (((long)bh<<16) | (long)bl);
+      push(res&0xffff);
+      push((res>>16)&0xffff);
 
 
   } else if(op == bor) {
@@ -165,6 +188,14 @@ void Cpu::execute() {
       w tmp = this->memRead(PC);
       this->PC++;
     push(pop()|tmp);
+  } else if(op == bor2) {
+      w ah = pop();
+      w al = pop();
+      w bh = pop();
+      w bl = pop();
+      long res = (((long)ah<<16) | (long)al) | (((long)bh<<16) | (long)bl);
+      push(res&0xffff);
+      push((res>>16)&0xffff);
 
 
   } else if(op == bxor) {
@@ -175,6 +206,14 @@ void Cpu::execute() {
       w tmp = this->memRead(PC);
       this->PC++;
     push(pop()^tmp);
+  } else if(op == bxor2) {
+      w ah = pop();
+      w al = pop();
+      w bh = pop();
+      w bl = pop();
+      long res = (((long)ah<<16) | (long)al) ^ (((long)bh<<16) | (long)bl);
+      push(res&0xffff);
+      push((res>>16)&0xffff);
 
 
   } else if(op == lsh) {
@@ -188,6 +227,14 @@ void Cpu::execute() {
       w tmp = this->memRead(PC);
       this->PC++;
     push(pop()<<tmp);
+  } else if(op == lsh2) {
+      w ah = pop();
+      w al = pop();
+      w bh = pop();
+      w bl = pop();
+      long res = (((long)ah<<16) | (long)al) << (((long)bh<<16) | (long)bl);
+      push(res&0xffff);
+      push((res>>16)&0xffff);
 
 
   } else if(op == rsh) {
@@ -201,6 +248,14 @@ void Cpu::execute() {
       w tmp = this->memRead(PC);
       this->PC++;
     push(pop()>>tmp);
+  } else if(op == rsh2) {
+      w ah = pop();
+      w al = pop();
+      w bh = pop();
+      w bl = pop();
+      long res = (((long)ah<<16) | (long)al) >> (((long)bh<<16) | (long)bl);
+      push(res&0xffff);
+      push((res>>16)&0xffff);
 
 
   } else if(op == sub) {
@@ -214,6 +269,15 @@ void Cpu::execute() {
       w tmp = this->memRead(PC);
       this->PC++;
     push(pop()-tmp);
+  } else if(op == sub2) {
+      w ah = pop();
+      w al = pop();
+      w bh = pop();
+      w bl = pop();
+      long res = (((long)bh<<16) | (long)bl) - (((long)ah<<16) | (long)al);
+      push(res&0xffff);
+      push((res>>16)&0xffff);
+
 
 
 
@@ -390,10 +454,22 @@ void Cpu::execute() {
       w val = pop();
       w target = pop();
       memWrite(target, val);
+  } else if(op == store2) {
+      w valh = pop();
+      w vall = pop();
+      w target = pop();
+      memWrite(target, vall);
+      memWrite(target+1, valh);
   } else if(op == rstore) {
       w target = pop();
       w val = pop();
       memWrite(target, val);
+  } else if(op == rstore2) {
+      w target = pop();
+      w valh = pop();
+      w vall = pop();
+      memWrite(target, vall);
+      memWrite(target + 1, valh);
   } else if(op == fastcall_w) {
       w target = memRead(PC);
       PC++;
@@ -423,6 +499,10 @@ void Cpu::execute() {
       push(RA);
       push(RA);
 
+  } else {
+      printf("op not implemented! %d\n", op);
+      printf("op not implemented! %s\n", oplist[op]);
+      exit(1);
   }
 
 

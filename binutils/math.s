@@ -1,179 +1,10 @@
-;;;;;;;;; UNSIGNED 2 WORD COMPARISON ;;;;;;;;;;;;;;
-.code
-.label LEU2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-ugt_w leu2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-ugt_w leu2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label leu2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-
-.code
-.label LTU2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-ugt_w ltu2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-uge_w ltu2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label ltu2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-
-.code
-.label GEU2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-ult_w geu2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-ult_w geu2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label geu2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-
-.code
-.label GTU2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-ult_w gtu2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-ule_w gtu2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label gtu2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-;;;;;;;;;;;;;;;;;;; SIGNED 2 WORD COMPARISON ;;;;;;;;;;;;;;;;;;;
-
-.code
-.label LEI2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-gt_w lei2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-gt_w lei2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label lei2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-
-.code
-.label LTI2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-gt_w lti2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-ge_w lti2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label lti2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-
-.code
-.label GEI2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-lt_w gei2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-lt_w gei2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label gei2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-
-.code
-.label GTI2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-lt_w gti2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-le_w gti2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label gti2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-;;;;;;;;;;;;;;;;;;;;;;; COMMON 2 WORD COMPARISON ;;;;;;;;;;;;;;
-.code
-.label EQI2
-.label EQU2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-ne_w eqi2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-ne_w eqi2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label eqi2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
-
-
-.code
-.label NEI2
-.label NEU2
-iaddrf_b 1 ; load A_high
-iaddrf_b 3 ; load B_high
-eq_w nei2_ret_0
-iaddrf_b 0 ; load A_low
-iaddrf_b 2 ; load B_low
-eq_w nei2_ret_0
-cnst_b 1
-cnst_b 0
-ret2
-.label nei2_ret_0
-cnst_b 0
-cnst_b 0
-ret2
 
 ;;;;;;;;;;;;;;;; MULTIPLICATION - SLOW ;;;;;;;;;;;;;;;;;
 
-
+.export MULI1
+.export MULU1
+.export MULI2
+.export MULU2
 ;;;;; one word
 
 .code
@@ -218,7 +49,11 @@ ret
 
 
 ;;;;; two word
+.code
+.label MULI2
+.label MULU2
 
+ret
 
 
 ;;;;;;;;;;;;; DIVISION - SLOW ;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,6 +213,14 @@ ret2
 .label MULI2
 
 ;;;; (AH * 2^16 + AL) * (BH * 2^16 + BL) = AH * BH * 2^32 + AH * BL * 2^16 + AL * BH * 2^16 + AL * BL
+ret
+
+.code
+.export BCOMU2
+.export BCOMI2
+.label BCOMU2
+.label BCOMI2
+
 ret
 
 
