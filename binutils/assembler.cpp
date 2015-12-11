@@ -288,7 +288,7 @@ int main(int argc, char ** argv) {
             //printf("Opcode: [%s]\n", word.c_str());
             int opcode = getOpIndex(word);
             if(opcode == -1) {
-                printf("Bad operation %s\n", word.c_str());
+                printf("Bad operation %s\n", line.c_str());
                 exit(1);
             }
 

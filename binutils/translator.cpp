@@ -69,7 +69,6 @@ char opnames[][10] = {
     "ARG",
     "CALL",
     "RET",
-    "RET2",
     "JUMP",
     "LABEL",
     "BCOM",
@@ -151,7 +150,6 @@ enum opname {
     ARG,
     CALL,
     RET,
-    RET2,
     JUMP,
     LABEL,
     BCOM,
@@ -193,6 +191,7 @@ typedef struct Operation_t {
 		arg = _arg;
 		flArg = _flArg;
         flIndir = 0;
+        size = 0;
 	}
 	Operation_t(int _name, int _flInstr, int _arg, int _flArg = 0) {
 		name = _name;
@@ -202,6 +201,7 @@ typedef struct Operation_t {
 		arg = std::string(buf);
 		flArg = _flArg;
         flIndir = 0;
+        size = 0;
 	}
 
 } Operation;
@@ -280,384 +280,239 @@ int currentArgFrameSize = 0;
 int currentLocalFrameSize = 0;
 
 
+void procStructure(std::vector<Operation> & asmCode, Operation op, std::vector<Operation>::reverse_iterator prevOp) {
+    //structure
+    if(op.name == INDIR) {
+        op.size = 1;
+        asmCode.push_back(op);
+    } else if(op.name == ASGN) {
+        if(prevOp == asmCode.rend() || (*prevOp).name != INDIR) {
+            printf("Structure assign fail");
+            exit(1);
+        }
+        asmCode.pop_back();
+
+        int wordsToCopy = strtol(op.arg.c_str(), NULL, 0);
+
+        Operation loadSizeOp(CNST, 1, op.arg);
+
+        if(wordsToCopy > 0 && wordsToCopy <= 255) {
+            loadSizeOp.flArg = SHORT_ARG;
+        } else {
+            loadSizeOp.flArg = LONG_ARG;
+        }
+        asmCode.push_back(loadSizeOp);
+        Operation constMemcpyAddr(CNST, 1, "memcpy_r", LINK_TIME_ARG);
+        asmCode.push_back(constMemcpyAddr);
+        Operation callFastcallAdaptor(CALL, 1, "fastcall3", LINK_TIME_ARG);
+        asmCode.push_back(callFastcallAdaptor);
+
+        //okay.. now we have:
+        // ... arg1|arg2|arg3|funcAddr|result| <SP>
+        //so, we should push SP-5
+        // ... arg1|arg2|arg3|funcAddr|result|&arg1| <SP>
+        //rstore
+        // ... result|arg2|arg3|funcAddr| <SP>
+        //discard_b 3
+        // ... result| <SP>
+
+
+        Operation pushTarget(ADDRS, 1, "-5", LONG_ARG);
+        Operation rstore(RSTORE, 1, "", NO_ARG);
+        Operation discard(DISCARD, 1, "3", SHORT_ARG);
+
+        asmCode.push_back(pushTarget);
+        asmCode.push_back(rstore);
+        asmCode.push_back(discard);
+    }
+}
+
+void procLabel(std::vector<Operation> & asmCode, Operation op, std::vector<Operation>::reverse_iterator prevOp) {
+    op.flInstr = 0;
+    op.name = LABEL_DIRECTIVE;
+    asmCode.push_back(op);
+}
+
+void procArg(std::vector<Operation> & asmCode, Operation op, std::vector<Operation>::reverse_iterator prevOp) {
+    if(op.size == 1) {
+        op.name = ADDRL;
+        op.flArg = SHORT_ARG;
+        char buf[100];
+        sprintf(buf, "%d", currentArg);
+        op.arg = std::string(buf);
+        asmCode.push_back(op);
+        asmCode.push_back(Operation(RSTORE, 1));
+        currentArg++;
+    } else if(op.size == 2) {
+        op.name = ADDRL;
+        op.flArg = SHORT_ARG;
+        char buf[100];
+        sprintf(buf, "%d", currentArg);
+        op.arg = std::string(buf);
+        op.size = 1;
+        asmCode.push_back(op);
+        Operation rStore_op = Operation(RSTORE, 1);
+        rStore_op.size = 2;
+        asmCode.push_back(rStore_op);
+        currentArg+=2;
+    } else {
+        printf("Bad arg size!\n");
+        exit(1);
+    }
+}
+
+void procCVT(std::vector<Operation> & asmCode, Operation op, std::vector<Operation>::reverse_iterator prevOp) {
+    // if arg(from) > size(to) - discard (arg-size)
+    // if arg(from) < size(to) - alloc (size-arg)
+    int fromSz = atoi(op.arg.c_str());
+    int toSz = op.size;
+    Operation newOp;
+
+
+    char buf[100];
+    if(fromSz > toSz) {
+        newOp.name = DISCARD;
+        int nDiscard = fromSz - toSz;
+        sprintf(buf,"%d",fromSz - toSz);
+        newOp.arg = std::string(buf);
+        newOp.flInstr = 1;
+        if(nDiscard == 1) {
+            newOp.name = DISCARD1;
+        } else if(nDiscard >=0 || nDiscard <= 255) {
+            newOp.flArg = SHORT_ARG;
+        } else {
+            newOp.flArg = LONG_ARG;
+        }
+
+        asmCode.push_back(newOp);
+    } else if(toSz > fromSz) {
+        for(int i = 0; i<toSz - fromSz; i++) {
+            Operation push_zero(CNST, 1, "0", SHORT_ARG);
+            asmCode.push_back(push_zero);
+        }
+    }
+}
+
+void procFastcallFunc(std::vector<Operation> & asmCode, Operation op, std::vector<Operation>::reverse_iterator prevOp) {
+    char funcName[100];
+    sprintf(funcName, "%s%s%d", opnames[op.name], typenames[op.type], op.size);
+
+    char adaptorName[100];
+
+    if(op.size > 1) {
+        sprintf(adaptorName, "fastcall2_long");
+
+        Operation constMemcpyAddr(CNST, 1, std::string(funcName), LINK_TIME_ARG);
+        asmCode.push_back(constMemcpyAddr);
+        Operation callFastcallAdaptor(CALL, 1, std::string(adaptorName), LINK_TIME_ARG);
+        asmCode.push_back(callFastcallAdaptor);
+        //okay.. now we have:
+        // ... arg1l|arg1h|arg2l|arg2h|funcAddr|result_l|result_h| <SP>
+        //so, we should push SP-6
+        // ... arg1l|arg1h|arg2l|arg2h|funcAddr|result_l|result_h|&arg1h| <SP>
+        //rstore
+        // ... arg1l|result_h|arg2l|arg2h|funcAddr|result_l| <SP>
+        //so, we should push SP-6
+        // ... arg1l|result_h|arg2l|arg2h|funcAddr|result_l|&arg1_l| <SP>
+        //rstore
+        // ... result_l|result_h|arg2l|arg2h|funcAddr| <SP>
+        //discard_b 3
+        // ... result_l|result_h| <SP>
+        Operation pushTargetH(ADDRS, 1, "-6", LONG_ARG);
+        Operation rstoreH(RSTORE, 1, "", NO_ARG);
+        Operation pushTargetL(ADDRS, 1, "-6", LONG_ARG);
+        Operation rstoreL(RSTORE, 1, "", NO_ARG);
+        Operation discard(DISCARD, 1, "3", SHORT_ARG);
+
+        asmCode.push_back(pushTargetH);
+        asmCode.push_back(rstoreH);
+        asmCode.push_back(pushTargetL);
+        asmCode.push_back(rstoreL);
+        asmCode.push_back(discard);
+
+
+    } else {
+        sprintf(adaptorName, "fastcall2");
+        Operation constMemcpyAddr(CNST, 1, std::string(funcName), LINK_TIME_ARG);
+        asmCode.push_back(constMemcpyAddr);
+        Operation callFastcallAdaptor(CALL, 1, std::string(adaptorName), LINK_TIME_ARG);
+        asmCode.push_back(callFastcallAdaptor);
+
+        //okay.. now we have:
+        // ... arg1|arg2|funcAddr|result| <SP>
+        //so, we should push SP-4
+        // ... arg1|arg2|funcAddr|result|&arg1| <SP>
+        //rstore
+        // ... result|arg2|funcAddr| <SP>
+        //discard_b 2
+        // ... result| <SP>
+
+
+        Operation pushTarget(ADDRS, 1, "-4", LONG_ARG);
+        Operation rstore(RSTORE, 1, "", NO_ARG);
+        Operation discard(DISCARD, 1, "2", SHORT_ARG);
+
+        asmCode.push_back(pushTarget);
+        asmCode.push_back(rstore);
+        asmCode.push_back(discard);
+    }
+
+}
+
+
 void addOp(std::vector<Operation> & asmCode, Operation op) {
 
     std::vector<Operation>::reverse_iterator prevOp = asmCode.rbegin();
 
-    if(op.type == TYPE_B) {
-        //structure
-        if(op.name == INDIR) {
-            asmCode.push_back(op);
-            return;
-        } else if(op.name == ASGN) {
-            if(prevOp == asmCode.rend() || (*prevOp).name != INDIR) {
-                printf("Structure assign fail");
-                exit(1);
-            }
-            asmCode.pop_back();
 
-            int wordsToCopy = strtol(op.arg.c_str(), NULL, 0);
-
-            Operation loadSizeOp(CNST, 1, op.arg);
-
-            if(wordsToCopy > 0 && wordsToCopy <= 255) {
-                loadSizeOp.flArg = SHORT_ARG;
-            } else {
-                loadSizeOp.flArg = LONG_ARG;
-            }
-            asmCode.push_back(loadSizeOp);
-            Operation constMemcpyAddr(CNST, 1, "memcpy_r", LINK_TIME_ARG);
-            asmCode.push_back(constMemcpyAddr);
-            Operation callFastcallAdaptor(CALL, 1, "fastcall3", LINK_TIME_ARG);
-            asmCode.push_back(callFastcallAdaptor);
-
-            //okay.. now we have:
-            // ... arg1|arg2|arg3|funcAddr|result| <SP>
-            //so, we should push SP-5
-            // ... arg1|arg2|arg3|funcAddr|result|&arg1| <SP>
-            //rstore
-            // ... result|arg2|arg3|funcAddr| <SP>
-            //discard_b 3
-            // ... result| <SP>
-
-
-            Operation pushTarget(ADDRS, 1, "-5", LONG_ARG);
-            Operation rstore(RSTORE, 1, "", NO_ARG);
-            Operation discard(DISCARD, 1, "3", SHORT_ARG);
-
-            asmCode.push_back(pushTarget);
-            asmCode.push_back(rstore);
-            asmCode.push_back(discard);
-
-
-            return;
+    if(isdigit(op.arg[0])) {
+        int val = atoi(op.arg.c_str());
+        if(val >=0 && val <= 255 && op.arg.find('+') == std::string::npos) {
+            op.flArg = SHORT_ARG;
+        } else {
+            op.flArg = LONG_ARG;
         }
-
-
-
-        return;
+    } else if(op.arg != "") {
+        op.flArg = LINK_TIME_ARG;
+    } else {
+        op.flArg = NO_ARG;
     }
 
-	if(op.name == LABEL) {
-		op.flInstr = 0;
-		op.name = LABEL_DIRECTIVE;
-		asmCode.push_back(op);
-		return;
-	}
 
-	if(op.name == ARG) {
-        if(op.size == 1) {
-            op.name = ADDRL;
-            op.flArg = SHORT_ARG;
-            char buf[100];
-            sprintf(buf, "%d", currentArg);
-            op.arg = std::string(buf);
-            asmCode.push_back(op);
-            asmCode.push_back(Operation(RSTORE, 1));
-            currentArg++;
-            return;
-        } else if(op.size == 2) {
-            // ..|dest_l|dest_h|...|val_l|val_h| SP
-            //addrl currentArg+1
-            // ..|dest_l|dest_h|...|val_l|val_h|&dest_h| SP
-            //rstore
-            // ..|dest_l|val_h|...|val_l| SP
-            //addrl currentArg
-            // ..|dest_l|val_h|...|val_l|&dest_l| SP
-            //rstore
-            // ..|val_l|val_h|... SP
 
-            char buf[100];
-            sprintf(buf,"%d", currentArg + 1);
-            Operation addrl_h(ADDRL, 1, std::string(buf), SHORT_ARG);
-            sprintf(buf,"%d", currentArg );
-            Operation addrl_l(ADDRL, 1, std::string(buf), SHORT_ARG);
-            Operation rstore(RSTORE, 1, "", NO_ARG);
-
-            asmCode.push_back(addrl_h);
-            asmCode.push_back(rstore);
-            asmCode.push_back(addrl_l);
-            asmCode.push_back(rstore);
-            return;
-
-        } else {
-            printf("Bad arg size!\n");
-            exit(1);
-        }
-	}
-
-	if(op.name == ASGN) {
+    if(op.type == TYPE_B) {
+        procStructure(asmCode, op, prevOp);
+    } else if(op.name == LABEL) {
+        procLabel(asmCode, op, prevOp);
+    } else if(op.name == ARG) {
+        procArg(asmCode, op, prevOp);
+    } else if(opIn(op, Sample()(CVI)(CVU)(CVP))) {
+        procCVT(asmCode,op,prevOp);
+    } else if(op.name == ASGN) {
         //check size here
-        if(op.size == 1) {
+        if(op.size == 1 || op.size == 2) {
             op.name = STORE;
             asmCode.push_back(op);
-            return;
-        } else if(op.size == 2) {
-            // |dest_l|dest_h|...|&dest_l|val_l|val_h| SP
-            // iaddrs_w -3
-            // |dest_l|dest_h|...|&dest_l|val_l|val_h|&dest_l| SP
-            //add_b 1
-            // |dest_l|dest_h|...|&dest_l|val_l|val_h|&dest_h| SP
-            //rstore
-            // |dest_l|val_h|...|&dest_l|val_l| SP
-            //store
-            // |val_l|val_h|...| SP
-
-
-            Operation iaddrs(ADDRS, 1, "-3", LONG_ARG);
-            iaddrs.flIndir = 1;
-            Operation add(ADD, 1, "1", SHORT_ARG);
-
-            Operation rstore(RSTORE, 1, "", NO_ARG);
-            Operation store(STORE, 1, "", NO_ARG);
-
-            asmCode.push_back(iaddrs);
-            asmCode.push_back(add);
-            asmCode.push_back(rstore);
-            asmCode.push_back(store);
-
-            return;
         } else {
             printf("Bad assign size!\n");
             exit(1);
 
         }
-	}
-
-	if(op.name == CALL) {
-		currentArg = 0;
-	}
-
-	if(opIn(op, Sample()(CVI)(CVU)(CVP))) {
-		// if arg(from) > size(to) - discard (arg-size)
-		// if arg(from) < size(to) - alloc (size-arg)
-		int fromSz = atoi(op.arg.c_str());
-		int toSz = op.size;
-		Operation newOp;
-
-
-		char buf[100];
-		if(fromSz > toSz) {
-			newOp.name = DISCARD;
-			int nDiscard = fromSz - toSz;
-			sprintf(buf,"%d",fromSz - toSz);
-			newOp.arg = std::string(buf);
-			newOp.flInstr = 1;
-			if(nDiscard == 1) {
-				newOp.name = DISCARD1;
-			} else if(nDiscard >=0 || nDiscard <= 255) {
-				newOp.flArg = SHORT_ARG;
-			} else {
-				newOp.flArg = LONG_ARG;
-			}
-
-			asmCode.push_back(newOp);
-		} else if(toSz > fromSz) {
-/*
-			newOp.name = ALLOC;
-			int nAlloc = toSz - fromSz;
-			sprintf(buf,"%d",toSz - fromSz);
-			newOp.arg = std::string(buf);
-			newOp.flInstr = 1;
-			if(nAlloc == 1) {
-				newOp.name = ALLOC1;
-			} else if(nAlloc >=0 || nAlloc <= 255) {
-				newOp.flArg = SHORT_ARG;
-			} else {
-				newOp.flArg = LONG_ARG;
-			}
-			asmCode.push_back(newOp);
-*/
-			for(int i = 0; i<toSz - fromSz; i++) {
-                Operation push_zero(CNST, 1, "0", SHORT_ARG);
-				asmCode.push_back(push_zero);
-			}
-		}
-		return;
-	}
-
-    if(op.size > 1 || opIn(op, Sample()(DIV)(MOD)(MUL))) {
-		if(op.name == CNST) {
-			unsigned long long mask = 0xffff;
-			for(int i = 0; i<op.size; i++) {
-				int cval = (atol(op.arg.c_str()) >> i*16) & mask;
-				char buf[100];
-				sprintf(buf, "%d", cval);
-                //mask = mask << 16;
-				Operation newOp;
-				newOp.flInstr = 1;
-				newOp.name = CNST;
-				newOp.flArg = LONG_ARG;
-				newOp.arg = std::string(buf);
-				asmCode.push_back(newOp);
-			}
-			return;
-        } else if(op.name == RET) {
-            if(op.size == 2) {
-                op.name == RET2;
-                asmCode.push_back(op);
-                return;
-            }
-        } else if(op.name == INDIR) {
-            if(op.size == 2) {
-                //indirect 2
-                // |val_l|val_h|...|&val_l| SP
-                //dup
-                //dup
-                // |val_l|val_h|...|&val_l|&val_l|&val_l| SP
-                //indir
-                // |val_l|val_h|...|&val_l|&val_l|val_l| SP
-                //addrs_w -3
-                // |val_l|val_h|...|&val_l(L)|&val_l|val_l|&L| SP
-                //rstore
-                // |val_l|val_h|...|val_l|&val_l| SP
-                //add_b 1
-                // |val_l|val_h|...|val_l|&val_h| SP
-                //indir
-                // |val_l|val_h|...|val_l|val_h| SP
-
-                Operation dup(DUP, 1, "", NO_ARG);
-                Operation indir(INDIR, 1, "", NO_ARG);
-                Operation rstore(RSTORE, 1, "", NO_ARG);
-                Operation addrs(ADDRS, 1, "-3", LONG_ARG);
-                Operation add(ADD, 1, "1", SHORT_ARG);
-
-                asmCode.push_back(dup);
-                asmCode.push_back(dup);
-                asmCode.push_back(indir);
-                asmCode.push_back(addrs);
-                asmCode.push_back(rstore);
-                asmCode.push_back(add);
-                asmCode.push_back(indir);
-
-
-
-                return;
-            }
-        } else if(op.name == CALL) {
-            if((*prevOp).name == CNST) {
-                (*prevOp).name = op.name;
-                return;
-            } else {
-                asmCode.push_back(op);
-            }
-        }
-
-
-        char funcName[100];
-        sprintf(funcName, "%s%s%d", opnames[op.name], typenames[op.type], op.size);
-
-        char adaptorName[100];
-
-        if(op.size > 1) {
-            sprintf(adaptorName, "fastcall2_long");
-
-            Operation constMemcpyAddr(CNST, 1, std::string(funcName), LINK_TIME_ARG);
-            asmCode.push_back(constMemcpyAddr);
-            Operation callFastcallAdaptor(CALL, 1, std::string(adaptorName), LINK_TIME_ARG);
-            asmCode.push_back(callFastcallAdaptor);
-            //okay.. now we have:
-            // ... arg1l|arg1h|arg2l|arg2h|funcAddr|result_l|result_h| <SP>
-            //so, we should push SP-6
-            // ... arg1l|arg1h|arg2l|arg2h|funcAddr|result_l|result_h|&arg1h| <SP>
-            //rstore
-            // ... arg1l|result_h|arg2l|arg2h|funcAddr|result_l| <SP>
-            //so, we should push SP-6
-            // ... arg1l|result_h|arg2l|arg2h|funcAddr|result_l|&arg1_l| <SP>
-            //rstore
-            // ... result_l|result_h|arg2l|arg2h|funcAddr| <SP>
-            //discard_b 3
-            // ... result_l|result_h| <SP>
-            Operation pushTargetH(ADDRS, 1, "-6", LONG_ARG);
-            Operation rstoreH(RSTORE, 1, "", NO_ARG);
-            Operation pushTargetL(ADDRS, 1, "-6", LONG_ARG);
-            Operation rstoreL(RSTORE, 1, "", NO_ARG);
-            Operation discard(DISCARD, 1, "3", SHORT_ARG);
-
-            asmCode.push_back(pushTargetH);
-            asmCode.push_back(rstoreH);
-            asmCode.push_back(pushTargetL);
-            asmCode.push_back(rstoreL);
-            asmCode.push_back(discard);
-
-
+    } else if(op.name == CALL) {
+        currentArg = 0;
+        op.size = 1;
+        if((*prevOp).name == CNST) {
+            (*prevOp).name = CALL;
         } else {
-            sprintf(adaptorName, "fastcall2");
-            Operation constMemcpyAddr(CNST, 1, std::string(funcName), LINK_TIME_ARG);
-            asmCode.push_back(constMemcpyAddr);
-            Operation callFastcallAdaptor(CALL, 1, std::string(adaptorName), LINK_TIME_ARG);
-            asmCode.push_back(callFastcallAdaptor);
-
-            //okay.. now we have:
-            // ... arg1|arg2|funcAddr|result| <SP>
-            //so, we should push SP-4
-            // ... arg1|arg2|funcAddr|result|&arg1| <SP>
-            //rstore
-            // ... result|arg2|funcAddr| <SP>
-            //discard_b 2
-            // ... result| <SP>
-
-
-            Operation pushTarget(ADDRS, 1, "-4", LONG_ARG);
-            Operation rstore(RSTORE, 1, "", NO_ARG);
-            Operation discard(DISCARD, 1, "2", SHORT_ARG);
-
-            asmCode.push_back(pushTarget);
-            asmCode.push_back(rstore);
-            asmCode.push_back(discard);
+            asmCode.push_back(op);
         }
-
-        if(opIn(op, Sample()(GT)(GE)(LT)(LE)(EQ)(NE)(UGT)(UGE)(ULT)(ULE)(UEQ)(UNE))) {
-            Operation pushConstZero(CNST, 1, "0", SHORT_ARG);
-            Operation jumpIfNotZero(NE, 1, op.arg, LINK_TIME_ARG);
-            Operation discard(DISCARD, 1, "1", SHORT_ARG);
-
-
-            asmCode.push_back(discard); // remove high-word of conditional result
-            asmCode.push_back(pushConstZero);
-            asmCode.push_back(jumpIfNotZero);
-
-
+    } else if(op.name == INDIR) {
+        if(op.size == 1 && opIn(*prevOp, Sample()(ADDRF)(ADDRG)(ADDRL)(CNST)) && ((*prevOp).flIndir == 0)) {
+            (*prevOp).flIndir = 1;
+        } else {
+            asmCode.push_back(op);
         }
-		return;
-	}
-
-	
-	//parse arg
-/*
-    if(op.arg.find('+') != std::string::npos) {
-        op.flArg = LINK_TIME_ARG;
-    } else*/ if(isdigit(op.arg[0])) {
-		int val = atoi(op.arg.c_str());
-        if(val >=0 && val <= 255 && op.arg.find('+') == std::string::npos) {
-			op.flArg = SHORT_ARG;
-		} else {
-			op.flArg = LONG_ARG;
-		}
-	} else if(op.arg != "") {
-		op.flArg = LINK_TIME_ARG;
-	} else {
-		op.flArg = NO_ARG;
-	}
-
-
-	if(op.name == INDIR) {
-		if(opIn(*prevOp, Sample()(ADDRF)(ADDRG)(ADDRL)(CNST))) {
-            if((*prevOp).flIndir == 0) {
-                (*prevOp).flIndir = 1;
-                return;
-            }
-		}
-	}
-
-	if(opIn(op, Sample()(ADD)(SUB)(BAND)(BOR)(BXOR)(JUMP)(CALL) )) {
-		if((*prevOp).name == CNST) {
-			(*prevOp).name = op.name;
-			return;
-		}
-	}
-
-    if(op.name == NEG) {
+    } else if(op.name == NEG && op.size == 1) {
         Operation op1;
         op1.name = BXOR;
         op1.flArg = LONG_ARG;
@@ -670,52 +525,73 @@ void addOp(std::vector<Operation> & asmCode, Operation op) {
         op2.flInstr = 1;
         op2.arg = "1";
         asmCode.push_back(op2);
-        return;
-    }
-
-    if(op.name == BCOM) {
+    } else if(op.name == BCOM && op.size == 1) {
         Operation op1;
         op1.name = BXOR;
         op1.flArg = LONG_ARG;
         op1.flInstr = 1;
         op1.arg = "0xffff";
         asmCode.push_back(op1);
-        return;
-    }
+    } else if(op.size > 1) {
+        if(op.name == CNST) {
+            unsigned long long mask = 0xffff;
+            for(int i = 0; i<op.size; i++) {
+                int cval = (atol(op.arg.c_str()) >> i*16) & mask;
+                char buf[100];
+                sprintf(buf, "%d", cval);
+                //mask = mask << 16;
+                Operation newOp;
+                newOp.flInstr = 1;
+                newOp.name = CNST;
+                newOp.flArg = LONG_ARG;
+                newOp.arg = std::string(buf);
+                asmCode.push_back(newOp);
+            }
+            return;
+        } else if(opIn(op, Sample()(ADD)(BAND)(BOR)(BXOR)(LSH)(RSH)(SUB)(EQ)(GE)(GT)(LE)(LT)(NE)(UEQ)(UGE)(UGT)(ULE)(ULT)(UNE)(RET)(STORE)(RSTORE))) {
+            asmCode.push_back(op);
+        } else if(opIn(op, Sample()(DIV)(MOD)(MUL)(NEG)(BCOM))) {
+            procFastcallFunc(asmCode, op, prevOp);
+        } else {
+            printf("Bad opcode! %d %s %d\n", op.name, opnames[op.name], op.size);
+            exit(1);
 
-    if(op.type == TYPE_U) {
-        if(opIn(op, Sample()(EQ)(GE)(GT)(LE)(LT)(NE))) {
+        }
+    } else if(opIn(op, Sample()(DIV)(MOD)(MUL))) {
+        procFastcallFunc(asmCode, op, prevOp);
+    } else if(opIn(op, Sample()(LSH)(RSH) )) {
+        asmCode.push_back(op);
+    } else if(opIn(op, Sample()(ADD)(SUB)(BAND)(BOR)(BXOR)(JUMP)(CALL) )) {
+        if((*prevOp).name == CNST) {
+            (*prevOp).name = op.name;
+        }
+    } else if(opIn(op, Sample()(EQ)(GE)(GT)(LE)(LT)(NE))){
+        if(op.type == TYPE_U) {
             //explicitly convert to unsigned comparison
             op.name += UEQ - EQ;
         }
-    }
+        asmCode.push_back(op);
 
-
-    if(opIn(op, Sample()(EQ)(GE)(GT)(LE)(LT)(NE)(UEQ)(UGE)(UGT)(ULE)(ULT)(UNE))) {
-        //check comparison for immediate arg
-    }
-	
-
-
-	if(op.name == ADDRG) {
-		op.name = CNST;
-	}
-
-
-    if(op.name == ADDRL) {
+    } else if(op.name == ADDRG) {
+        op.name = CNST;
+        asmCode.push_back(op);
+    } else if(opIn(op, Sample()(ADDRF)(CNST)(RET))) {
+        asmCode.push_back(op);
+    } else if(opIn(op, Sample()(DISCARD))) {
+        op.name = DISCARD1;
+        op.flArg = NO_ARG;
+        asmCode.push_back(op);
+    } else if(op.name == ADDRL) {
         int cArg = strtol(op.arg.c_str(), NULL, 0);
         char buf[100];
 //        sprintf(buf,"%d",cArg + currentArgFrameSize);
         sprintf(buf,"%s+%d",op.arg.c_str(), currentArgFrameSize);
         op.arg = std::string(buf);
+        asmCode.push_back(op);
+    } else {
+        printf("Bad opcode! %d %s %d\n", op.name, opnames[op.name], op.size);
+        exit(1);
     }
-
-
-
-
-	asmCode.push_back(op);
-
-
 
 }
 
@@ -750,9 +626,6 @@ std::string getWord(std::string str) {
 }
 
 int main() {
-
-
-
 	std::vector<Operation> asmCode;
 
 	while(1) {
@@ -854,7 +727,7 @@ int main() {
 				s++;
 				p++;
 			}
-			printf("%s%s", ((asmCode[i].flIndir)?"i":""), tmp);
+            printf("%s%s%s", ((asmCode[i].flIndir)?"i":""), tmp, (asmCode[i].size == 2)?"2":"");
 			int argType = asmCode[i].flArg;
 			if(argType == NO_ARG) {
 				printf("\n");
