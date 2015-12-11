@@ -1,3 +1,6 @@
+#ifndef OPLIST_H_
+#define OPLIST_H_
+
 enum opname {
     nop = 0,
 
@@ -237,3 +240,4 @@ char oplist[][16] = {
     ""
 
 };
+#endif
