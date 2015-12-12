@@ -163,6 +163,10 @@ enum opname_rc {
     rc_gt,
     rc_le,
     rc_lt,
+    rc_uge,
+    rc_ugt,
+    rc_ule,
+    rc_ult,
     rc_ne,
     rc_call,
     rc_ret,
@@ -190,11 +194,6 @@ enum directive_rc {
 
 };
 
-enum sign_rc {
-    SIGN_SIGNED,
-    SIGN_UNSIGNED
-};
-
 enum size_rc {
     SIZE_WORD,
     SIZE_DWORD
@@ -215,10 +214,9 @@ struct LCCEntry {
 };
 
 struct RCEntry {
-    RCEntry(bool _isD, int _name, const char * _arg = NULL, sign_rc _sign = SIGN_UNSIGNED, size_rc _size = SIZE_WORD, arg_rc _argType = ARG_NONE) {
+    RCEntry(bool _isD, int _name, const char * _arg = NULL, size_rc _size = SIZE_WORD, arg_rc _argType = ARG_NONE) {
         isDirective = _isD;
         name = _name;
-        sign = _sign;
         size = _size;
         argType = _argType;
         if(_arg) {
@@ -229,7 +227,6 @@ struct RCEntry {
 
     bool isDirective;
     int name;
-    sign_rc sign;
     size_rc size;
     arg_rc argType;
     char arg[100];

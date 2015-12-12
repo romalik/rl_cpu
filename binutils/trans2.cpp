@@ -12,6 +12,7 @@
 std::vector< RCEntry > output;
 int nLocals = 0;
 int nArgs = 0;
+int cArg = 0;
 
 
 void genProcHeader(std::string params) {
@@ -33,7 +34,7 @@ void genProcHeader(std::string params) {
 
     char buf[100];
     sprintf(buf, "%d", totalReserve);
-    RCEntry op_alloc = RCEntry(0, rc_alloc, buf, SIGN_UNSIGNED, SIZE_WORD, ( (totalReserve > 127)?ARG_WORD:ARG_CHAR));
+    RCEntry op_alloc = RCEntry(0, rc_alloc, buf, SIZE_WORD, ( (totalReserve > 127)?ARG_WORD:ARG_CHAR));
     output.push_back(op_alloc);
 }
 
@@ -121,18 +122,18 @@ void parseOp(std::string line) {
     if(op == "ADDRF") {
         if(!flArgNumeric) fail(line);
         if(opSize != 1) fail(line);
-        output.push_back(RCEntry(0, rc_addrf, argStr.c_str(), SIGN_UNSIGNED, SIZE_WORD, argType));
+        output.push_back(RCEntry(0, rc_addrf, argStr.c_str(), SIZE_WORD, argType));
 
 
     } else if(op == "ADDRG") {
         if(opSize != 1) fail(line);
-        output.push_back(RCEntry(0, rc_cnst, argStr.c_str(), SIGN_UNSIGNED, SIZE_WORD, argType));
+        output.push_back(RCEntry(0, rc_cnst, argStr.c_str(), SIZE_WORD, argType));
 
 
     } else if(op == "ADDRL") {
         if(!flArgNumeric) fail(line);
         if(opSize != 1) fail(line);
-        output.push_back(RCEntry(0, rc_addrl, argStr.c_str(), SIGN_UNSIGNED, SIZE_WORD, argType));
+        output.push_back(RCEntry(0, rc_addrl, argStr.c_str(), SIZE_WORD, argType));
 
 
     } else if(op == "CNST") {
@@ -141,15 +142,15 @@ void parseOp(std::string line) {
             int cval = (atol(argStr.c_str()) >> (unsigned long long)i*16ULL) & mask;
             char buf[100];
             sprintf(buf, "%d", cval);
-            output.push_back(RCEntry(0, rc_cnst, buf, SIGN_UNSIGNED, SIZE_WORD, (cval >=0 && cval <= 127)?ARG_CHAR:ARG_WORD));
+            output.push_back(RCEntry(0, rc_cnst, buf, SIZE_WORD, (cval >=0 && cval <= 127)?ARG_CHAR:ARG_WORD));
         }
 
     } else if(op == "INDIR") {
         if(opType != 'B') {
             if(opSize == 1) {
-                output.push_back(RCEntry(0, rc_indir, "", SIGN_UNSIGNED, SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_indir, "", SIZE_WORD, ARG_NONE));
             } else if(opSize == 2) {
-                output.push_back(RCEntry(0, rc_indir, "", SIGN_UNSIGNED, SIZE_DWORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_indir, "", SIZE_DWORD, ARG_NONE));
             } else {
                 //hmmm strange..
                 printf("Strange indir attempt. I'd better crash..\n");
@@ -160,45 +161,45 @@ void parseOp(std::string line) {
         }
     } else if(op == "NEG") {
         if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_bxor, "0xffff", SIGN_UNSIGNED, SIZE_WORD, ARG_WORD));
-            output.push_back(RCEntry(0, rc_add, "0x01", SIGN_UNSIGNED, SIZE_WORD, ARG_CHAR));
+            output.push_back(RCEntry(0, rc_bxor, "0xffff", SIZE_WORD, ARG_WORD));
+            output.push_back(RCEntry(0, rc_add, "0x01", SIZE_WORD, ARG_CHAR));
         } else if(opSize == 2) {
-            output.push_back(RCEntry(0, rc_cnst, "0xffff", SIGN_UNSIGNED, SIZE_WORD, ARG_WORD));
-            output.push_back(RCEntry(0, rc_cnst, "0xffff", SIGN_UNSIGNED, SIZE_WORD, ARG_WORD));
-            output.push_back(RCEntry(0, rc_bxor, "", SIGN_UNSIGNED, SIZE_DWORD, ARG_NONE));
-            output.push_back(RCEntry(0, rc_cnst, "0x01", SIGN_UNSIGNED, SIZE_WORD, ARG_CHAR));
-            output.push_back(RCEntry(0, rc_cnst, "0x00", SIGN_UNSIGNED, SIZE_WORD, ARG_CHAR));
-            output.push_back(RCEntry(0, rc_add, "", SIGN_UNSIGNED, SIZE_DWORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_cnst, "0xffff", SIZE_WORD, ARG_WORD));
+            output.push_back(RCEntry(0, rc_cnst, "0xffff", SIZE_WORD, ARG_WORD));
+            output.push_back(RCEntry(0, rc_bxor, "", SIZE_DWORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_cnst, "0x01", SIZE_WORD, ARG_CHAR));
+            output.push_back(RCEntry(0, rc_cnst, "0x00", SIZE_WORD, ARG_CHAR));
+            output.push_back(RCEntry(0, rc_add, "", SIZE_DWORD, ARG_NONE));
         }
     } else if(op == "ADD") {
         if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_add, "", SIGN_UNSIGNED, SIZE_WORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_add, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
-            output.push_back(RCEntry(0, rc_add, "", SIGN_UNSIGNED, SIZE_DWORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_add, "", SIZE_DWORD, ARG_NONE));
         }
     } else if(op == "SUB") {
         if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_sub, "", SIGN_UNSIGNED, SIZE_WORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_sub, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
-            output.push_back(RCEntry(0, rc_sub, "", SIGN_UNSIGNED, SIZE_DWORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_sub, "", SIZE_DWORD, ARG_NONE));
         }
     } else if(op == "BAND") {
         if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_band, "", SIGN_UNSIGNED, SIZE_WORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_band, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
-            output.push_back(RCEntry(0, rc_band, "", SIGN_UNSIGNED, SIZE_DWORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_band, "", SIZE_DWORD, ARG_NONE));
         }
     } else if(op == "BOR") {
         if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_bor, "", SIGN_UNSIGNED, SIZE_WORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_bor, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
-            output.push_back(RCEntry(0, rc_bor, "", SIGN_UNSIGNED, SIZE_DWORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_bor, "", SIZE_DWORD, ARG_NONE));
         }
     } else if(op == "BXOR") {
         if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_bxor, "", SIGN_UNSIGNED, SIZE_WORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_bxor, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
-            output.push_back(RCEntry(0, rc_bxor, "", SIGN_UNSIGNED, SIZE_DWORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_bxor, "", SIZE_DWORD, ARG_NONE));
         }
     } else if(op == "DIV") {
         //fuck that
@@ -211,7 +212,7 @@ void parseOp(std::string line) {
             int val = atoi(output.back().arg);
             output.pop_back();
             while(val > 0) {
-                output.push_back(RCEntry(0, rc_lsh, "", SIGN_UNSIGNED, SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_lsh, "", SIZE_WORD, ARG_NONE));
                 val--;
             }
         } else {
@@ -222,14 +223,85 @@ void parseOp(std::string line) {
             int val = atoi(output.back().arg);
             output.pop_back();
             while(val > 0) {
-                output.push_back(RCEntry(0, rc_rsh, "", SIGN_UNSIGNED, SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_rsh, "", SIZE_WORD, ARG_NONE));
                 val--;
             }
         } else {
             //fuck that..
         }
     } else if(op == "ASGN") {
+        if(opSize == 1) {
+            output.push_back(RCEntry(0, rc_store, "", SIZE_WORD, ARG_NONE));
+        } else if(opSize == 2) {
+            output.push_back(RCEntry(0, rc_store, "", SIZE_DWORD, ARG_NONE));
+        }
+    } else if(op == "EQ") {
+        if(opSize == 1) {
+            output.push_back(RCEntry(0, rc_eq, "", SIZE_WORD, ARG_NONE));
+        } else {
+            //fuck it
+        }
+    } else if(op == "NE") {
+        if(opSize == 1) {
+            output.push_back(RCEntry(0, rc_ne, "", SIZE_WORD, ARG_NONE));
+        } else {
+            //fuck it
+        }
+    } else if(op == "GT") {
+        if(opSize == 1) {
+            if(opType == 'U' || opType == 'P') {
+                output.push_back(RCEntry(0, rc_ugt, "", SIZE_WORD, ARG_NONE));
+            } else {
+                output.push_back(RCEntry(0, rc_gt, "", SIZE_WORD, ARG_NONE));
+            }
+        } else {
+            //fuck it
+        }
+    } else if(op == "GE") {
+        if(opSize == 1) {
+            if(opType == 'U' || opType == 'P') {
+                output.push_back(RCEntry(0, rc_uge, "", SIZE_WORD, ARG_NONE));
+            } else {
+                output.push_back(RCEntry(0, rc_ge, "", SIZE_WORD, ARG_NONE));
+            }
+        } else {
+            //fuck it
+        }
+    } else if(op == "LT") {
+        if(opSize == 1) {
+            if(opType == 'U' || opType == 'P') {
+                output.push_back(RCEntry(0, rc_ult, "", SIZE_WORD, ARG_NONE));
+            } else {
+                output.push_back(RCEntry(0, rc_lt, "", SIZE_WORD, ARG_NONE));
+            }
+        } else {
+            //fuck it
+        }
+    } else if(op == "LE") {
+        if(opSize == 1) {
+            if(opType == 'U' || opType == 'P') {
+                output.push_back(RCEntry(0, rc_ule, "", SIZE_WORD, ARG_NONE));
+            } else {
+                output.push_back(RCEntry(0, rc_le, "", SIZE_WORD, ARG_NONE));
+            }
+        } else {
+            //fuck it
+        }
+    } else if(op == "ARG") {
+        if(opSize == 1) {
+            char buf[100];
+            sprintf(buf, "%d", cArg);
+            output.push_back(RCEntry(0, rc_addrl, buf, SIZE_WORD, (cArg <= 127)?ARG_CHAR:ARG_WORD));
+            output.push_back(RCEntry(0, rc_rstore, "", SIZE_WORD, ARG_NONE));
+            cArg++;
+        } else {
+            char buf[100];
+            sprintf(buf, "%d", cArg);
+            output.push_back(RCEntry(0, rc_addrl, buf, SIZE_WORD, (cArg <= 127)?ARG_CHAR:ARG_WORD));
+            output.push_back(RCEntry(0, rc_rstore, "", SIZE_DWORD, ARG_NONE));
+            cArg+=2;
 
+        }
     }
 }
 
