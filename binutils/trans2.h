@@ -122,7 +122,6 @@ enum opname_lcc {
     ARG,
     CALL,
     RET,
-    RET2,
     JUMP,
     LABEL,
     BCOM,

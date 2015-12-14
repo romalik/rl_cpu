@@ -20,6 +20,7 @@ void genProcHeader(std::string params) {
     std::string funcName;
     nLocals = 0;
     nArgs = 0;
+    cArg = 0;
     ss >> funcName >> nLocals >> nArgs;
 
     RCEntry dir_label = RCEntry(1, rc_label, funcName.c_str());
@@ -87,11 +88,23 @@ void parseOp(std::string line) {
     std::string opRaw;
     ss >> opRaw;
 
-    char opType = opRaw[opRaw.size() - 1];
-    int opSize = opRaw[opRaw.size() - 2] - '0';
+    char opType = 0;
+    int opSize = 0;
 
-    std::string op = std::string(opRaw, 0, opRaw.size() - 2);
+    if(opRaw[opRaw.size() - 1] == 'V') {
+        opSize = 0;
+        opType = 'V';
+    } else {
+        opType = opRaw[opRaw.size() - 2];
+        opSize = opRaw[opRaw.size() - 1] - '0';
+    }
 
+    std::string op;
+    if(opType == 'V') {
+        op = std::string(opRaw, 0, opRaw.size() - 1);
+    } else {
+        op = std::string(opRaw, 0, opRaw.size() - 2);
+    }
     int flArgNumeric = 0;
     arg_rc argType = ARG_NONE;
     std::string argStr;
@@ -171,6 +184,14 @@ void parseOp(std::string line) {
             output.push_back(RCEntry(0, rc_cnst, "0x00", SIZE_WORD, ARG_CHAR));
             output.push_back(RCEntry(0, rc_add, "", SIZE_DWORD, ARG_NONE));
         }
+    } else if(op == "BCOM") {
+        if(opSize == 1) {
+            output.push_back(RCEntry(0, rc_bxor, "0xffff", SIZE_WORD, ARG_WORD));
+        } else if(opSize == 2) {
+            output.push_back(RCEntry(0, rc_cnst, "0xffff", SIZE_WORD, ARG_WORD));
+            output.push_back(RCEntry(0, rc_cnst, "0xffff", SIZE_WORD, ARG_WORD));
+            output.push_back(RCEntry(0, rc_bxor, "", SIZE_DWORD, ARG_NONE));
+        }
     } else if(op == "ADD") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_add, "", SIZE_WORD, ARG_NONE));
@@ -237,22 +258,22 @@ void parseOp(std::string line) {
         }
     } else if(op == "EQ") {
         if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_eq, "", SIZE_WORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_eq, argStr.c_str(), SIZE_WORD, ARG_LINK));
         } else {
             //fuck it
         }
     } else if(op == "NE") {
         if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_ne, "", SIZE_WORD, ARG_NONE));
+            output.push_back(RCEntry(0, rc_ne, argStr.c_str(), SIZE_WORD, ARG_LINK));
         } else {
             //fuck it
         }
     } else if(op == "GT") {
         if(opSize == 1) {
             if(opType == 'U' || opType == 'P') {
-                output.push_back(RCEntry(0, rc_ugt, "", SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_ugt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             } else {
-                output.push_back(RCEntry(0, rc_gt, "", SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_gt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
             //fuck it
@@ -260,9 +281,9 @@ void parseOp(std::string line) {
     } else if(op == "GE") {
         if(opSize == 1) {
             if(opType == 'U' || opType == 'P') {
-                output.push_back(RCEntry(0, rc_uge, "", SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_uge, argStr.c_str(), SIZE_WORD, ARG_LINK));
             } else {
-                output.push_back(RCEntry(0, rc_ge, "", SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_ge, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
             //fuck it
@@ -270,9 +291,9 @@ void parseOp(std::string line) {
     } else if(op == "LT") {
         if(opSize == 1) {
             if(opType == 'U' || opType == 'P') {
-                output.push_back(RCEntry(0, rc_ult, "", SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_ult, argStr.c_str(), SIZE_WORD, ARG_LINK));
             } else {
-                output.push_back(RCEntry(0, rc_lt, "", SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_lt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
             //fuck it
@@ -280,9 +301,9 @@ void parseOp(std::string line) {
     } else if(op == "LE") {
         if(opSize == 1) {
             if(opType == 'U' || opType == 'P') {
-                output.push_back(RCEntry(0, rc_ule, "", SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_ule, argStr.c_str(), SIZE_WORD, ARG_LINK));
             } else {
-                output.push_back(RCEntry(0, rc_le, "", SIZE_WORD, ARG_NONE));
+                output.push_back(RCEntry(0, rc_le, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
             //fuck it
@@ -302,7 +323,36 @@ void parseOp(std::string line) {
             cArg+=2;
 
         }
+    } else if(op == "CALL") {
+        output.push_back(RCEntry(0, rc_call, "", SIZE_WORD, ARG_NONE));
+        cArg = 0;
+    } else if(op == "RET") {
+        output.push_back(RCEntry(0, rc_ret, "", (opSize==2)?SIZE_DWORD:SIZE_WORD, ARG_NONE));
+    } else if(op == "JUMP") {
+        output.push_back(RCEntry(0, rc_jump, "", SIZE_WORD, ARG_NONE));
+    } else if(op == "LABEL") {
+        output.push_back(RCEntry(1, rc_label, argStr.c_str(), SIZE_WORD, ARG_WORD));
+    } else if(op == "CVI" || op == "CVU" || op == "CVF" || op == "CVP") {
+        int fromSz = atoi(argStr.c_str());
+        int toSz = opSize;
+        char buf[100];
+        sprintf(buf, "%d", abs(fromSz - toSz));
+
+        if(fromSz > toSz) {
+            if(fromSz - toSz < 127) {
+                output.push_back(RCEntry(0, rc_discard, buf, SIZE_WORD, ARG_CHAR));
+            } else {
+                output.push_back(RCEntry(0, rc_discard, buf, SIZE_WORD, ARG_WORD));
+            }
+        } else if(fromSz < toSz) {
+            for(int i = 0; i<fromSz - toSz; i++) {
+                output.push_back(RCEntry(0,rc_cnst, "0", SIZE_WORD, ARG_CHAR));
+            }
+        }
+    } else if(op == "DISCARD") {
+        output.push_back(RCEntry(0, rc_discard, ))
     }
+
 }
 
 void parseLine(std::string line) {
