@@ -4,7 +4,8 @@
 int main() {
 	int i = 0;
 	int j = 0;
-	char myString[] = "Hello from rlCPU!\n";
+    int d,g,d1,g1;
+    char myString[] = "Hello from rlCPU!\n";
 	char buf[] = "This string will contain num";
 	
 	char myString2[] = "And the second string!\n";
@@ -15,7 +16,20 @@ int main() {
 	puts(myString);
 	
 	puts(myString2);
-	
+
+    puts("SmallTest\n");
+    d = 2;
+    g = d * 4;
+    puts("Mult passed. 2*4 = ");
+    putc(g + '0');
+    putc('\n');
+
+    d1 = 8;
+    g1 = d1 / 2;
+    puts("Div passed. 8/2 = ");
+    putc(g1 + '0');
+    putc('\n');
+
 	{
 		char *ptr = "Hello world!";
 		char *np = 0;

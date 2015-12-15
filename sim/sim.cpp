@@ -335,7 +335,6 @@ void Cpu::execute() {
 
   } else if(op == call0) {
     w target = pop();
-    PC++;
     push(PC);
     push(AP);
     push(BP);
@@ -355,7 +354,6 @@ void Cpu::execute() {
 
   } else if(op == call1) {
     w target = pop();
-    PC++;
     SP++;
     push(PC);
     push(AP);
@@ -377,7 +375,6 @@ void Cpu::execute() {
 
   } else if(op == call2) {
     w target = pop();
-    PC++;
     SP++;
     SP++;
     push(PC);
@@ -406,7 +403,6 @@ void Cpu::execute() {
     PC = pop();
   } else if(op == jump_w) {
       w target = memRead(PC);
-      PC++;
       PC = target;
   } else if(op == jump) {
       w target = pop();
@@ -535,8 +531,8 @@ int main(int argc, char ** argv) {
         printf("\nLoading done. Starting..\n");
         while(1) {
             myCpu.execute();
-            if(debug)
-                usleep(500*1000);
+            //if(debug)
+            //    usleep(500*1000);
         }
 
 

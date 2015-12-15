@@ -93,11 +93,24 @@ void genBuiltin(std::string line, int opSize) {
     char buf[100];
     sprintf(buf, "__builtin_%s", line.c_str());
     if(opSize == 0) {
-        output.push_back(RCEntry(0, rc_call0, buf, SIZE_WORD, ARG_LINK));
+        fail(line);
+        //output.push_back(RCEntry(0, rc_call0, buf, SIZE_WORD, ARG_LINK));
     } else if (opSize == 1) {
-        output.push_back(RCEntry(0, rc_call1, buf, SIZE_WORD, ARG_LINK));
+        // Stack: ...|ARG1|ARG2|
+        output.push_back(RCEntry(0, rc_call0, buf, SIZE_WORD, ARG_LINK));
+        // Stack: ...|RETV|ARG2|
+        //              ^
+        //          builtin stores result here
+        output.push_back(RCEntry(0, rc_discard, "1", SIZE_WORD, ARG_CHAR));
+        // Stack: ...|RETV|
     } else if (opSize == 2) {
-        output.push_back(RCEntry(0, rc_call2, buf, SIZE_WORD, ARG_LINK));
+        // Stack: ...|ARG1l|ARG1h|ARG2l|ARG2h|
+        output.push_back(RCEntry(0, rc_call0, buf, SIZE_WORD, ARG_LINK));
+        // Stack: ...|RETVl|RETVh|ARG2l|ARG2h|
+        //              ^     ^
+        //          builtin stores result here
+        output.push_back(RCEntry(0, rc_discard, "2", SIZE_WORD, ARG_CHAR));
+        // Stack: ...|RETVl|RETVh|
     } else {
         fail(line);
     }
@@ -135,6 +148,9 @@ void parseOp(std::string line) {
     if(opRaw[opRaw.size() - 1] == 'V') {
         opSize = 0;
         opType = 'V';
+    } else if(opRaw[opRaw.size() - 1] == 'B') {
+        opSize = 0;
+        opType = 'B';
     } else {
         opType = opRaw[opRaw.size() - 2];
         opSize = opRaw[opRaw.size() - 1] - '0';
@@ -146,6 +162,8 @@ void parseOp(std::string line) {
         opSize = 0;
         opType = 0;
     } else if(opType == 'V') {
+        op = std::string(opRaw, 0, opRaw.size() - 1);
+    } else if(opType == 'B') {
         op = std::string(opRaw, 0, opRaw.size() - 1);
     } else {
         op = std::string(opRaw, 0, opRaw.size() - 2);
@@ -192,9 +210,14 @@ void parseOp(std::string line) {
 //        if(!flArgNumeric) fail(line);
         if(opSize != 1) fail(line);
         char buf[100];
-        sprintf(buf, "%d", atoi(argStr.c_str()) + nArgs);
-        output.push_back(RCEntry(0, rc_addrl, buf, SIZE_WORD, (atoi(argStr.c_str()) + nArgs)<=127?ARG_CHAR:ARG_WORD));
-
+        if(flArgNumeric) {
+            int localN = atoi(argStr.c_str()) + nArgs;
+            sprintf(buf, "%d", localN);
+            output.push_back(RCEntry(0, rc_addrl, buf, SIZE_WORD, ((localN<=127)?ARG_CHAR:ARG_WORD)));
+        } else {
+            sprintf(buf, "%s+%d", argStr.c_str(), nArgs);
+            output.push_back(RCEntry(0, rc_addrl, buf, SIZE_WORD, ARG_LINK));
+        }
 
     } else if(op == "CNST") {
         unsigned long long mask = 0xffff;
@@ -312,12 +335,18 @@ void parseOp(std::string line) {
             genBuiltin(line, opSize);
         }
     } else if(op == "ASGN") {
-        if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_store, "", SIZE_WORD, ARG_NONE));
-        } else if(opSize == 2) {
-            output.push_back(RCEntry(0, rc_store, "", SIZE_DWORD, ARG_NONE));
+        if(opType == 'B') {
+            output.push_back(RCEntry(0, rc_cnst, argStr.c_str(), SIZE_WORD, argType));
+            output.push_back(RCEntry(0, rc_call0, "__builtin_memcpy", SIZE_WORD, ARG_LINK));
+            output.push_back(RCEntry(0, rc_discard, "3", SIZE_WORD, ARG_CHAR));
         } else {
-            fail(line);
+            if(opSize == 1) {
+                output.push_back(RCEntry(0, rc_store, "", SIZE_WORD, ARG_NONE));
+            } else if(opSize == 2) {
+                output.push_back(RCEntry(0, rc_store, "", SIZE_DWORD, ARG_NONE));
+            } else {
+                fail(line);
+            }
         }
     } else if(op == "EQ") {
         if(opSize == 1) {
@@ -445,7 +474,7 @@ void optimize() {
     std::vector< RCEntry >::iterator it = output.begin();
     while(it != output.end()) {
         std::vector< RCEntry >::iterator prevIt;
-        if(it != output.begin() && it->isDirective == 0) {
+        if(it != output.begin() && it->isDirective == 0 && it->argType == ARG_NONE) {
             prevIt = it - 1;
             if(it->name == rc_indir) { //indirect locals, frame and globals
                 if(prevIt->name == rc_addrf ||
