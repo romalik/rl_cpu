@@ -1,5 +1,5 @@
 #!/bin/sh
 
-trans < "$1" > "$1t"
+trans -o < "$1" > "$1t"
 asm "$1t" "$2"
 

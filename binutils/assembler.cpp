@@ -282,8 +282,8 @@ int main(int argc, char ** argv) {
             } else if(word == ".endproc") {
                 assembly.output(ret);
             } else if(word == ".address") {
-		//STUB! emit label uid here
-	    }
+                //STUB! emit label uid here
+            }
         } else {
             //printf("Opcode: [%s]\n", word.c_str());
             int opcode = getOpIndex(word);
@@ -310,12 +310,13 @@ int main(int argc, char ** argv) {
                 //printf("Arg: [%s]\n", arg.c_str());
                 if(isdigit(arg[0]) || arg[0] == '-') {
                     int argNum = evaluateExpr(arg.c_str());
+                    unsigned int argNumU = (unsigned int)(argNum);
                     if(argType == 1) {
-                        opcode = opcode | (argNum << 8);
+                        opcode = opcode | ((argNumU&0xff) << 8);
                         assembly.output(opcode);
                     } else if(argType == 2) {
                         assembly.output(opcode);
-                        assembly.output(argNum);
+                        assembly.output(argNumU&0xffff);
                     }
                 } else {
                     //here we have a label

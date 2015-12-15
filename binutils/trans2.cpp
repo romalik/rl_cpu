@@ -15,6 +15,10 @@ int nArgs = 0;
 int cArg = 0;
 
 
+void genProcEnding() {
+    output.push_back(RCEntry(0,rc_ret));
+}
+
 void genProcHeader(std::string params) {
     std::stringstream ss(params);
     std::string funcName;
@@ -55,6 +59,7 @@ void parseDirective(std::string line) {
         output.push_back(RCEntry(1, rc_proc, lccArg.c_str()));
         genProcHeader(lccArg);
     } else if(!strcmp(lccWord.c_str(), "endproc")) {
+        genProcEnding();
         output.push_back(RCEntry(1, rc_endproc, lccArg.c_str()));
     } else if(!strcmp(lccWord.c_str(), "code")) {
         output.push_back(RCEntry(1, rc_code, lccArg.c_str()));
@@ -80,8 +85,43 @@ void parseDirective(std::string line) {
 }
 
 void fail(std::string line) {
-    printf("Bad line: %s\n", line.c_str());
+    fprintf(stderr, "Translator: Bad line: %s\n", line.c_str());
     exit(1);
+}
+
+void genBuiltin(std::string line, int opSize) {
+    char buf[100];
+    sprintf(buf, "__builtin_%s", line.c_str());
+    if(opSize == 0) {
+        output.push_back(RCEntry(0, rc_call0, buf, SIZE_WORD, ARG_LINK));
+    } else if (opSize == 1) {
+        output.push_back(RCEntry(0, rc_call1, buf, SIZE_WORD, ARG_LINK));
+    } else if (opSize == 2) {
+        output.push_back(RCEntry(0, rc_call2, buf, SIZE_WORD, ARG_LINK));
+    } else {
+        fail(line);
+    }
+}
+
+void genBuiltinCmp(std::string line, int opSize) {
+    char buf[100];
+    sprintf(buf, "__builtin_cmp_%s", line.c_str());
+    output.push_back(RCEntry(0, rc_call1, buf, SIZE_WORD, ARG_LINK));
+}
+
+void genRet(int opSize) {
+    if(opSize == 0) {
+        //do nothing, just ret
+    } else if(opSize == 1) {
+        //bp-4
+        output.push_back(RCEntry(0, rc_addrl, "-4", SIZE_WORD, ARG_CHAR));
+        output.push_back(RCEntry(0, rc_rstore, "", SIZE_WORD, ARG_NONE));
+    } else if(opSize == 2) {
+        //bp-5
+        output.push_back(RCEntry(0, rc_addrl, "-5", SIZE_WORD, ARG_CHAR));
+        output.push_back(RCEntry(0, rc_rstore, "", SIZE_DWORD, ARG_NONE));
+    }
+    output.push_back(RCEntry(0,rc_ret));
 }
 
 void parseOp(std::string line) {
@@ -138,7 +178,7 @@ void parseOp(std::string line) {
 
 
     if(op == "ADDRF") {
-        if(!flArgNumeric) fail(line);
+//        if(!flArgNumeric) fail(line);
         if(opSize != 1) fail(line);
         output.push_back(RCEntry(0, rc_addrf, argStr.c_str(), SIZE_WORD, argType));
 
@@ -149,9 +189,11 @@ void parseOp(std::string line) {
 
 
     } else if(op == "ADDRL") {
-        if(!flArgNumeric) fail(line);
+//        if(!flArgNumeric) fail(line);
         if(opSize != 1) fail(line);
-        output.push_back(RCEntry(0, rc_addrl, argStr.c_str(), SIZE_WORD, argType));
+        char buf[100];
+        sprintf(buf, "%d", atoi(argStr.c_str()) + nArgs);
+        output.push_back(RCEntry(0, rc_addrl, buf, SIZE_WORD, (atoi(argStr.c_str()) + nArgs)<=127?ARG_CHAR:ARG_WORD));
 
 
     } else if(op == "CNST") {
@@ -242,14 +284,11 @@ void parseOp(std::string line) {
             fail(line);
         }
     } else if(op == "DIV") {
-        fail(line);
-        //fuck that
+        genBuiltin(line, opSize);
     } else if(op == "MOD") {
-        fail(line);
-        //fuck that
+        genBuiltin(line, opSize);
     } else if(op == "MUL") {
-        fail(line);
-        //fuck that
+        genBuiltin(line, opSize);
     } else if(op == "LSH") {
         if((opSize == 1) && (output.back().name == rc_cnst)) {
             int val = atoi(output.back().arg);
@@ -259,8 +298,7 @@ void parseOp(std::string line) {
                 val--;
             }
         } else {
-            fail(line);
-            //fuck that..
+            genBuiltin(line, opSize);
         }
     } else if(op == "RSH") {
         if((opSize == 1) && (output.back().name == rc_cnst)) {
@@ -271,8 +309,7 @@ void parseOp(std::string line) {
                 val--;
             }
         } else {
-            fail(line);
-            //fuck that..
+            genBuiltin(line, opSize);
         }
     } else if(op == "ASGN") {
         if(opSize == 1) {
@@ -286,13 +323,13 @@ void parseOp(std::string line) {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_eq, argStr.c_str(), SIZE_WORD, ARG_LINK));
         } else {
-            fail(line);
+            genBuiltinCmp(line,opSize);
         }
     } else if(op == "NE") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_ne, argStr.c_str(), SIZE_WORD, ARG_LINK));
         } else {
-            fail(line);
+            genBuiltinCmp(line,opSize);
         }
     } else if(op == "GT") {
         if(opSize == 1) {
@@ -302,7 +339,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_gt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            fail(line);
+            genBuiltinCmp(line,opSize);
         }
     } else if(op == "GE") {
         if(opSize == 1) {
@@ -312,7 +349,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_ge, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            fail(line);
+            genBuiltinCmp(line,opSize);
         }
     } else if(op == "LT") {
         if(opSize == 1) {
@@ -322,7 +359,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_lt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            fail(line);
+            genBuiltinCmp(line,opSize);
         }
     } else if(op == "LE") {
         if(opSize == 1) {
@@ -332,7 +369,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_le, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            fail(line);
+            genBuiltinCmp(line,opSize);
         }
     } else if(op == "ARG") {
         if(opSize == 1) {
@@ -362,15 +399,7 @@ void parseOp(std::string line) {
         }
         cArg = 0;
     } else if(op == "RET") {
-        if(opSize == 0) {
-            output.push_back(RCEntry(0, rc_ret0, "", SIZE_WORD, ARG_NONE));
-        } else if(opSize == 1) {
-            output.push_back(RCEntry(0, rc_ret1, "", SIZE_WORD, ARG_NONE));
-        } else if(opSize == 2) {
-            output.push_back(RCEntry(0, rc_ret2, "", SIZE_WORD, ARG_NONE));
-        } else {
-            fail(line);
-        }
+        genRet(opSize);
     } else if(op == "JUMP") {
         output.push_back(RCEntry(0, rc_jump, "", SIZE_WORD, ARG_NONE));
     } else if(op == "LABEL") {
@@ -416,7 +445,7 @@ void optimize() {
     std::vector< RCEntry >::iterator it = output.begin();
     while(it != output.end()) {
         std::vector< RCEntry >::iterator prevIt;
-        if(it != output.begin()) {
+        if(it != output.begin() && it->isDirective == 0) {
             prevIt = it - 1;
             if(it->name == rc_indir) { //indirect locals, frame and globals
                 if(prevIt->name == rc_addrf ||
@@ -432,6 +461,10 @@ void optimize() {
             } else if((it->name >= rc_add && it->name <= rc_bxor)  || (it->name >= rc_call0 && it->name <= rc_call2) || it->name == rc_jump) { //immediate arithm & call ops
                 if(prevIt->name == rc_cnst && prevIt->size == SIZE_WORD) {
                     prevIt->name = it->name;
+                    if((it->name >= rc_call0 && it->name <= rc_call2) || it->name == rc_jump) { //force word size arg for call&jump
+                        prevIt->argType = ARG_LINK;
+                    }
+
                     it = output.erase(it);
                     continue;
                 }
@@ -483,11 +516,10 @@ int main(int argc, char ** argv) {
             break;
         parseLine(line);
     }
-    printf("Before opt: %d\n", getOpNum(output));
-    dumpCode();
 
-    optimize();
-
-    printf("After opt: %d\n", getOpNum(output));
+    if(argc > 1 && !strcmp(argv[1], "-o")) {
+        optimize();
+    }
     dumpCode();
+    return 0;
 }

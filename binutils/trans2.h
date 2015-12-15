@@ -169,9 +169,7 @@ char opname_rc_str[][16] = {
     "call0",
     "call1",
     "call2",
-    "ret0",
-    "ret1",
-    "ret2",
+    "ret",
     "jump",
     "discard",
     "alloc",
@@ -209,9 +207,7 @@ enum opname_rc {
     rc_call0,
     rc_call1,
     rc_call2,
-    rc_ret0,
-    rc_ret1,
-    rc_ret2,
+    rc_ret,
     rc_jump,
     rc_discard,
     rc_alloc,
@@ -277,6 +273,8 @@ struct RCEntry {
         argType = _argType;
         if(_arg) {
             strcpy(arg, _arg);
+        } else {
+            arg[0] = 0;
         }
         needIndir = 0;
 

@@ -1,3 +1,3 @@
 .code
-call_w main
-call_w halt
+call1_w main
+call1_w halt

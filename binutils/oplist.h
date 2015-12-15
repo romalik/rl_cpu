@@ -27,13 +27,15 @@ enum opname {
     indir,
     indir2,
 
-    neg,
-    neg2,
-
     add,
     add_b,
     add_w,
     add2,
+
+    sub,
+    sub_b,
+    sub_w,
+    sub2,
 
     band,
     band_b,
@@ -51,68 +53,38 @@ enum opname {
     bxor2,
 
     lsh,
-    lsh_b,
-    lsh_w,
-    lsh2,
 
     rsh,
-    rsh_b,
-    rsh_w,
-    rsh2,
-
-    sub,
-    sub_b,
-    sub_w,
-    sub2,
 
     eq_w,
-    eq2_w,
     ge_w,
-    ge2_w,
     gt_w,
-    gt2_w,
     le_w,
-    le2_w,
     lt_w,
-    lt2_w,
     ne_w,
-    ne2_w,
 
-    ueq_w,
-    ueq2_w,
     uge_w,
-    uge2_w,
     ugt_w,
-    ugt2_w,
     ule_w,
-    ule2_w,
     ult_w,
-    ult2_w,
-    une_w,
-    une2_w,
 
-    call_w,
-    call,
+    call0_w,
+    call0,
+    call1_w,
+    call1,
+    call2_w,
+    call2,
 
     ret,
-    ret2,
 
     jump_w,
     jump,
 
-    discard1,
     discard_b,
     discard_w,
 
-    alloc1,
     alloc_b,
     alloc_w,
-
-    fastcall,
-    fastcall_w,
-
-    fastret,
-    fastret2,
 
     store,
     rstore,
@@ -149,13 +121,15 @@ char oplist[][16] = {
     "indir",
     "indir2",
 
-    "neg",
-    "neg2",
-
     "add",
     "add_b",
     "add_w",
     "add2",
+
+    "sub",
+    "sub_b",
+    "sub_w",
+    "sub2",
 
     "band",
     "band_b",
@@ -173,68 +147,38 @@ char oplist[][16] = {
     "bxor2",
 
     "lsh",
-    "lsh_b",
-    "lsh_w",
-    "lsh2",
 
     "rsh",
-    "rsh_b",
-    "rsh_w",
-    "rsh2",
-
-    "sub",
-    "sub_b",
-    "sub_w",
-    "sub2",
 
     "eq_w",
-    "eq2_w",
     "ge_w",
-    "ge2_w",
     "gt_w",
-    "gt2_w",
     "le_w",
-    "le2_w",
     "lt_w",
-    "lt2_w",
     "ne_w",
-    "ne2_w",
 
-    "ueq_w",
-    "ueq2_w",
     "uge_w",
-    "uge2_w",
     "ugt_w",
-    "ugt2_w",
     "ule_w",
-    "ule2_w",
     "ult_w",
-    "ult2_w",
-    "une_w",
-    "une2_w",
 
-    "call_w",
-    "call",
+    "call0_w",
+    "call0",
+    "call1_w",
+    "call1",
+    "call2_w",
+    "call2",
 
     "ret",
-    "ret2",
 
     "jump_w",
     "jump",
 
-    "discard1",
     "discard_b",
     "discard_w",
 
-    "alloc1",
     "alloc_b",
     "alloc_w",
-
-    "fastcall",
-    "fastcall_w",
-
-    "fastret",
-    "fastret2",
 
     "store",
     "rstore",

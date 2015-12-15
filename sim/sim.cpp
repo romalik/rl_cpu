@@ -54,7 +54,11 @@ w Cpu::pop() {
 }
 
 w Cpu::IRHigh() {
-    return ((IR >> 8)&0xff);
+    w t = ((IR >> 8)&0xff);
+    if(t & 0x80) { //sign-extend
+        t = t | 0xff00;
+    }
+    return t;
 }
 
 void Cpu::execute() {
@@ -217,47 +221,9 @@ void Cpu::execute() {
 
 
   } else if(op == lsh) {
-      //BUG!
-      RA = pop();
-      RB = pop();
-    push(RB<<RA);
-  } else if(op == lsh_b) {
-    push(pop()<<IRHigh());
-  } else if(op == lsh_w) {
-      w tmp = this->memRead(PC);
-      this->PC++;
-    push(pop()<<tmp);
-  } else if(op == lsh2) {
-      w ah = pop();
-      w al = pop();
-      w bh = pop();
-      w bl = pop();
-      long res = (((long)ah<<16) | (long)al) << (((long)bh<<16) | (long)bl);
-      push(res&0xffff);
-      push((res>>16)&0xffff);
-
-
+    push(pop() << 1);
   } else if(op == rsh) {
-      //BUG!
-      RA = pop();
-      RB = pop();
-    push(RB>>RA);
-  } else if(op == rsh_b) {
-    push(pop()>>IRHigh());
-  } else if(op == rsh_w) {
-      w tmp = this->memRead(PC);
-      this->PC++;
-    push(pop()>>tmp);
-  } else if(op == rsh2) {
-      w ah = pop();
-      w al = pop();
-      w bh = pop();
-      w bl = pop();
-      long res = (((long)ah<<16) | (long)al) >> (((long)bh<<16) | (long)bl);
-      push(res&0xffff);
-      push((res>>16)&0xffff);
-
-
+      push(pop() >> 1);
   } else if(op == sub) {
       //BUG!
         RA = pop();
@@ -277,10 +243,6 @@ void Cpu::execute() {
       long res = (((long)bh<<16) | (long)bl) - (((long)ah<<16) | (long)al);
       push(res&0xffff);
       push((res>>16)&0xffff);
-
-
-
-
   } else if(op == eq_w) {
     int v2 = (ws)pop();
     int v1 = (ws)pop();
@@ -335,15 +297,6 @@ void Cpu::execute() {
         PC = addr;
     }
 
-  } else if(op == ueq_w) {
-    w v2 = pop();
-    w v1 = pop();
-    w addr = this->memRead(PC);
-    PC++;
-    if(v1 == v2) {
-        PC = addr;
-    }
-
   } else if(op == uge_w) {
       w v2 = pop();
       w v1 = pop();
@@ -380,17 +333,9 @@ void Cpu::execute() {
         PC = addr;
     }
 
-  } else if(op == une_w) {
-      w v2 = pop();
-      w v1 = pop();
-    w addr = this->memRead(PC);
-    PC++;
-    if(v1 != v2) {
-        PC = addr;
-    }
-
-  } else if(op == call) {
+  } else if(op == call0) {
     w target = pop();
+    PC++;
     push(PC);
     push(AP);
     push(BP);
@@ -398,7 +343,7 @@ void Cpu::execute() {
     BP = SP;
     PC = target;
 
-  } else if(op == call_w) {
+  } else if(op == call0_w) {
     w target = memRead(PC);
     PC++;
     push(PC);
@@ -408,25 +353,57 @@ void Cpu::execute() {
     BP = SP;
     PC = target;
 
-  } else if(op == ret) {
-    RA = pop();
-    SP = BP;
-    BP = pop();
-    AP = pop();
+  } else if(op == call1) {
     w target = pop();
-    push(RA);
-    PC = target;
-  } else if(op == ret2) {
-      RA = pop();
-      RB = pop();
-    SP = BP;
-    BP = pop();
-    AP = pop();
-    w target = pop();
-    push(RB);
-    push(RA);
+    PC++;
+    SP++;
+    push(PC);
+    push(AP);
+    push(BP);
+    AP = BP;
+    BP = SP;
     PC = target;
 
+  } else if(op == call1_w) {
+    w target = memRead(PC);
+    PC++;
+    SP++;
+    push(PC);
+    push(AP);
+    push(BP);
+    AP = BP;
+    BP = SP;
+    PC = target;
+
+  } else if(op == call2) {
+    w target = pop();
+    PC++;
+    SP++;
+    SP++;
+    push(PC);
+    push(AP);
+    push(BP);
+    AP = BP;
+    BP = SP;
+    PC = target;
+
+  } else if(op == call2_w) {
+    w target = memRead(PC);
+    PC++;
+    SP++;
+    SP++;
+    push(PC);
+    push(AP);
+    push(BP);
+    AP = BP;
+    BP = SP;
+    PC = target;
+
+  } else if(op == ret) {
+    SP = BP;
+    BP = pop();
+    AP = pop();
+    PC = pop();
   } else if(op == jump_w) {
       w target = memRead(PC);
       PC++;
@@ -434,16 +411,12 @@ void Cpu::execute() {
   } else if(op == jump) {
       w target = pop();
       PC = target;
-  } else if(op == discard1) {
-      pop();
   } else if(op == discard_b) {
       SP -= IRHigh();
   } else if(op == discard_w) {
       w discardAmount = memRead(PC);
       PC++;
       SP -= discardAmount;
-  } else if(op == alloc1) {
-      SP += 1;
   } else if(op == alloc_b) {
       SP += IRHigh();
   } else if(op == alloc_w) {
@@ -470,30 +443,6 @@ void Cpu::execute() {
       w vall = pop();
       memWrite(target, vall);
       memWrite(target + 1, valh);
-  } else if(op == fastcall_w) {
-      w target = memRead(PC);
-      PC++;
-      push(PC);
-      PC = target;
-
-  } else if(op == fastcall) {
-      w target = pop();
-      push(PC);
-      PC = target;
-
-  } else if(op == fastret) {
-      w retval = pop();
-      w target = pop();
-      push(retval);
-      PC = target;
-  } else if(op == fastret2) {
-      RA = pop();
-      RB = pop();
-      w target = pop();
-      push(RB);
-      push(RA);
-      PC = target;
-
   } else if(op == dup_op) {
       RA = pop();
       push(RA);
