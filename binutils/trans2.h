@@ -141,6 +141,45 @@ enum opname_lcc {
 
 };
 
+char opname_rc_str[][16] = {
+    "nop",
+    "addrf",
+    "addrl",
+    "cnst",
+    "addrs",
+    "indir",
+    "add",
+    "sub",
+    "band",
+    "bor",
+    "bxor",
+    "bcom",
+    "lsh",
+    "rsh",
+    "eq",
+    "ne",
+    "ge",
+    "gt",
+    "le",
+    "lt",
+    "uge",
+    "ugt",
+    "ule",
+    "ult",
+    "call0",
+    "call1",
+    "call2",
+    "ret0",
+    "ret1",
+    "ret2",
+    "jump",
+    "discard",
+    "alloc",
+    "store",
+    "rstore",
+    "dup"
+
+};
 
 enum opname_rc {
     rc_nop,
@@ -150,14 +189,15 @@ enum opname_rc {
     rc_addrs,
     rc_indir,
     rc_add,
-    rc_bcom,
+    rc_sub,
     rc_band,
     rc_bor,
     rc_bxor,
+    rc_bcom,
     rc_lsh,
     rc_rsh,
-    rc_sub,
     rc_eq,
+    rc_ne,
     rc_ge,
     rc_gt,
     rc_le,
@@ -166,16 +206,33 @@ enum opname_rc {
     rc_ugt,
     rc_ule,
     rc_ult,
-    rc_ne,
-    rc_call,
-    rc_ret,
+    rc_call0,
+    rc_call1,
+    rc_call2,
+    rc_ret0,
+    rc_ret1,
+    rc_ret2,
     rc_jump,
     rc_discard,
     rc_alloc,
-    rc_fastcall,
     rc_store,
     rc_rstore,
     rc_dup
+};
+
+char directive_rc_str[][16] = {
+    "import",
+    "export",
+    "proc",
+    "endproc",
+    "code",
+    "data",
+    "align",
+    "skip",
+    "byte",
+    "address",
+    "label"
+
 };
 
 enum directive_rc {
@@ -221,6 +278,7 @@ struct RCEntry {
         if(_arg) {
             strcpy(arg, _arg);
         }
+        needIndir = 0;
 
     }
 
@@ -229,6 +287,7 @@ struct RCEntry {
     size_rc size;
     arg_rc argType;
     char arg[100];
+    int needIndir;
 
 };
 

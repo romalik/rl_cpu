@@ -26,17 +26,13 @@ void genProcHeader(std::string params) {
     RCEntry dir_label = RCEntry(1, rc_label, funcName.c_str());
     output.push_back(dir_label);
 
-    //////WHY?///////
-    nArgs += 5;
-    /////End Why////
-
-
     int totalReserve = nLocals + nArgs;
-
-    char buf[100];
-    sprintf(buf, "%d", totalReserve);
-    RCEntry op_alloc = RCEntry(0, rc_alloc, buf, SIZE_WORD, ( (totalReserve > 127)?ARG_WORD:ARG_CHAR));
-    output.push_back(op_alloc);
+    if(totalReserve > 0) {
+        char buf[100];
+        sprintf(buf, "%d", totalReserve);
+        RCEntry op_alloc = RCEntry(0, rc_alloc, buf, SIZE_WORD, ( (totalReserve > 127)?ARG_WORD:ARG_CHAR));
+        output.push_back(op_alloc);
+    }
 }
 
 void parseDirective(std::string line) {
@@ -44,7 +40,12 @@ void parseDirective(std::string line) {
 
     std::string lccWord;
     ss >> lccWord;
-    std::string lccArg = std::string(line, lccWord.size()+1);
+    std::string lccArg;
+    if(lccWord.size() == line.size()) {
+        lccArg = "";
+    } else {
+        lccArg = std::string(line, lccWord.size()+1);
+    }
 
     if(!strcmp(lccWord.c_str(), "import")) {
         output.push_back(RCEntry(1, rc_import, lccArg.c_str()));
@@ -100,7 +101,11 @@ void parseOp(std::string line) {
     }
 
     std::string op;
-    if(opType == 'V') {
+    if(opRaw == "DISCARD") {
+        op = opRaw;
+        opSize = 0;
+        opType = 0;
+    } else if(opType == 'V') {
         op = std::string(opRaw, 0, opRaw.size() - 1);
     } else {
         op = std::string(opRaw, 0, opRaw.size() - 2);
@@ -183,6 +188,8 @@ void parseOp(std::string line) {
             output.push_back(RCEntry(0, rc_cnst, "0x01", SIZE_WORD, ARG_CHAR));
             output.push_back(RCEntry(0, rc_cnst, "0x00", SIZE_WORD, ARG_CHAR));
             output.push_back(RCEntry(0, rc_add, "", SIZE_DWORD, ARG_NONE));
+        } else {
+            fail(line);
         }
     } else if(op == "BCOM") {
         if(opSize == 1) {
@@ -191,42 +198,57 @@ void parseOp(std::string line) {
             output.push_back(RCEntry(0, rc_cnst, "0xffff", SIZE_WORD, ARG_WORD));
             output.push_back(RCEntry(0, rc_cnst, "0xffff", SIZE_WORD, ARG_WORD));
             output.push_back(RCEntry(0, rc_bxor, "", SIZE_DWORD, ARG_NONE));
+        } else {
+            fail(line);
         }
     } else if(op == "ADD") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_add, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
             output.push_back(RCEntry(0, rc_add, "", SIZE_DWORD, ARG_NONE));
+        } else {
+            fail(line);
         }
     } else if(op == "SUB") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_sub, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
             output.push_back(RCEntry(0, rc_sub, "", SIZE_DWORD, ARG_NONE));
+        } else {
+            fail(line);
         }
     } else if(op == "BAND") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_band, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
             output.push_back(RCEntry(0, rc_band, "", SIZE_DWORD, ARG_NONE));
+        } else {
+            fail(line);
         }
     } else if(op == "BOR") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_bor, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
             output.push_back(RCEntry(0, rc_bor, "", SIZE_DWORD, ARG_NONE));
+        } else {
+            fail(line);
         }
     } else if(op == "BXOR") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_bxor, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
             output.push_back(RCEntry(0, rc_bxor, "", SIZE_DWORD, ARG_NONE));
+        } else {
+            fail(line);
         }
     } else if(op == "DIV") {
+        fail(line);
         //fuck that
     } else if(op == "MOD") {
+        fail(line);
         //fuck that
     } else if(op == "MUL") {
+        fail(line);
         //fuck that
     } else if(op == "LSH") {
         if((opSize == 1) && (output.back().name == rc_cnst)) {
@@ -237,6 +259,7 @@ void parseOp(std::string line) {
                 val--;
             }
         } else {
+            fail(line);
             //fuck that..
         }
     } else if(op == "RSH") {
@@ -248,6 +271,7 @@ void parseOp(std::string line) {
                 val--;
             }
         } else {
+            fail(line);
             //fuck that..
         }
     } else if(op == "ASGN") {
@@ -255,18 +279,20 @@ void parseOp(std::string line) {
             output.push_back(RCEntry(0, rc_store, "", SIZE_WORD, ARG_NONE));
         } else if(opSize == 2) {
             output.push_back(RCEntry(0, rc_store, "", SIZE_DWORD, ARG_NONE));
+        } else {
+            fail(line);
         }
     } else if(op == "EQ") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_eq, argStr.c_str(), SIZE_WORD, ARG_LINK));
         } else {
-            //fuck it
+            fail(line);
         }
     } else if(op == "NE") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_ne, argStr.c_str(), SIZE_WORD, ARG_LINK));
         } else {
-            //fuck it
+            fail(line);
         }
     } else if(op == "GT") {
         if(opSize == 1) {
@@ -276,7 +302,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_gt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            //fuck it
+            fail(line);
         }
     } else if(op == "GE") {
         if(opSize == 1) {
@@ -286,7 +312,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_ge, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            //fuck it
+            fail(line);
         }
     } else if(op == "LT") {
         if(opSize == 1) {
@@ -296,7 +322,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_lt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            //fuck it
+            fail(line);
         }
     } else if(op == "LE") {
         if(opSize == 1) {
@@ -306,7 +332,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_le, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            //fuck it
+            fail(line);
         }
     } else if(op == "ARG") {
         if(opSize == 1) {
@@ -315,19 +341,36 @@ void parseOp(std::string line) {
             output.push_back(RCEntry(0, rc_addrl, buf, SIZE_WORD, (cArg <= 127)?ARG_CHAR:ARG_WORD));
             output.push_back(RCEntry(0, rc_rstore, "", SIZE_WORD, ARG_NONE));
             cArg++;
-        } else {
+        } else if(opSize == 2) {
             char buf[100];
             sprintf(buf, "%d", cArg);
             output.push_back(RCEntry(0, rc_addrl, buf, SIZE_WORD, (cArg <= 127)?ARG_CHAR:ARG_WORD));
             output.push_back(RCEntry(0, rc_rstore, "", SIZE_DWORD, ARG_NONE));
             cArg+=2;
-
+        } else {
+            fail(line);
         }
     } else if(op == "CALL") {
-        output.push_back(RCEntry(0, rc_call, "", SIZE_WORD, ARG_NONE));
+        if(opSize == 0) {
+            output.push_back(RCEntry(0, rc_call0, "", SIZE_WORD, ARG_NONE));
+        } else if(opSize == 1) {
+            output.push_back(RCEntry(0, rc_call1, "", SIZE_WORD, ARG_NONE));
+        } else if(opSize == 2) {
+            output.push_back(RCEntry(0, rc_call2, "", SIZE_WORD, ARG_NONE));
+        } else {
+            fail(line);
+        }
         cArg = 0;
     } else if(op == "RET") {
-        output.push_back(RCEntry(0, rc_ret, "", (opSize==2)?SIZE_DWORD:SIZE_WORD, ARG_NONE));
+        if(opSize == 0) {
+            output.push_back(RCEntry(0, rc_ret0, "", SIZE_WORD, ARG_NONE));
+        } else if(opSize == 1) {
+            output.push_back(RCEntry(0, rc_ret1, "", SIZE_WORD, ARG_NONE));
+        } else if(opSize == 2) {
+            output.push_back(RCEntry(0, rc_ret2, "", SIZE_WORD, ARG_NONE));
+        } else {
+            fail(line);
+        }
     } else if(op == "JUMP") {
         output.push_back(RCEntry(0, rc_jump, "", SIZE_WORD, ARG_NONE));
     } else if(op == "LABEL") {
@@ -350,7 +393,13 @@ void parseOp(std::string line) {
             }
         }
     } else if(op == "DISCARD") {
-        output.push_back(RCEntry(0, rc_discard, ))
+        if(argType == ARG_CHAR || argType == ARG_WORD) {
+            if(atoi(argStr.c_str())!=0) {
+                output.push_back(RCEntry(0, rc_discard, argStr.c_str(), SIZE_WORD, argType));
+            }
+        } else {
+            fail(line);
+        }
     }
 
 }
@@ -363,6 +412,69 @@ void parseLine(std::string line) {
     }
 }
 
+void optimize() {
+    std::vector< RCEntry >::iterator it = output.begin();
+    while(it != output.end()) {
+        std::vector< RCEntry >::iterator prevIt;
+        if(it != output.begin()) {
+            prevIt = it - 1;
+            if(it->name == rc_indir) { //indirect locals, frame and globals
+                if(prevIt->name == rc_addrf ||
+                   prevIt->name == rc_addrl ||
+                   prevIt->name == rc_cnst  ||
+                   prevIt->name == rc_addrs) {
+                    if(prevIt->needIndir == 0) {
+                        prevIt->needIndir = 1;
+                        it = output.erase(it);
+                        continue;
+                    }
+                }
+            } else if((it->name >= rc_add && it->name <= rc_bxor)  || (it->name >= rc_call0 && it->name <= rc_call2) || it->name == rc_jump) { //immediate arithm & call ops
+                if(prevIt->name == rc_cnst && prevIt->size == SIZE_WORD) {
+                    prevIt->name = it->name;
+                    it = output.erase(it);
+                    continue;
+                }
+            }
+        }
+        it++;
+
+    }
+}
+
+void dumpCode() {
+    for(int i = 0; i<output.size(); i++) {
+        if(output[i].isDirective == 1) {
+            printf(".%s %s\n", directive_rc_str[output[i].name], output[i].arg);
+        } else {
+            char argTypeStr[10];
+            if(output[i].argType == ARG_NONE) {
+                sprintf(argTypeStr, "");
+            } else if(output[i].argType == ARG_CHAR) {
+                sprintf(argTypeStr, "_b");
+            } else {
+                sprintf(argTypeStr, "_w");
+            }
+            printf("%s%s%s%s %s\n",
+                   output[i].needIndir?"i":"",
+                   opname_rc_str[output[i].name],
+                   output[i].size == 2?"2":"",
+                   argTypeStr,
+                   output[i].arg);
+        }
+    }
+}
+
+int getOpNum(std::vector< RCEntry > & code) {
+    int res = 0;
+    for(int i = 0; i<code.size(); i++) {
+        if(code[i].isDirective == 0) {
+            res++;
+        }
+    }
+    return res;
+}
+
 int main(int argc, char ** argv) {
     std::string line;
     while(1) {
@@ -370,6 +482,12 @@ int main(int argc, char ** argv) {
         if(line == "")
             break;
         parseLine(line);
-
     }
+    printf("Before opt: %d\n", getOpNum(output));
+    dumpCode();
+
+    optimize();
+
+    printf("After opt: %d\n", getOpNum(output));
+    dumpCode();
 }
