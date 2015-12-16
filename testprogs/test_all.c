@@ -20,15 +20,15 @@ int test_comp(int * success, int * all) {
 	if(a + b > 2) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(a + b < 4) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(a + b > -2) { (*success)++; } else {fail(__LINE__); }(*all)++;
-	if(a + b < 100000) { (*success)++; } else {fail(__LINE__); }(*all)++;
-	if(a + b > -100000) { (*success)++; } else {fail(__LINE__); }(*all)++;
+    if(a + b < 100000) { (*success)++; } else {fail(__LINE__); }(*all)++;
+/**/if(a + b > -100000) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(a + b != 0) { (*success)++; } else {fail(__LINE__); }(*all)++;
 
 	a = 5; b = -10;
 	if(a + b == -5) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(a + b > -15) { (*success)++; } else {fail(__LINE__); }(*all)++;
-	if(a + b < 100500) { (*success)++; } else {fail(__LINE__); }(*all)++;
-	if(!(a + b > 100500)) { (*success)++; } else {fail(__LINE__); }(*all)++;
+    if(a + b < 100500) { (*success)++; } else {fail(__LINE__); }(*all)++;
+    if(!(a + b > 100500)) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(a + b > -100500) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(a + b != 0) { (*success)++; } else {fail(__LINE__); }(*all)++;
 
@@ -37,9 +37,9 @@ int test_comp(int * success, int * all) {
 	if(ua + ub == 3) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(ua + ub > 2) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(ua + ub < 4) { (*success)++; } else {fail(__LINE__); }(*all)++;
-	if(ua + ub > -2) { (*success)++; } else {fail(__LINE__); }(*all)++;
-	if(ua + ub < 100000) { (*success)++; } else {fail(__LINE__); }(*all)++;
-	if(ua + ub > -100000) { (*success)++; } else {fail(__LINE__); }(*all)++;
+/**/if(ua + ub > -2) { (*success)++; } else {fail(__LINE__); }(*all)++;
+    if(ua + ub < 100000) { (*success)++; } else {fail(__LINE__); }(*all)++;
+/**/if(ua + ub > -100000) { (*success)++; } else {fail(__LINE__); }(*all)++;
 	if(ua + ub != 0) { (*success)++; } else {fail(__LINE__); }(*all)++;
 
 

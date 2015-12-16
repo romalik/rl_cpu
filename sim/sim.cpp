@@ -68,7 +68,7 @@ void Cpu::execute() {
       printf("PC: 0x%04X, IR: 0x%04X ('%s')\n", PC, IR, oplist[IR&0xff]);
       printf("Stack: ");
       for(int i = 0; i<10; i++) {
-          w val =  memRead(SP + i - 9);
+          w val =  memRead(SP + i - 10);
          printf("0x%04X(%c) ", val, (val > 32 && val < 127)?(char)val:'-');
       }
       printf("\n");

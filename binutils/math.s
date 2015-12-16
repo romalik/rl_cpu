@@ -1,6 +1,8 @@
 .code
 .export __builtin_MULI1
+.export __builtin_MULU1
 .label __builtin_MULI1
+.label __builtin_MULU1
 ; A at bp-4 [addrl_b -4]
 ; B at bp-5 [addrl_b -5]
 ; res tmp bp [addrl_b 0]
@@ -21,8 +23,6 @@ iaddrl_b -5                    ;load current B
 add                                    ;sum them
 addrl_b 0                      ;store new result
 rstore                         ;
-
-
 
 .label skip
 
@@ -123,3 +123,279 @@ addrl_b -5
 rstore
 
 ret
+
+
+;;unsigned comparison
+
+.export __builtin_cmp_GEU2
+.label __builtin_cmp_GEU2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ult_w __builtin_cmp_false
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ugt_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+ult_w __builtin_cmp_false
+jump_w __builtin_cmp_true
+
+
+.export __builtin_cmp_GTU2
+.label __builtin_cmp_GTU2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ult_w __builtin_cmp_false
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ugt_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+ule_w __builtin_cmp_false
+jump_w __builtin_cmp_true
+
+
+.export __builtin_cmp_LEU2
+.label __builtin_cmp_LEU2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ugt_w __builtin_cmp_false
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ult_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+ugt_w __builtin_cmp_false
+jump_w __builtin_cmp_true
+
+
+.export __builtin_cmp_LTU2
+.label __builtin_cmp_LTU2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ugt_w __builtin_cmp_false
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ult_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+uge_w __builtin_cmp_false
+jump_w __builtin_cmp_true
+
+
+;;signed comparison
+
+.export __builtin_cmp_GEI2
+.label __builtin_cmp_GEI2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+lt_w __builtin_cmp_false
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+gt_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+eq_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+ule_w __builtin_cmp_gei_cnt
+; al > bl
+iaddrl_b -6  ;check sign
+band_w 0x8000
+cnst_b 0
+ne_w __builtin_cmp_false    ;negative
+jump_w __builtin_cmp_true   ;positive
+
+.label __builtin_cmp_gei_cnt
+; al < bl
+iaddrl_b -6  ;check sign
+band_w 0x8000
+cnst_b 0
+ne_w __builtin_cmp_true     ;negative
+jump_w __builtin_cmp_false  ;positive
+
+
+.export __builtin_cmp_GTI2
+.label __builtin_cmp_GTI2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+lt_w __builtin_cmp_false
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+gt_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+eq_w __builtin_cmp_false
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+ule_w __builtin_cmp_gti_cnt
+; al > bl
+iaddrl_b -6  ;check sign
+band_w 0x8000
+cnst_b 0
+ne_w __builtin_cmp_false    ;negative
+jump_w __builtin_cmp_true   ;positive
+
+.label __builtin_cmp_gti_cnt
+; al < bl
+iaddrl_b -6  ;check sign
+band_w 0x8000
+cnst_b 0
+ne_w __builtin_cmp_true     ;negative
+jump_w __builtin_cmp_false  ;positive
+
+
+
+.export __builtin_cmp_LEI2
+.label __builtin_cmp_LEI2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+gt_w __builtin_cmp_false
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+lt_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+eq_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+uge_w __builtin_cmp_lei_cnt
+; al < bl
+iaddrl_b -6  ;check sign
+band_w 0x8000
+cnst_b 0
+ne_w __builtin_cmp_false    ;negative
+jump_w __builtin_cmp_true   ;positive
+
+.label __builtin_cmp_lei_cnt
+; al > bl
+iaddrl_b -6  ;check sign
+band_w 0x8000
+cnst_b 0
+ne_w __builtin_cmp_true     ;negative
+jump_w __builtin_cmp_false  ;positive
+
+
+.export __builtin_cmp_LTI2
+.label __builtin_cmp_LTI2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+gt_w __builtin_cmp_false
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+lt_w __builtin_cmp_true
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+eq_w __builtin_cmp_false
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+uge_w __builtin_cmp_lti_cnt
+; al < bl
+iaddrl_b -6  ;check sign
+band_w 0x8000
+cnst_b 0
+ne_w __builtin_cmp_false    ;negative
+jump_w __builtin_cmp_true   ;positive
+
+.label __builtin_cmp_lti_cnt
+; al > bl
+iaddrl_b -6  ;check sign
+band_w 0x8000
+cnst_b 0
+ne_w __builtin_cmp_true     ;negative
+jump_w __builtin_cmp_false  ;positive
+
+
+
+
+;;universal comparisons
+
+.export __builtin_cmp_EQU2
+.export __builtin_cmp_EQI2
+.label __builtin_cmp_EQU2
+.label __builtin_cmp_EQI2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+ne_w __builtin_cmp_false
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+ne_w __builtin_cmp_false
+jump_w __builtin_cmp_true
+
+.export __builtin_cmp_NEU2
+.export __builtin_cmp_NEI2
+.label __builtin_cmp_NEU2
+.label __builtin_cmp_NEI2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+addrl_b -7  ;for result rstore
+iaddrl_b -6 ;Ah
+iaddrl_b -4 ;Bh
+eq_w __builtin_cmp_false
+iaddrl_b -7 ;Al
+iaddrl_b -5 ;Bl
+eq_w __builtin_cmp_false
+jump_w __builtin_cmp_true
+
+
+
+
+
+.label __builtin_cmp_true
+cnst_b 1
+store
+ret
+.label __builtin_cmp_false
+cnst_b 0
+store
+ret
+
+
+

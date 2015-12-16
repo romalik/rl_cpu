@@ -2,7 +2,9 @@
 #include "string.h"
 
 int main() {
-	int i = 0;
+    unsigned long long_a;
+    unsigned long long_b;
+    int i = 0;
 	int j = 0;
     int d,g,d1,g1;
     char myString[] = "Hello from rlCPU!\n";
@@ -30,6 +32,21 @@ int main() {
     putc(g1 + '0');
     putc('\n');
 
+    long_a = 100000;
+    long_b = 200000;
+    puts("Test 100000 > 200000?\n");
+    if(long_a < long_b) {
+        puts("Yes\n");
+    } else {
+        puts("No\n");
+    }
+
+    puts("Test 200000 > 100000?\n");
+    if(long_b < long_a) {
+        puts("Yes\n");
+    } else {
+        puts("No\n");
+    }
 	{
 		char *ptr = "Hello world!";
 		char *np = 0;

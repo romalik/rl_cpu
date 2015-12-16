@@ -116,10 +116,22 @@ void genBuiltin(std::string line, int opSize) {
     }
 }
 
-void genBuiltinCmp(std::string line, int opSize) {
+void genBuiltinCmp(std::string line, int opSize, std::string argStr) {
+
     char buf[100];
     sprintf(buf, "__builtin_cmp_%s", line.c_str());
-    output.push_back(RCEntry(0, rc_call1, buf, SIZE_WORD, ARG_LINK));
+    output.push_back(RCEntry(0, rc_call0, buf, SIZE_WORD, ARG_LINK));
+    if(opSize == 1) {
+        fail(line);
+    } else if(opSize == 2) {
+        output.push_back(RCEntry(0, rc_discard, "3", SIZE_WORD, ARG_CHAR));
+        output.push_back(RCEntry(0, rc_cnst, "0", SIZE_WORD, ARG_CHAR));
+        output.push_back(RCEntry(0, rc_nop));
+        output.push_back(RCEntry(0, rc_ne, argStr.c_str(), SIZE_WORD, ARG_LINK));
+
+    } else {
+        fail(line);
+    }
 }
 
 void genRet(int opSize) {
@@ -194,6 +206,8 @@ void parseOp(std::string line) {
         argType = ARG_NONE;
     }
 
+    //fprintf(stderr, "Str: [%s], op: [%s], opSize: %d, opType: %c, argType: %d\n", line.c_str(), op.c_str(), opSize, opType, argType);
+
 
     if(op == "ADDRF") {
 //        if(!flArgNumeric) fail(line);
@@ -233,10 +247,11 @@ void parseOp(std::string line) {
             if(opSize == 1) {
                 output.push_back(RCEntry(0, rc_indir, "", SIZE_WORD, ARG_NONE));
             } else if(opSize == 2) {
+                //fprintf(stderr, "INDIR 2\n");
                 output.push_back(RCEntry(0, rc_indir, "", SIZE_DWORD, ARG_NONE));
             } else {
                 //hmmm strange..
-                printf("Strange indir attempt. I'd better crash..\n");
+                fprintf(stderr,"Strange indir attempt. I'd better crash..\n");
                 fail(line);
             }
         } else {
@@ -352,13 +367,13 @@ void parseOp(std::string line) {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_eq, argStr.c_str(), SIZE_WORD, ARG_LINK));
         } else {
-            genBuiltinCmp(line,opSize);
+            genBuiltinCmp(line,opSize,argStr);
         }
     } else if(op == "NE") {
         if(opSize == 1) {
             output.push_back(RCEntry(0, rc_ne, argStr.c_str(), SIZE_WORD, ARG_LINK));
         } else {
-            genBuiltinCmp(line,opSize);
+            genBuiltinCmp(line,opSize,argStr);
         }
     } else if(op == "GT") {
         if(opSize == 1) {
@@ -368,7 +383,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_gt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            genBuiltinCmp(line,opSize);
+            genBuiltinCmp(line,opSize,argStr);
         }
     } else if(op == "GE") {
         if(opSize == 1) {
@@ -378,7 +393,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_ge, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            genBuiltinCmp(line,opSize);
+            genBuiltinCmp(line,opSize,argStr);
         }
     } else if(op == "LT") {
         if(opSize == 1) {
@@ -388,7 +403,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_lt, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            genBuiltinCmp(line,opSize);
+            genBuiltinCmp(line,opSize,argStr);
         }
     } else if(op == "LE") {
         if(opSize == 1) {
@@ -398,7 +413,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_le, argStr.c_str(), SIZE_WORD, ARG_LINK));
             }
         } else {
-            genBuiltinCmp(line,opSize);
+            genBuiltinCmp(line,opSize,argStr);
         }
     } else if(op == "ARG") {
         if(opSize == 1) {
@@ -446,7 +461,7 @@ void parseOp(std::string line) {
                 output.push_back(RCEntry(0, rc_discard, buf, SIZE_WORD, ARG_WORD));
             }
         } else if(fromSz < toSz) {
-            for(int i = 0; i<fromSz - toSz; i++) {
+            for(int i = 0; i<toSz - fromSz; i++) {
                 output.push_back(RCEntry(0,rc_cnst, "0", SIZE_WORD, ARG_CHAR));
             }
         }
@@ -476,7 +491,7 @@ void optimize() {
         std::vector< RCEntry >::iterator prevIt;
         if(it != output.begin() && it->isDirective == 0 && it->argType == ARG_NONE) {
             prevIt = it - 1;
-            if(it->name == rc_indir) { //indirect locals, frame and globals
+            if(it->name == rc_indir && it->size == SIZE_WORD) { //indirect locals, frame and globals
                 if(prevIt->name == rc_addrf ||
                    prevIt->name == rc_addrl ||
                    prevIt->name == rc_cnst  ||
@@ -520,7 +535,7 @@ void dumpCode() {
             printf("%s%s%s%s %s\n",
                    output[i].needIndir?"i":"",
                    opname_rc_str[output[i].name],
-                   output[i].size == 2?"2":"",
+                   output[i].size == SIZE_DWORD?"2":"",
                    argTypeStr,
                    output[i].arg);
         }
