@@ -2,6 +2,10 @@
 #include "stdio.h"
 void itoa(int n, char s[]);
 
+int getc() {
+  return *(char *)(0xfffe);
+}
+
 int putc(char c) {
 	*(char *)(0xffff) = c;
 	return 0;
@@ -22,7 +26,7 @@ void putDigit(int a) {
 		putc('-');
 	}
 	putc('0' + a);
-	
+
 }
 
 void putNum(int a) {

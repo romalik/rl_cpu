@@ -285,17 +285,19 @@ public:
     void link() {
         for(int i = 0; i<sections.size(); i++) {
             for(int j = 0; j<0xffff; j++) {
-                if(sections[i][0].labelMap[j]) {
+              for(int cSect = 0; cSect<2; cSect++) {
+                if(sections[i][cSect].labelMap[j]) {
                     LabelEntry entry;
-                    uint16_t labelUid = sections[i][0].code[j];
+                    uint16_t labelUid = sections[i][cSect].code[j];
                     if(!findLabelByUid(labelUid, labelsPerObj[i], entry)) {
                         printf("Label with uid %d not found!\n", labelUid);
                         exit(1);
                     } else {
-                    //printf("Obj %d uid %d pos %d\n", i, labelUid, entry.position);
-						sections[i][0].code[j] = entry.position;
-					}
+                      //printf("Obj %d uid %d pos %d\n", i, labelUid, entry.position);
+        						  sections[i][cSect].code[j] = entry.position;
+				          	}
                 }
+              }
             }
         }
     }

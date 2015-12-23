@@ -1,7 +1,7 @@
 # You can override the CFLAGS and C compiler externally,
 # e.g. make PLATFORM=cortex-m3
 CFLAGS += -I./include
-
+CC=lcc
 ifeq ($(PLATFORM),cortex-m3)
   CC      = arm-none-eabi-gcc
   AR      = arm-none-eabi-ar

@@ -9,6 +9,7 @@ Cpu::Cpu() {
 
   this->devices.push_back(new RAM(0, 0x8000, 0));
 
+  this->devices.push_back(new PORT(0xfffe, 0, &std::cin, NULL));
   this->devices.push_back(new PORT(0xffff, 0, NULL, &std::cout));
 
 }
@@ -76,7 +77,7 @@ void Cpu::execute() {
 
   tick();
   this->PC++;
-  
+
   unsigned char op = this->IR & 0xff;
 
   if(op == nop){
@@ -529,6 +530,22 @@ int main(int argc, char ** argv) {
         myCpu.setBP(0x4000);
         myCpu.loadBin(0,std::string(argv[1]));
         printf("\nLoading done. Starting..\n");
+
+        struct termios old_tio, new_tio;
+        unsigned char c;
+
+        /* get the terminal settings for stdin */
+        tcgetattr(STDIN_FILENO,&old_tio);
+
+        /* we want to keep the old setting to restore them a the end */
+        new_tio=old_tio;
+
+        /* disable canonical mode (buffered i/o) and local echo */
+        new_tio.c_lflag &=(~ICANON & ~ECHO);
+
+        /* set the new settings immediately */
+        tcsetattr(STDIN_FILENO,TCSANOW,&new_tio);
+
         while(1) {
             myCpu.execute();
             //if(debug)

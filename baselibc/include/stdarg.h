@@ -21,6 +21,7 @@ typedef __va_list va_list;
 	sizeof(mode)==2 ? *(mode *)(&(list += 4)[-2]) : __va_arg(list, mode, n))
 #define _littleendian_va_arg(list, mode, n) __va_arg(list, mode, n)
 #define va_end(list) ((void)0)
+#define va_copy(a, b)
 #define va_arg(list, mode) _littleendian_va_arg(list, mode, 3U)
 typedef void *__gnuc_va_list;
 #endif

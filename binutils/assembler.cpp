@@ -282,7 +282,10 @@ int main(int argc, char ** argv) {
             } else if(word == ".endproc") {
                 assembly.output(ret);
             } else if(word == ".address") {
-                //STUB! emit label uid here
+              ss >> word;
+              int labelUid = assembly.getLabelUid(word);
+              assembly.markLabelPosition();
+              assembly.output(labelUid);
             }
         } else {
             //printf("Opcode: [%s]\n", word.c_str());

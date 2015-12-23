@@ -25,11 +25,11 @@ enum flags {
 };
 
 enum ranks {
-	rank_char     = -2,
-	rank_short    = -1,
-	rank_int      = 0,
-	rank_long     = 1,
-	rank_longlong = 2,
+	rank_char     = 0,
+	rank_short    = 1,
+	rank_int      = 2,
+	rank_long     = 3,
+	rank_longlong = 4,
 	rank_ptr      = INT_MAX	/* Special value used for pointers */
 };
 
@@ -66,8 +66,7 @@ static inline int test_bit(unsigned long *bitmap, unsigned int bit)
 }
 
 /* STUB! */
-int vsscanf(const char *buffer, const char *format, va_list ap) { return 0; }
-
+int vsscanf(const char *buffer, const char *format, va_list ap) {return 0;}
 #if 0
 int vsscanf(const char *buffer, const char *format, va_list ap)
 {
@@ -94,7 +93,10 @@ int vsscanf(const char *buffer, const char *format, va_list ap)
 	enum bail bail = bail_none;
 	int sign;
 	int converted = 0;	/* Successful conversions */
-	unsigned long matchmap[((1 << CHAR_BIT) + (LONG_BIT - 1)) / LONG_BIT];
+
+  //const unsigned int _idx = ((1 << CHAR_BIT) + (LONG_BIT - 1)) / LONG_BIT;
+
+	unsigned long matchmap[100];
 	int matchinv = 0;	/* Is match map inverted? */
 	unsigned char range_start = 0;
 	(void)sign;
@@ -122,7 +124,16 @@ int vsscanf(const char *buffer, const char *format, va_list ap)
 			case '*':
 				flags |= FL_SPLAT;
 				break;
-			case '0'...'9':
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
 				width = (ch - '0');
 				state = st_width;
 				flags |= FL_WIDTH;
@@ -402,4 +413,5 @@ int vsscanf(const char *buffer, const char *format, va_list ap)
 
 	return converted;
 }
+
 #endif

@@ -45,8 +45,20 @@ rstore
 ret
 
 
+.code
+.export __builtin_MULU2
+.export __builtin_MULI2
+.label __builtin_MULU2
+.label __builtin_MULI2
+
+ret
+
+
+
 .export __builtin_LSHI1
+.export __builtin_LSHU1
 .label __builtin_LSHI1
+.label __builtin_LSHU1
 ; n at bp-4 [addrl_b -4]
 ; res at bp-5 [addrl_b -5]
 .label lshi1_loop
@@ -62,9 +74,53 @@ sub_b 1         ;decrement
 addrl_b -4      ;and
 rstore          ;store
 jump_w lshi1_loop
-
 .label lshi1_end
 ret
+
+
+
+
+.export __builtin_LSHI2
+.export __builtin_LSHU2
+.label __builtin_LSHI2
+.label __builtin_LSHU2
+
+ret
+
+
+
+.export __builtin_RSHI1
+.export __builtin_RSHU1
+.label __builtin_RSHI1
+.label __builtin_RSHU1
+; n at bp-4 [addrl_b -4]
+; res at bp-5 [addrl_b -5]
+.label lshi1_loop
+iaddrl_b -4     ;load n
+cnst_b 0
+eq_w lshi1_end  ;if zero, jump to end
+iaddrl_b -5     ;load res
+rsh             ;shift
+addrl_b -5      ;and
+rstore          ;store it
+iaddrl_b -4     ;load n
+sub_b 1         ;decrement
+addrl_b -4      ;and
+rstore          ;store
+jump_w lshi1_loop
+.label lshi1_end
+ret
+
+
+.export __builtin_RSHI2
+.export __builtin_RSHU2
+.label __builtin_RSHI2
+.label __builtin_RSHU2
+
+
+ret
+
+
 
 .export __builtin_DIVU1
 .export __builtin_DIVI1
