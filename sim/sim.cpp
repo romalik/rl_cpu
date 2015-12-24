@@ -2,6 +2,11 @@
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
+
+Cpu myCpu;
+
+
 Cpu::Cpu() {
 //test config, full ram memory, last 2 words - in/output
 
@@ -12,8 +17,21 @@ Cpu::Cpu() {
   this->devices.push_back(new PORT(0xfffe, 0, &std::cin, NULL));
   this->devices.push_back(new PORT(0xffff, 0, NULL, &std::cout));
 
+  this->devices.push_back(new HDD(0xfffc, 0xfffd, std::string("hdd")));
+
+
 }
 
+Cpu::~Cpu() {
+}
+
+void Cpu::terminate() {
+  for(int i = 0; i<this->devices.size(); i++) {
+    this->devices[i]->terminate();
+  }
+  printf("CPU terminating\n");
+
+}
 void Cpu::memWrite(w addr, w val) {
     for(int i = 0; i<this->devices.size(); i++) {
       if(this->devices[i]->canOperate(addr)) {
@@ -508,7 +526,16 @@ int test() {
 
 }
 
+void onSignal(int signal) {
+  if(signal == SIGINT) {
+    myCpu.terminate();
+    exit(1);
+  }
+}
+
 int main(int argc, char ** argv) {
+
+    signal(SIGINT, onSignal);
     if(argc < 2)
         return 0;
 
@@ -523,7 +550,6 @@ int main(int argc, char ** argv) {
         }
 
         printf("Loading binary %s...\n", argv[1]);
-        Cpu myCpu;
         myCpu.setDebug(debug);
         myCpu.setPC(0);
         myCpu.setSP(0x4000);

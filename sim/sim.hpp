@@ -25,6 +25,113 @@ public:
   virtual int canOperate(w addr) = 0;
   virtual void write(w addr, w val, int force = 0) = 0;
   virtual w read(w addr) = 0;
+  virtual void terminate() {};
+};
+
+
+class HDD : public VMemDevice {
+  char * data;
+  std::string image_path;
+  int size;
+  w cmdAddr;
+  w dataAddr;
+  int cSector;
+  int cState;
+  int cPos;
+  static const int STATE_READING = 1;
+  static const int STATE_WRITING = 2;
+
+
+  static const int CMD_READ = 1;
+  static const int CMD_WRITE = 2;
+  static const int CMD_RESET = 3;
+ public:
+  HDD(w cmdAddr, w dataAddr, std::string path) {
+    image_path = path;
+    std::ifstream is(path.c_str(), std::ifstream::binary);
+    is.seekg (0, is.end);
+    size = is.tellg();
+    is.seekg (0, is.beg);
+    data = (char *)(malloc(size));
+    is.read(data, size);
+    is.close();
+    cSector = 0;
+    cState = 0;
+    cPos = 0;
+  }
+  virtual void terminate() {
+    std::ofstream os(image_path.c_str(), std::ofstream::binary);
+    os.write(data, size);
+    os.close();
+  }
+  virtual int canOperate(w addr) {
+    return (addr == cmdAddr) || (addr == dataAddr);
+  }
+  virtual void write(w addr, w val, int force) {
+    if(canOperate(addr)) {
+      if(addr == cmdAddr) {
+        if(val == CMD_READ) {
+          cState = -STATE_READING;
+          cPos = 0;
+        } else if(val == CMD_WRITE) {
+          cState = -STATE_WRITING;
+          cPos = 0;
+        } else if(val == CMD_RESET) {
+          cState = 0;
+          cSector = 0;
+          cPos = 0;
+        }
+      } else if(addr == dataAddr) {
+        if(cState < 0) {
+          if(cPos == 0) {
+            cSector = val << 16;
+            cPos++;
+          } else if(cPos == 1) {
+            cSector |= val;
+            cPos = 0;
+            cState = -cState;
+          }
+        } else {
+          if(cState == STATE_WRITING) {
+            if(cPos < 512) {
+              int dest = cSector*512 + cPos;
+              data[dest] = val&0xff;
+              cPos++;
+            } else {
+              cState = 0;
+            }
+          }
+
+        }
+      }
+    }
+  }
+  w read(w addr) {
+    if(canOperate(addr)) {
+      if(addr == cmdAddr) {
+        return 0;
+      } else if(addr == dataAddr) {
+        if(cState < 0) {
+          return 0;
+        } else {
+          if(cState == STATE_READING) {
+            if(cPos < 512) {
+              int dest = cSector*512 + cPos;
+              w retval = data[dest];
+              cPos++;
+              if(cPos == 512) {
+                cState = 0;
+              }
+              return retval;
+            }
+          }
+
+        }
+      }
+    }
+    return 0;
+  }
+
 };
 
 class PORT : public VMemDevice {
@@ -118,6 +225,7 @@ public:
 
 
   Cpu();
+  ~Cpu();
   void memWrite(w addr, w val);
   w memRead(w addr);
   void tick();
@@ -137,4 +245,5 @@ public:
 
   void setDebug(int _d) {flDebug = _d;}
 
+  void terminate();
 };
