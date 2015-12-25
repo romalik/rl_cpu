@@ -60,6 +60,16 @@ void itoa(int n, char s[]) {
      reverse(s);
  }
 
+int strcpy(unsigned int * dest, unsigned int * src) {
+
+	do {
+		*dest = *src;
+		dest++;
+		src++;
+	} while(*src);
+	return 0;
+}
+
 
 int memcpy(unsigned int * dest, unsigned int * src, int n) {
 	int k = n;

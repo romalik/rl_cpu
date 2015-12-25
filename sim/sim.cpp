@@ -5,7 +5,7 @@
 #include <signal.h>
 
 Cpu myCpu;
-
+struct termios old_tio, new_tio;
 
 Cpu::Cpu() {
 //test config, full ram memory, last 2 words - in/output
@@ -529,6 +529,8 @@ int test() {
 void onSignal(int signal) {
   if(signal == SIGINT) {
     myCpu.terminate();
+
+    tcsetattr(STDIN_FILENO,TCSANOW,&old_tio);
     exit(1);
   }
 }
@@ -557,7 +559,6 @@ int main(int argc, char ** argv) {
         myCpu.loadBin(0,std::string(argv[1]));
         printf("\nLoading done. Starting..\n");
 
-        struct termios old_tio, new_tio;
         unsigned char c;
 
         /* get the terminal settings for stdin */

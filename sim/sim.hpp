@@ -46,7 +46,7 @@ class HDD : public VMemDevice {
   static const int CMD_WRITE = 2;
   static const int CMD_RESET = 3;
  public:
-  HDD(w cmdAddr, w dataAddr, std::string path) {
+  HDD(w _cmdAddr, w _dataAddr, std::string path) {
     image_path = path;
     std::ifstream is(path.c_str(), std::ifstream::binary);
     is.seekg (0, is.end);
@@ -58,6 +58,9 @@ class HDD : public VMemDevice {
     cSector = 0;
     cState = 0;
     cPos = 0;
+    cmdAddr = _cmdAddr;
+    dataAddr = _dataAddr;
+    printf("HDD: create cmd:0x%04x data:0x%04x\n", cmdAddr, dataAddr);
   }
   virtual void terminate() {
     std::ofstream os(image_path.c_str(), std::ofstream::binary);
@@ -69,6 +72,7 @@ class HDD : public VMemDevice {
   }
   virtual void write(w addr, w val, int force) {
     if(canOperate(addr)) {
+//      printf("HDD: port 0x%04x val 0x%04x\n", addr, val);
       if(addr == cmdAddr) {
         if(val == CMD_READ) {
           cState = -STATE_READING;
@@ -77,6 +81,7 @@ class HDD : public VMemDevice {
           cState = -STATE_WRITING;
           cPos = 0;
         } else if(val == CMD_RESET) {
+//          printf("HDD: reset\n");
           cState = 0;
           cSector = 0;
           cPos = 0;
@@ -89,6 +94,7 @@ class HDD : public VMemDevice {
           } else if(cPos == 1) {
             cSector |= val;
             cPos = 0;
+//            printf("HDD: set sector %d\n", cSector);
             cState = -cState;
           }
         } else {
@@ -96,7 +102,9 @@ class HDD : public VMemDevice {
             if(cPos < 512) {
               int dest = cSector*512 + cPos;
               data[dest] = val&0xff;
-              cPos++;
+              data[dest+1] = ((val&0xff00)>>16);
+//              printf("HDD write 0x%04x at %d\n", val, dest);
+              cPos+=2;
             } else {
               cState = 0;
             }
@@ -118,7 +126,8 @@ class HDD : public VMemDevice {
             if(cPos < 512) {
               int dest = cSector*512 + cPos;
               w retval = data[dest];
-              cPos++;
+              retval |= ((data[dest+1])<<16);
+              cPos+=2;
               if(cPos == 512) {
                 cState = 0;
               }
