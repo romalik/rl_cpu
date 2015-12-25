@@ -95,7 +95,7 @@ class Linker {
                     p++;
                 }
 
-                labelName = std::string(labelName, 0, found);
+                //labelName = std::string(labelName, 0, found);
                 printf("Found complex label! Name: [%s] shift: [%s] eval: [%d]\n", labelName.c_str(), shiftStr.c_str(), shRes);
                 labelShift = shRes;
             }
@@ -150,8 +150,30 @@ public:
         }
     }
 
-    int findGlobalLabel(std::string name, LabelEntry & entry) {
-        for(int i = 0; i<labelsPerObj.size(); i++) {
+    int findGlobalLabel(std::string _name, LabelEntry & entry) {
+
+      std::string name;
+      name = _name;
+      size_t plusPos = name.find('+');
+      size_t minusPos = name.find('-');
+      size_t cropPos = 0;
+      if(plusPos == std::string::npos && minusPos == std::string::npos) {
+        cropPos = 0;
+      } else if(plusPos != std::string::npos && minusPos == std::string::npos) {
+        cropPos = plusPos;
+      } else if(plusPos == std::string::npos && minusPos != std::string::npos) {
+        cropPos = minusPos;
+      } else if(plusPos != std::string::npos && minusPos != std::string::npos) {
+        cropPos = std::min(plusPos, minusPos);
+      }
+
+      if(cropPos) {
+        name = std::string(_name,0,cropPos);
+      }
+
+
+
+      for(int i = 0; i<labelsPerObj.size(); i++) {
             LabelMap::iterator it = labelsPerObj[i].find(name);
             if(it != labelsPerObj[i].end()) {
                 if(it->second.needImport == 0) {
@@ -160,6 +182,7 @@ public:
                 }
             }
         }
+        printf("Fail for name %s crop %s\n", _name.c_str(), name.c_str());
         return 0;
     }
 
@@ -170,7 +193,7 @@ public:
                     LabelEntry entry;
                     if(findGlobalLabel(it->first, entry) == 0) {
                         printf("Unresolved symbol %s in file %s\n", it->first.c_str(), sections[i][0].filename.c_str());
-
+                        //dumpLabels();
                         exit(1);
                     } else {
 						it->second.position = entry.position;
@@ -294,7 +317,7 @@ public:
                         exit(1);
                     } else {
                       //printf("Obj %d uid %d pos %d\n", i, labelUid, entry.position);
-        						  sections[i][cSect].code[j] = entry.position;
+        						  sections[i][cSect].code[j] = entry.position + entry.shift;
 				          	}
                 }
               }

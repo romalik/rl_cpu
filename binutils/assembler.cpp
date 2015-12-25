@@ -61,6 +61,8 @@ public:
     }
 
     int getLabelUid(std::string & name) {
+
+
         if(labels[name].uid == -1) {
             //new Label
             labels[name].uid = generateLabelUid();

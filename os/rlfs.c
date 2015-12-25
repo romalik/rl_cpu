@@ -87,7 +87,7 @@ int rlfs_open(char * name, int mode) {
   }
   ataReadSectorsLBA(0, WORK_BUFFER);
   for(i = 0; i<256; i+=16) {
-    if(!memcmp(WORK_BUFFER + i + 3, name)) {
+    if(!strcmp((char *)(WORK_BUFFER) + i + 3, name)) {
       openFiles[fd].baseSector = openFiles[fd].currentSector = WORK_BUFFER[i+2];
       openFiles[fd].size = WORK_BUFFER[i+1];
       openFiles[fd].id = i>>4;

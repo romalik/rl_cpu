@@ -2,16 +2,14 @@
 #include <string.h>
 #include "sh.h"
 #include "ata.h"
-
+#include "rlfs.h"
 
 int main() {
 
 
-  unsigned char buf[64*4] = "this is a test string";
   printf("Init ata..\n");
   ataInit();
-  ataWriteSectorsLBA(0, buf);
-
+  rlfs_init();
   printf("Starting shell\n");
   main_sh();
   printf("System halted\n");

@@ -52,7 +52,7 @@ int main() {
   int i = 0;
   printf("Builtin commands:\n");
   while(builtinCmds[i][0] != 0) {
-    printf("%s : %04x\n", builtinCmds[i], (int)builtinFuncs[i]);
+    printf("%s : %04x : %s\n", builtinCmds[i], (int)builtinFuncs[i], builtinCmds[i+1]);
     i++;
   }
   printf("# ");
