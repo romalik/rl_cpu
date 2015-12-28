@@ -1,4 +1,17 @@
 
+int isdigit(char c) {
+    return (c >= '0' && c <= '9');
+}
+
+int atoi(const char * s) {
+    int res = 0;
+    while(isdigit(*s)) {
+        res = res*10;
+        res += (*s)-'0';
+    }
+    return res;
+}
+
 int strcmp(const char *s1, const char *s2)
 {
 	const unsigned char *c1 = (const unsigned char *)s1;

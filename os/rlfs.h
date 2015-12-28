@@ -55,4 +55,8 @@ int rlfs_isEOF(int fd);
 
 int rlfs_tellg(int fd);
 
+int rlfs_removeFile(char * filename);
+
+int rlfs_removeFile(char * filename);
+
 #endif

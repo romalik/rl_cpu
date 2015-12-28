@@ -3,6 +3,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/time.h>
+
+long long gettime_ms() {
+    struct timeval te; 
+    gettimeofday(&te, NULL);
+    long long milliseconds = te.tv_sec*1000LL + te.tv_usec/1000;
+    return milliseconds;
+}
+
 
 Cpu myCpu;
 struct termios old_tio, new_tio;
@@ -52,7 +61,9 @@ w Cpu::memRead(w addr) {
 }
 
 void Cpu::tick() {
-  //insert delay here
+    
+    
+    //insert delay here
     //1000 kHz
     usleep(1);
 }
@@ -243,6 +254,8 @@ void Cpu::execute() {
     push(pop() << 1);
   } else if(op == rsh) {
       push(pop() >> 1);
+
+  
   } else if(op == sub) {
       //BUG!
         RA = pop();
@@ -572,13 +585,28 @@ int main(int argc, char ** argv) {
 
         /* set the new settings immediately */
         tcsetattr(STDIN_FILENO,TCSANOW,&new_tio);
-
+/*
+        int cnt = 0;
+        long long prevTime = gettime_ms();
         while(1) {
+            cnt++;
+            if(cnt > 1000) {
+                long long cTime = gettime_ms();
+                int dT = cTime - prevTime;
+                float avTime = (static_cast<float>(dT)/1000.0f)/100.0f;
+                printf("Average time: %f\nAverage ips %d\n", avTime, static_cast<int>(1.0f/avTime));
+
+                prevTime = cTime;
+                cnt = 0;
+            }
             myCpu.execute();
             //if(debug)
             //    usleep(500*1000);
         }
-
+*/
+        while(1) {
+            myCpu.execute();
+        }
 
     }
     return 0;

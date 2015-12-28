@@ -1,3 +1,3 @@
 #!/bin/sh
-g++ -o sim ./sim.cpp
+g++  -o sim ./sim.cpp
 

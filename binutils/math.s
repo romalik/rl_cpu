@@ -95,7 +95,7 @@ ret
 .label __builtin_RSHU1
 ; n at bp-4 [addrl_b -4]
 ; res at bp-5 [addrl_b -5]
-.label lshi1_loop
+.label rshi1_loop
 iaddrl_b -4     ;load n
 cnst_b 0
 eq_w lshi1_end  ;if zero, jump to end
@@ -107,8 +107,8 @@ iaddrl_b -4     ;load n
 sub_b 1         ;decrement
 addrl_b -4      ;and
 rstore          ;store
-jump_w lshi1_loop
-.label lshi1_end
+jump_w rshi1_loop
+.label rshi1_end
 ret
 
 
@@ -147,7 +147,7 @@ store
 .label $divu1_3
 iaddrl_b 0
 iaddrl_b -5
-le_w $divu1_2
+ule_w $divu1_2
 addrl_b 1
 iaddrl_b 1
 sub_b 1
@@ -434,11 +434,11 @@ jump_w __builtin_cmp_true
 addrl_b -7  ;for result rstore
 iaddrl_b -6 ;Ah
 iaddrl_b -4 ;Bh
-eq_w __builtin_cmp_false
+ne_w __builtin_cmp_true
 iaddrl_b -7 ;Al
 iaddrl_b -5 ;Bl
-eq_w __builtin_cmp_false
-jump_w __builtin_cmp_true
+ne_w __builtin_cmp_true
+jump_w __builtin_cmp_false
 
 
 

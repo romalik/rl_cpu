@@ -1,5 +1,6 @@
+#include "common.h"
 #include "rlfs.h"
-
+#include <stdio.h>
 
 struct FileDescriptor openFiles[MAX_FILES];
 
@@ -48,7 +49,6 @@ void rlfs_markSector(int sect, int val) {
   ataReadSectorsLBA(1, WORK_BUFFER);
   idx = sect >> 4;
   pos = sect & 0x0f;
-
   if(val) {
     WORK_BUFFER[idx] = (WORK_BUFFER[idx] | (1<<pos));
   } else {
@@ -60,25 +60,29 @@ void rlfs_markSector(int sect, int val) {
 int rlfs_create(char * name) {
   int freeSect;
   int i;
+    printf("create file %s\n", name);
   freeSect = rlfs_findFreeSector();
   rlfs_markSector(freeSect, 1);
 
   ataReadSectorsLBA(0, WORK_BUFFER);
   for(i = 0; i<256; i+=16) {
-    if(WORK_BUFFER[i] == 0)
+    if(WORK_BUFFER[i] == 0 || WORK_BUFFER[i] == 0xffff)
       break;
   }
   WORK_BUFFER[i] = 1;
   WORK_BUFFER[i+1] = 0;
   WORK_BUFFER[i+2] = freeSect;
-  strcpy((char *)(WORK_BUFFER)+3, (char *)(name));
-  return 0;
+  strcpy((char *)(WORK_BUFFER)+3+i, (char *)(name));
+  ataWriteSectorsLBA(0, WORK_BUFFER);  
+  printf("created file at %d\n", freeSect);
+  return i;
 }
 
 /* returns handle */
 int rlfs_open(char * name, int mode) {
   int fd;
   int i;
+  
   /* find free descriptor */
   for(fd = 0; fd<MAX_FILES; fd++) {
     if(openFiles[fd].id == 0xffff) {
@@ -88,21 +92,57 @@ int rlfs_open(char * name, int mode) {
   ataReadSectorsLBA(0, WORK_BUFFER);
   for(i = 0; i<256; i+=16) {
     if(!strcmp((char *)(WORK_BUFFER) + i + 3, name)) {
-      openFiles[fd].baseSector = openFiles[fd].currentSector = WORK_BUFFER[i+2];
-      openFiles[fd].size = WORK_BUFFER[i+1];
-      openFiles[fd].id = i>>4;
-      openFiles[fd].mode = mode;
-      openFiles[fd].pos = 0;
-      openFiles[fd].posInSector = 0;
       break;
     }
   }
+  if(i == 256) {
+      if(mode == 'w') {
+        i = rlfs_create(name);
+      } else {
+        return -1;
+      }
+  }
+  openFiles[fd].baseSector = openFiles[fd].currentSector = WORK_BUFFER[i+2];
+  openFiles[fd].size = WORK_BUFFER[i+1];
+  openFiles[fd].id = i>>4;
+  openFiles[fd].mode = mode;
+  openFiles[fd].pos = 0;
+  openFiles[fd].posInSector = 0;
+
+
   if(mode == 'w') {
     /* clear all sector marks for this file */
+    int cSize = openFiles[fd].size;
+    int cSector = openFiles[fd].currentSector;
+    while(cSize > 511) {
+        ataReadSectorsLBA(cSector, WORK_BUFFER);
+        cSector = WORK_BUFFER[4*64-1];
+        rlfs_markSector(cSector, 0);
+        cSize -= 511;
+    }
   }
   return fd;
 
 }
+
+int rlfs_removeFile(char * filename) {
+    int fd;
+    int id;
+    int sect;
+    fd = rlfs_open(filename, 'w');
+    if(fd < 0) {
+        return -1;
+    }
+    id = openFiles[fd].id;
+    sect = openFiles[fd].baseSector;
+    rlfs_close(fd);
+    ataReadSectorsLBA(0, WORK_BUFFER);
+    WORK_BUFFER[id << 4] = 0xffff;
+    ataWriteSectorsLBA(0, WORK_BUFFER);
+    rlfs_markSector(sect,0);
+    return 0;
+}
+
 
 
 int rlfs_close(int fd) {
@@ -111,6 +151,7 @@ int rlfs_close(int fd) {
   ataReadSectorsLBA(0, WORK_BUFFER);
   WORK_BUFFER[entryPos + 1] = openFiles[fd].size;
   openFiles[fd].id = 0xffff;
+  ataWriteSectorsLBA(0, WORK_BUFFER);
   return 0;
 }
 
@@ -137,9 +178,11 @@ int rlfs_seek(int fd, int pos) {
 
 int rlfs_write(int fd, int c) {
   ataReadSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
-  WORK_BUFFER[openFiles[fd].pos] = c;
+  WORK_BUFFER[openFiles[fd].posInSector] = c;
   openFiles[fd].pos++;
   openFiles[fd].posInSector++;
+
+
   if(openFiles[fd].pos < openFiles[fd].size) {
     ataWriteSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
     if(openFiles[fd].posInSector == 255) {
@@ -151,11 +194,13 @@ int rlfs_write(int fd, int c) {
     ataWriteSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
     if(openFiles[fd].posInSector == 255) {
       int newSector = rlfs_findFreeSector();
+
       ataReadSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
       WORK_BUFFER[64*4-1] = newSector;
       ataWriteSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
       openFiles[fd].currentSector = newSector;
       openFiles[fd].posInSector = 0;
+      rlfs_markSector(newSector, 1);
     }
   }
 }
@@ -173,6 +218,7 @@ int rlfs_read(int fd) {
       openFiles[fd].currentSector = WORK_BUFFER[64*4-1];
       openFiles[fd].posInSector = 0;
     }
+    return retval;
   } else {
     return 0;
   }
