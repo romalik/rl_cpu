@@ -6,7 +6,7 @@
 #include <sys/time.h>
 
 long long gettime_ms() {
-    struct timeval te; 
+    struct timeval te;
     gettimeofday(&te, NULL);
     long long milliseconds = te.tv_sec*1000LL + te.tv_usec/1000;
     return milliseconds;
@@ -61,8 +61,8 @@ w Cpu::memRead(w addr) {
 }
 
 void Cpu::tick() {
-    
-    
+
+
     //insert delay here
     //1000 kHz
     usleep(1);
@@ -255,7 +255,7 @@ void Cpu::execute() {
   } else if(op == rsh) {
       push(pop() >> 1);
 
-  
+
   } else if(op == sub) {
       //BUG!
         RA = pop();
@@ -593,7 +593,7 @@ int main(int argc, char ** argv) {
             if(cnt > 1000) {
                 long long cTime = gettime_ms();
                 int dT = cTime - prevTime;
-                float avTime = (static_cast<float>(dT)/1000.0f)/100.0f;
+                float avTime = (static_cast<float>(dT)/1000.0f)/1000.0f;
                 printf("Average time: %f\nAverage ips %d\n", avTime, static_cast<int>(1.0f/avTime));
 
                 prevTime = cTime;
