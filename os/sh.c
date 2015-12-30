@@ -2,7 +2,7 @@
 #include <string.h>
 #include "sh.h"
 #include "rlfs.h"
-
+#include "heap.h"
 
 char cmdBuf[127];
 int cmdBufSize = 127;
@@ -10,6 +10,24 @@ int cmdBufPos = 0;
 char * nArgv[10];
 int nArgc;
 
+extern char  __data_end;
+extern char  __code_end;
+
+int meminfo(int argc, char ** argv) {
+    unsigned int *p1, *p2, *p3;
+    printf("__data_end 0x%04X\n__code_end 0x%04X\n", &__data_end, &__code_end);
+
+    p1 = (unsigned int *)malloc(0x100);
+    p2 = (unsigned int *)malloc(0x200);
+    p3 = (unsigned int *)malloc(0x300);
+    
+    printf("p1 0x%04x, p2 0x%04x, p3 0x%04x\n", p1, p2, p3);
+
+
+
+    return 0;
+
+}
 int keyscan(int srgc, char ** argv) {
     while(1) {
         int c;
@@ -216,6 +234,7 @@ int rlfs_size_main(int argc, char ** argv) {
 }
 
 char builtinCmds[][10] = {
+  "meminfo",
   "memdump",
   "keyscan",
   "hexdump",
@@ -234,6 +253,7 @@ char builtinCmds[][10] = {
 };
 
 int (*builtinFuncs[]) (int argc, char ** argv) = {
+  meminfo,
   memdump,
   keyscan,
   hexdump,
