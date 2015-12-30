@@ -70,7 +70,9 @@ void Cpu::tick() {
 
     //insert delay here
     //1000 kHz
-    usleep(1);
+    //usleep(1);
+    //
+
 }
 
 void Cpu::push(w val) {
@@ -505,8 +507,8 @@ void Cpu::loadBin(w addr, std::string filename) {
     char image[0xffff*2];
     file.read(image, 0xffff*2);
     setSeqWriterPos(addr);
-    for(int i = 0; i<=0xffff; i++) {
-        writeSeq(((w)((uint8_t)image[i*2]) << 8) | (uint8_t)image[i*2 + 1] );
+    for(int i = 0; i<=0xffff; i+=2) {
+        writeSeq(((w)((uint8_t)image[i]) << 8) | (uint8_t)image[i + 1] );
     }
 }
 
@@ -608,8 +610,8 @@ int main(int argc, char ** argv) {
             //if(debug)
             //    usleep(500*1000);
         }
-*/
 
+*/
         SP_min = myCpu.getSP();
         SP_max = myCpu.getSP();
         while(1) {

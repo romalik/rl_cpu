@@ -1,4 +1,3 @@
-#include "common.h"
 #include "rlfs.h"
 #include <stdio.h>
 
@@ -73,7 +72,7 @@ int rlfs_create(char * name) {
   WORK_BUFFER[i+1] = 0;
   WORK_BUFFER[i+2] = freeSect;
   strcpy((char *)(WORK_BUFFER)+3+i, (char *)(name));
-  ataWriteSectorsLBA(0, WORK_BUFFER);  
+  ataWriteSectorsLBA(0, WORK_BUFFER);
   printf("created file at %d\n", freeSect);
   return i;
 }
@@ -82,7 +81,7 @@ int rlfs_create(char * name) {
 int rlfs_open(char * name, int mode) {
   int fd;
   int i;
-  
+
   /* find free descriptor */
   for(fd = 0; fd<MAX_FILES; fd++) {
     if(openFiles[fd].id == 0xffff) {

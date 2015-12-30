@@ -8,6 +8,7 @@ int atoi(const char * s) {
     while(isdigit(*s)) {
         res = res*10;
         res += (*s)-'0';
+        s++;
     }
     return res;
 }

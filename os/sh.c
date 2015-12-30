@@ -2,7 +2,7 @@
 #include <string.h>
 #include "sh.h"
 #include "rlfs.h"
-#include "heap.h"
+#include "malloc.h"
 
 char cmdBuf[127];
 int cmdBufSize = 127;
@@ -14,20 +14,54 @@ extern char  __data_end;
 extern char  __code_end;
 
 int meminfo(int argc, char ** argv) {
-    unsigned int *p1, *p2, *p3;
+    unsigned int *p1, *p2, *p3, *p4;
+    size_t sz;
     printf("__data_end 0x%04X\n__code_end 0x%04X\n", &__data_end, &__code_end);
 
     p1 = (unsigned int *)malloc(0x100);
     p2 = (unsigned int *)malloc(0x200);
     p3 = (unsigned int *)malloc(0x300);
-    
     printf("p1 0x%04x, p2 0x%04x, p3 0x%04x\n", p1, p2, p3);
 
+    free(p2);
+
+    p4 = (unsigned int *)malloc(0x150);
+    printf("p4 0x%04x\n", p4);
 
 
+    free(p1);
+    free(p3);
+    free(p4);
+
+    for(sz = 0xffff; sz > 0; sz--) {
+      p1 = (unsigned int *)malloc(sz);
+      if(p1)
+        break;
+    }
+    if(sz && p1) {
+      printf("Free mem: %u words\n", sz);
+      free(p1);
+    }
     return 0;
 
 }
+
+int usemem(int argc, char ** argv) {
+  size_t sz;
+  unsigned int *p;
+  printf("trying atoi %s\n", argv[1]);
+  sz = atoi(argv[1]);
+
+  printf("Allocating %u words..\n", sz);
+  p = (unsigned int *)malloc(sz);
+  if(p) {
+    printf("Successful! p = 0x%04x\n", p);
+  } else {
+    printf("Failure!\n");
+  }
+  return 0;
+}
+
 int keyscan(int srgc, char ** argv) {
     while(1) {
         int c;
@@ -90,7 +124,7 @@ int edit(int argc, char ** argv) {
         }
     }
     rlfs_close(fd);
-    
+
     return 0;
 }
 
@@ -115,7 +149,7 @@ int cat(int argc, char ** argv) {
         for(i = 1; i<argc; i++) {
             int fd = rlfs_open(argv[i],'r');
             if(fd < 0) {
-                printf("File [%s] not found!\n", argv[i]); 
+                printf("File [%s] not found!\n", argv[i]);
             } else {
                 while(!rlfs_isEOF(fd)) {
                     putc(rlfs_read(fd));
@@ -137,7 +171,7 @@ int ls(int argc, char ** argv) {
         } else if(buf[i] == 0xffff) {
             continue;
         } else {
-            printf("%06d : %s\n", buf[i+1], (buf + i+3));    
+            printf("%06d : %s\n", buf[i+1], (buf + i+3));
         }
     }
     return 0;
@@ -234,6 +268,7 @@ int rlfs_size_main(int argc, char ** argv) {
 }
 
 char builtinCmds[][10] = {
+  "usemem",
   "meminfo",
   "memdump",
   "keyscan",
@@ -253,6 +288,7 @@ char builtinCmds[][10] = {
 };
 
 int (*builtinFuncs[]) (int argc, char ** argv) = {
+  usemem,
   meminfo,
   memdump,
   keyscan,
@@ -292,7 +328,7 @@ int sh_getArgs(char * cmd, char ** _argv) {
     while(*s) {
         if((*s)==' ') {
             *s = 0;
-            _argv[argc] = s+1; 
+            _argv[argc] = s+1;
             argc++;
         }
         s++;
@@ -302,11 +338,14 @@ int sh_getArgs(char * cmd, char ** _argv) {
 
 int main_sh() {
   int i = 0;
+/*
   printf("Builtin commands:\n");
+
   while(builtinCmds[i][0] != 0) {
     printf("%s : %04x\n", builtinCmds[i], (int)builtinFuncs[i]);
     i++;
   }
+  */
   printf("# ");
   while(1) {
     char c = getc();
