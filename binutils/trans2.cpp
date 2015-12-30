@@ -503,7 +503,7 @@ void optimize() {
                     }
                 }
             } else if((it->name >= rc_add && it->name <= rc_bxor)  || (it->name >= rc_call0 && it->name <= rc_call2) || it->name == rc_jump) { //immediate arithm & call ops
-                if(prevIt->name == rc_cnst && prevIt->size == SIZE_WORD) {
+                if(prevIt->name == rc_cnst && prevIt->size == SIZE_WORD && prevIt->needIndir == 0) {
                     prevIt->name = it->name;
                     if((it->name >= rc_call0 && it->name <= rc_call2) || it->name == rc_jump) { //force word size arg for call&jump
                         prevIt->argType = ARG_LINK;

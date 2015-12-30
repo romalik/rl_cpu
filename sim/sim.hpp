@@ -254,5 +254,7 @@ public:
 
   void setDebug(int _d) {flDebug = _d;}
 
+    w getSP() {return this->SP; }
+
   void terminate();
 };

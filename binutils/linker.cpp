@@ -425,6 +425,8 @@ int main(int argc, char ** argv) {
 //    printf("Writing to %s..\n", outFile.c_str());
     linker.writeBin(outFile);
 //    printf("Done.\n");
+
+    linker.dumpLabels();
     return 0;
 
 }

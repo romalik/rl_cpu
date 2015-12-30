@@ -34,11 +34,16 @@ Cpu::Cpu() {
 Cpu::~Cpu() {
 }
 
+w SP_min;
+w SP_max;
+
 void Cpu::terminate() {
   for(int i = 0; i<this->devices.size(); i++) {
     this->devices[i]->terminate();
   }
   printf("CPU terminating\n");
+
+  printf("SP_min: 0x%04x\nSP_max 0x%04x\n", SP_min, SP_max);
 
 }
 void Cpu::memWrite(w addr, w val) {
@@ -604,8 +609,19 @@ int main(int argc, char ** argv) {
             //    usleep(500*1000);
         }
 */
+
+        SP_min = myCpu.getSP();
+        SP_max = myCpu.getSP();
         while(1) {
             myCpu.execute();
+
+            if(myCpu.getSP() > SP_max) {
+                SP_max = myCpu.getSP();
+            }
+
+            if(myCpu.getSP() < SP_min) {
+                SP_min = myCpu.getSP();
+            }
         }
 
     }
