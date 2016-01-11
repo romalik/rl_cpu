@@ -13,6 +13,14 @@ int nArgc;
 extern char  __data_end;
 extern char  __code_end;
 
+extern unsigned int ticks;
+
+int uptime(int argc, char ** argv) {
+  printf("%u ticks\n", ticks);
+  return 0;
+}
+
+
 int meminfo(int argc, char ** argv) {
     unsigned int *p1, *p2, *p3, *p4;
     size_t sz;

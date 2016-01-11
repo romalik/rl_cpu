@@ -13,6 +13,9 @@
 #include <unistd.h>
 #include <termios.h>
 
+
+#include <pthread.h>
+
 typedef uint16_t w;
 typedef int16_t ws;
 
@@ -28,6 +31,83 @@ public:
   virtual void terminate() {};
 };
 
+class InterruptController : public VMemDevice {
+  int currentInterrupt;
+  w pendingInterrupts;
+  w addrStart;
+  int nIRQs;
+  std::vector<w> intVectors;
+ public:
+  InterruptController(w _addrStart, int _nIRQs) {
+     addrStart = _addrStart;
+     nIRQs = _nIRQs;
+     intVectors.resize(nIRQs, 0);
+     currentInterrupt = 0;
+     pendingInterrupts = 0;
+  }
+  ~InterruptController() {}
+
+  virtual int canOperate(w addr) {
+    return ((addr >= addrStart)&&(addr < addrStart + nIRQs));
+  }
+
+  virtual void write(w addr, w val, int force = 0) {
+    if(canOperate(addr)) {
+      intVectors[addr - addrStart] = val;
+    }
+  }
+
+  virtual w read(w addr) {
+    if(canOperate(addr)) {
+      return intVectors[addr - addrStart];
+    } else {
+      return 0;
+    }
+  }
+
+  void request(int irq) {
+    //printf("IRQ on line %d\n", irq);
+
+    if(irq < nIRQs) {
+      pendingInterrupts |= (1 << irq);
+    }
+
+    //printf("Mask now 0x%04x\n", pendingInterrupts);
+  }
+
+  int irqLineStatus() {
+    if(pendingInterrupts) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  w getIrqVector() {
+    //printf("InterruptController: finding interrupt. Mask: 0x%04x\n", pendingInterrupts);
+    if(!pendingInterrupts) {
+      printf("Interrupt controller failure\n");
+      return 0x1234;
+    }
+
+    while(true) {
+      if(pendingInterrupts & (1 << currentInterrupt)) {
+        break;
+      }
+      currentInterrupt++;
+      if(currentInterrupt == nIRQs) {
+        currentInterrupt = 0;
+      }
+    }
+
+
+    pendingInterrupts &= ~(1<<currentInterrupt);
+
+    //printf("InterruptController: done. Mask: 0x%04x\n", pendingInterrupts);
+    return intVectors[currentInterrupt];
+  }
+
+};
 
 class HDD : public VMemDevice {
   char * data;
@@ -171,10 +251,19 @@ public:
   }
   virtual w read(w addr) {
     if(canOperate(addr)) {
-      char c = 0;
+      int c = 0;
       if(in) {
+
         //(*in) >> c;
         c = (*in).get();
+        if(c == EOF) {
+          printf("PORT: EOF\n");
+          c = 0;
+        }
+
+        if(c) {
+          printf("PORT: read %c\n", c);
+        }
       }
       w val = (w)(c);
       return val;
@@ -219,6 +308,56 @@ public:
   }
 };
 
+
+
+
+class Timer : public VMemDevice {
+  InterruptController * intCtl;
+  unsigned long long delay;
+  int irqLine;
+  bool running;
+
+  pthread_t timer_thread;
+
+
+ public:
+  Timer(InterruptController * _intCtl, int _irqLine, unsigned long long _delay) {
+    intCtl = _intCtl;
+    delay = _delay;
+    irqLine = _irqLine;
+    running = true;
+
+    //start thread here
+    pthread_create(&timer_thread, NULL, Timer::tick_worker, this);
+  }
+  ~Timer() {
+    running = false;
+
+    //join here
+    pthread_join(timer_thread, NULL);
+  }
+
+  static void *tick_worker(void *timer_ptr)
+  {
+    Timer * thiz = (Timer *)(timer_ptr);
+    while(thiz->running) {
+      usleep(thiz->delay);
+      thiz->tick();
+    }
+    return NULL;
+  }
+
+  virtual int canOperate(w addr) {return 0;}
+  virtual void write(w addr, w val, int force = 0) {};
+  virtual w read(w addr) {return 0;}
+
+  void tick() {
+      intCtl->request(irqLine);
+  }
+
+};
+
+
 class Cpu {
   w RA, RB;
   w AP, BP, SP, T;
@@ -226,10 +365,15 @@ class Cpu {
   w IR;
   w ML;
 
+
+  w intEnabled;
+  w userMode;
+
   int flDebug;
 
   std::vector<VMemDevice *> devices;
 
+  InterruptController * intCtl;
 public:
 
 

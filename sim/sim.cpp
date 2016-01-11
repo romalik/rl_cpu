@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 long long gettime_ms() {
     struct timeval te;
@@ -15,11 +16,19 @@ long long gettime_ms() {
 
 Cpu myCpu;
 struct termios old_tio, new_tio;
+int oldf;
+
 
 Cpu::Cpu() {
 //test config, full ram memory, last 2 words - in/output
 
     flDebug = 0;
+
+  intEnabled = 0;
+  userMode = 0;
+
+  intCtl = new InterruptController(0x8000, 8);
+
 
   this->devices.push_back(new RAM(0, 0x8000, 0));
 
@@ -27,9 +36,15 @@ Cpu::Cpu() {
   this->devices.push_back(new PORT(0xffff, 0, NULL, &std::cout));
 
   this->devices.push_back(new HDD(0xfffc, 0xfffd, std::string("hdd")));
-
+  this->devices.push_back(new Timer(intCtl, 3, 500000ULL));
+  this->devices.push_back(intCtl);
 
 }
+
+
+
+
+
 
 Cpu::~Cpu() {
 }
@@ -99,6 +114,19 @@ w Cpu::IRHigh() {
 }
 
 void Cpu::execute() {
+  if(intEnabled) {
+//    printf("CPU: IRQ Line Status: %d\n", intCtl->irqLineStatus());
+    if(intCtl->irqLineStatus()) {
+      //printf("Into int vec!\n");
+      this->push(PC);
+      this->userMode = 0;
+      //printf("Try get vec..");
+      PC = intCtl->getIrqVector();
+      //printf(" 0x%04x\n", PC);
+    }
+  }
+
+
   this->IR = this->memRead(PC);
   if(flDebug /* || (IR&0xff) == ret2|| (IR&0xff) == le_w|| (IR&0xff) == lt_w */) {
 
@@ -483,6 +511,14 @@ void Cpu::execute() {
       push(RA);
       push(RA);
 
+  } else if(op == ei) {
+    this->intEnabled = 1;
+    printf("CPU: enable interrupts\n");
+
+  } else if(op == di) {
+    this->intEnabled = 0;
+    printf("CPU: disable interrupts\n");
+
   } else {
       printf("op not implemented! %d\n", op);
       printf("op not implemented! %s\n", oplist[op]);
@@ -551,6 +587,7 @@ void onSignal(int signal) {
     myCpu.terminate();
 
     tcsetattr(STDIN_FILENO,TCSANOW,&old_tio);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
     exit(1);
   }
 }
@@ -580,7 +617,6 @@ int main(int argc, char ** argv) {
         printf("\nLoading done. Starting..\n");
 
         unsigned char c;
-
         /* get the terminal settings for stdin */
         tcgetattr(STDIN_FILENO,&old_tio);
 
@@ -592,6 +628,10 @@ int main(int argc, char ** argv) {
 
         /* set the new settings immediately */
         tcsetattr(STDIN_FILENO,TCSANOW,&new_tio);
+
+        oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+        fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
 /*
         int cnt = 0;
         long long prevTime = gettime_ms();

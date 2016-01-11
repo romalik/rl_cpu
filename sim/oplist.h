@@ -92,7 +92,10 @@ enum opname {
     store2,
     rstore2,
 
-    dup_op
+    dup_op,
+
+    ei,
+    di
 };
 
 char oplist[][16] = {
@@ -187,6 +190,10 @@ char oplist[][16] = {
     "rstore2",
 
     "dup",
+
+    "ei",
+    "di",
+
     ""
 
 };

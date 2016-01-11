@@ -3,7 +3,9 @@
 void itoa(int n, char s[]);
 
 int getc() {
-  return *(char *)(0xfffe);
+  int c;
+  while((c = *(char *)(0xfffe)) == 0) {}
+  return c;
 }
 
 int putc(char c) {
