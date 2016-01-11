@@ -28,11 +28,13 @@ void rlfs_mkfs() {
 int rlfs_findFreeSector() {
   int i;
   int j;
+  printf("Alloc sect\n");
   ataReadSectorsLBA(1, WORK_BUFFER);
   for(i = 0; i<256; i++) {
     if(WORK_BUFFER[i] != 0xffff) {
       for(j = 0; j<16; j++) {
         if((WORK_BUFFER[i] & (1 << j)) == 0) {
+            printf("sect: %d\n", i*16+j);
           return i*16 + j;
         }
       }
@@ -77,6 +79,15 @@ int rlfs_create(char * name) {
   return i;
 }
 
+void removeMarkersForFile(unsigned int cSector, unsigned int cSize) {
+    while(cSize > 255) {
+        ataReadSectorsLBA(cSector, WORK_BUFFER);
+        cSector = WORK_BUFFER[4*64-1];
+        rlfs_markSector(cSector, 0);
+        cSize -= 255;
+    }
+}
+
 /* returns handle */
 int rlfs_open(char * name, int mode) {
   int fd;
@@ -90,7 +101,7 @@ int rlfs_open(char * name, int mode) {
   }
   ataReadSectorsLBA(0, WORK_BUFFER);
   for(i = 0; i<256; i+=16) {
-    if(!strcmp((char *)(WORK_BUFFER) + i + 3, name)) {
+    if(!strcmp((char *)(WORK_BUFFER) + i + 3, name) && (WORK_BUFFER[i] != 0xffff))  {
       break;
     }
   }
@@ -111,14 +122,8 @@ int rlfs_open(char * name, int mode) {
 
   if(mode == 'w') {
     /* clear all sector marks for this file */
-    int cSize = openFiles[fd].size;
-    int cSector = openFiles[fd].currentSector;
-    while(cSize > 511) {
-        ataReadSectorsLBA(cSector, WORK_BUFFER);
-        cSector = WORK_BUFFER[4*64-1];
-        rlfs_markSector(cSector, 0);
-        cSize -= 511;
-    }
+    removeMarkersForFile(openFiles[fd].baseSector, openFiles[fd].size);
+    openFiles[fd].size = 0;
   }
   return fd;
 
@@ -128,17 +133,19 @@ int rlfs_removeFile(char * filename) {
     int fd;
     int id;
     int sect;
+    int size;
     fd = rlfs_open(filename, 'w');
     if(fd < 0) {
         return -1;
     }
     id = openFiles[fd].id;
     sect = openFiles[fd].baseSector;
+    size = openFiles[fd].size;
     rlfs_close(fd);
     ataReadSectorsLBA(0, WORK_BUFFER);
     WORK_BUFFER[id << 4] = 0xffff;
     ataWriteSectorsLBA(0, WORK_BUFFER);
-    rlfs_markSector(sect,0);
+    removeMarkersForFile(sect,size);
     return 0;
 }
 
@@ -165,9 +172,9 @@ int rlfs_seek(int fd, int pos) {
   if(pos > openFiles[fd].size) {
     return -1;
   }
-  while(cPos > 254) {
+  while(cPos > 255) {
     openFiles[fd].currentSector = rlfs_getNextSector(fd);
-    cPos -= 254;
+    cPos -= 255;
   }
   openFiles[fd].pos = pos;
   openFiles[fd].posInSector = cPos;
@@ -210,7 +217,7 @@ int rlfs_read(int fd) {
   ataReadSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
   if(openFiles[fd].pos < openFiles[fd].size) {
 
-    retval = WORK_BUFFER[openFiles[fd].pos];
+    retval = WORK_BUFFER[openFiles[fd].posInSector];
     openFiles[fd].pos++;
     openFiles[fd].posInSector++;
     if(openFiles[fd].posInSector == 255) {

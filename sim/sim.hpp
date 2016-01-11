@@ -89,10 +89,10 @@ class HDD : public VMemDevice {
       } else if(addr == dataAddr) {
         if(cState < 0) {
           if(cPos == 0) {
-            cSector = val << 16;
+            cSector = ((int)val) << 16;
             cPos++;
           } else if(cPos == 1) {
-            cSector |= val;
+            cSector |= (int)(val);
             cPos = 0;
 //            printf("HDD: set sector %d\n", cSector);
             cState = -cState;
@@ -102,7 +102,7 @@ class HDD : public VMemDevice {
             if(cPos < 512) {
               int dest = cSector*512 + cPos;
               data[dest] = val&0xff;
-              data[dest+1] = ((val&0xff00)>>16);
+              data[dest+1] = ((val&0xff00)>>8);
 //              printf("HDD write 0x%04x at %d\n", val, dest);
               cPos+=2;
             } else {

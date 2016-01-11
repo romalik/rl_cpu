@@ -74,6 +74,21 @@ int keyscan(int srgc, char ** argv) {
     return 0;
 }
 
+
+int binwrite(int argc, char ** argv) {
+    int fd;
+    fd = rlfs_open(argv[1], 'w');
+    rlfs_write(fd, 0x1234);
+    rlfs_write(fd, 0x1234);
+    rlfs_write(fd, 0x1234);
+    rlfs_write(fd, 0x1234);
+
+    rlfs_write(fd, 0x5678);
+    rlfs_write(fd, 0xdead);
+    rlfs_write(fd, 0xbeef);
+    rlfs_close(fd);
+}
+
 int hexdump(int argc, char ** argv) {
     int i;
     for(i = 1; i<argc; i++) {
@@ -268,6 +283,7 @@ int rlfs_size_main(int argc, char ** argv) {
 }
 
 char builtinCmds[][10] = {
+  "binwrite",
   "usemem",
   "meminfo",
   "memdump",
@@ -288,6 +304,7 @@ char builtinCmds[][10] = {
 };
 
 int (*builtinFuncs[]) (int argc, char ** argv) = {
+  binwrite,
   usemem,
   meminfo,
   memdump,
@@ -351,20 +368,21 @@ int main_sh() {
     char c = getc();
     putc(c);
     if(addChar(c)) {
-      printf("Cmd entered: %s\n", cmdBuf);
-
-      nArgc = sh_getArgs(cmdBuf, nArgv);
-
-      i = 0;
-      while(builtinCmds[i][0] != 0) {
-        if(!strcmp(nArgv[0],builtinCmds[i])) {
-          int retval = builtinFuncs[i](nArgc, nArgv);
-          printf("Exitcode: %d\n",retval);
-          break;
+        if(cmdBuf[0]) {
+            nArgc = sh_getArgs(cmdBuf, nArgv);
+            i = 0;
+            while(builtinCmds[i][0] != 0) {
+                if(!strcmp(nArgv[0],builtinCmds[i])) {
+                    int retval = builtinFuncs[i](nArgc, nArgv);
+                    break;
+                }
+            i++;
+            }
+            if(builtinCmds[i][0] == 0) {
+                printf("Bad command\n");
+            }
         }
-        i++;
-      }
-      printf("# ");
+        printf("# ");
     }
   }
   return 0;
