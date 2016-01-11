@@ -32,7 +32,7 @@ Cpu::Cpu() {
 
   this->devices.push_back(new RAM(0, 0x8000, 0));
 
-  this->devices.push_back(new PORT(0xfffe, 0, &std::cin, NULL));
+  this->devices.push_back(new UART(NULL,0,0, 0xfffe, &std::cin, NULL));
   this->devices.push_back(new PORT(0xffff, 0, NULL, &std::cout));
 
   this->devices.push_back(new HDD(0xfffc, 0xfffd, std::string("hdd")));
@@ -630,7 +630,7 @@ int main(int argc, char ** argv) {
         tcsetattr(STDIN_FILENO,TCSANOW,&new_tio);
 
         oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-        fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+//        fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
 
 /*
         int cnt = 0;

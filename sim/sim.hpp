@@ -2,6 +2,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <deque>
 #include <string.h>
 #include <fstream>
 #include <sstream>
@@ -223,6 +224,93 @@ class HDD : public VMemDevice {
 
 };
 
+
+class UART : public VMemDevice {
+
+    pthread_t worker_tid;
+    bool running;
+
+    std::deque<w> outBuffer;
+    std::deque<w> inBuffer;
+
+public:
+
+  w addr;
+
+  int rxIrq;
+  int txIrq;
+  InterruptController * intCtl;
+
+  std::istream * in;
+  std::ostream * out;
+
+  UART(InterruptController * _intCtl, int _rxIrq, int _txIrq, w _addr, std::istream * _in, std::ostream * _out) {
+    addr = _addr;
+    
+    in = _in;
+    out = _out;
+
+
+    intCtl = _intCtl;
+    rxIrq = _rxIrq;
+    txIrq = _txIrq;
+  
+    running = true;
+
+    //start thread here
+    pthread_create(&worker_tid, NULL, UART::worker_thread, this);
+  }
+  ~UART() {
+    running = false;
+
+    //join here
+    pthread_join(worker_tid, NULL);
+  }
+
+
+  static void * worker_thread(void * p) {
+    UART * thiz = (UART *)(p);
+    while(thiz->running) {
+        thiz->readLoop();
+    }
+    return NULL;
+  }
+
+  void readLoop() {
+    
+      int c = 0;
+      if(in) {
+        c = (*in).get();
+      }
+      w val = (w)(c);
+      inBuffer.push_back(c);
+  }
+
+  virtual int canOperate(w _addr) {
+    return (_addr == addr);
+  }
+  virtual void write(w addr, w val, int force) {
+    if(canOperate(addr)) {
+      if(out) {
+        (*out) << (char)((char)val & 0xff);
+        (*out).flush();
+      }
+    }
+  }
+  virtual w read(w addr) {
+    if(canOperate(addr)) {
+        if(!inBuffer.empty()) {
+            w r = inBuffer.front();
+            inBuffer.pop_front();
+            return r;
+        } else {
+            return 0;
+        }
+    }
+  }
+};
+
+
 class PORT : public VMemDevice {
 public:
   w addr;
@@ -255,10 +343,10 @@ public:
       if(in) {
 
         //(*in) >> c;
-        c = (*in).get();
-        if(c == EOF) {
-          printf("PORT: EOF\n");
-          c = 0;
+        if((*in).eof()) {
+            c = 0;
+        } else {
+          c = (*in).get();
         }
 
         if(c) {

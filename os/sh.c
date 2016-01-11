@@ -291,6 +291,7 @@ int rlfs_size_main(int argc, char ** argv) {
 }
 
 char builtinCmds[][10] = {
+  "uptime",
   "binwrite",
   "usemem",
   "meminfo",
@@ -312,6 +313,7 @@ char builtinCmds[][10] = {
 };
 
 int (*builtinFuncs[]) (int argc, char ** argv) = {
+  uptime,
   binwrite,
   usemem,
   meminfo,
