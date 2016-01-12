@@ -184,7 +184,8 @@ class HDD : public VMemDevice {
               int dest = cSector*512 + cPos;
               data[dest] = val&0xff;
               data[dest+1] = ((val&0xff00)>>8);
-//              printf("HDD write 0x%04x at %d\n", val, dest);
+              printf("HDD write 0x%04x at %d\n", val, dest);
+              printf("dest : 0x%02x dest+1 : 0x%02x\n",data[dest], data[dest+1]);
               cPos+=2;
             } else {
               cState = 0;
@@ -246,7 +247,7 @@ public:
 
   UART(InterruptController * _intCtl, int _rxIrq, int _txIrq, w _addr, std::istream * _in, std::ostream * _out) {
     addr = _addr;
-    
+
     in = _in;
     out = _out;
 
@@ -254,7 +255,7 @@ public:
     intCtl = _intCtl;
     rxIrq = _rxIrq;
     txIrq = _txIrq;
-  
+
     running = true;
 
     //start thread here
@@ -277,7 +278,7 @@ public:
   }
 
   void readLoop() {
-    
+
       int c = 0;
       if(in) {
         c = (*in).get();
@@ -392,6 +393,60 @@ public:
       return storage[addr - begin];
     } else {
       return (rand() % 0xffff);
+    }
+  }
+};
+
+
+class ExtRAM : public VMemDevice {
+  w begin;
+  w size;
+  w end;
+
+  w bankSelector;
+
+  int cBank;
+  int nBanks;
+  std::vector<w *> storage;
+
+
+
+public:
+  ExtRAM(w _begin, w _sz, w _bankSelector, int _nBanks) {
+    begin = _begin;
+    end = _begin + _sz;
+    size = _sz;
+    bankSelector = _bankSelector;
+    nBanks = _nBanks;
+    cBank = 0;
+    for(int i = 0; i<nBanks; i++) {
+      storage.push_back((w *)malloc(_sz * sizeof(w)));
+    }
+  }
+  ~ExtRAM() {
+    for(int i = 0; i<nBanks; i++) {
+      free(storage[i]);
+    }
+  }
+
+  virtual int canOperate(w addr) { return (((addr >= begin)&&(addr<end))|| addr == bankSelector); }
+  virtual void write(w addr, w val, int force = 0) {
+    if(canOperate(addr)) {
+      if(addr == bankSelector) {
+        cBank = val;
+      } else {
+        storage[cBank][addr - begin] = val;
+      }
+    }
+  }
+
+  virtual w read(w addr) {
+    if(canOperate(addr)) {
+      if(addr == bankSelector) {
+        return cBank;
+      } else {
+        return storage[cBank][addr - begin];
+      }
     }
   }
 };

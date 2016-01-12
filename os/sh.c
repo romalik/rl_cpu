@@ -13,10 +13,21 @@ int nArgc;
 extern char  __data_end;
 extern char  __code_end;
 
-extern unsigned int ticks;
+extern void syscall(void * p);
+
+//extern unsigned int ticks;
+
+int test_syscall(int argc, char ** argv) {
+  unsigned int n = 42;
+  printf("Testing syscall 42..\n");
+  syscall(&n);
+  printf("Back in work..\n");
+
+  return 0;
+}
 
 int uptime(int argc, char ** argv) {
-  printf("%u ticks\n", ticks);
+  printf("%u ticks\n", gettime());
   return 0;
 }
 
@@ -96,6 +107,31 @@ int binwrite(int argc, char ** argv) {
     rlfs_write(fd, 0xbeef);
     rlfs_close(fd);
 }
+
+
+int hex2bin(int argc, char ** argv) {
+    int i;
+    int fdIn;
+    int fdOut;
+    int c;
+
+    fdIn = rlfs_open(argv[1],'r');
+    fdOut = rlfs_open(argv[2],'w');
+    if(fdIn < 0) {
+        printf("file %s not found\n", argv[i]);
+        return 1;
+    }
+    while(!rlfs_isEOF(fdIn)) {
+        c = rlfs_read(fdIn);
+        printf("0x%04x ", c);
+    }
+
+    printf("\n");
+
+    return 0;
+}
+
+
 
 int hexdump(int argc, char ** argv) {
     int i;
@@ -290,7 +326,11 @@ int rlfs_size_main(int argc, char ** argv) {
   printf("\ndone\n");
 }
 
-char builtinCmds[][10] = {
+int help(int argc, char ** argv);
+
+char builtinCmds[][15] = {
+  "help",
+  "test_syscall",
   "uptime",
   "binwrite",
   "usemem",
@@ -313,6 +353,8 @@ char builtinCmds[][10] = {
 };
 
 int (*builtinFuncs[]) (int argc, char ** argv) = {
+  help,
+  test_syscall,
   uptime,
   binwrite,
   usemem,
@@ -333,6 +375,16 @@ int (*builtinFuncs[]) (int argc, char ** argv) = {
   rlfs_size_main
 };
 
+int help(int argc, char ** argv) {
+  int i = 0;
+  printf("Builtin commands:\n");
+
+  while(builtinCmds[i][0] != 0) {
+    printf("%s\n", builtinCmds[i]);
+    i++;
+  }
+  return 0;
+}
 
 int addChar(char c) {
   if(c == '\n') {

@@ -27,15 +27,18 @@ Cpu::Cpu() {
   intEnabled = 0;
   userMode = 0;
 
-  intCtl = new InterruptController(0x8000, 8);
+  intCtl = new InterruptController(0x7fea, 8);
 
 
-  this->devices.push_back(new RAM(0, 0x8000, 0));
+  this->devices.push_back(new RAM(0, 16*1024, 0)); //ROM
+  this->devices.push_back(new RAM(0x4000, 16*1024-16, 0)); //RAM
 
-  this->devices.push_back(new UART(NULL,0,0, 0xfffe, &std::cin, NULL));
-  this->devices.push_back(new PORT(0xffff, 0, NULL, &std::cout));
+  this->devices.push_back(new ExtRAM(0x8000, 32*1024, 0x7fdf, 16)); //ExtRAM
 
-  this->devices.push_back(new HDD(0xfffc, 0xfffd, std::string("hdd")));
+  this->devices.push_back(new UART(NULL,0,0, 0x7ffe, &std::cin, NULL));
+  this->devices.push_back(new PORT(0x7fff, 0, NULL, &std::cout));
+
+  this->devices.push_back(new HDD(0x7ffc, 0x7ffd, std::string("hdd")));
   this->devices.push_back(new Timer(intCtl, 3, 500000ULL));
   this->devices.push_back(intCtl);
 
@@ -519,6 +522,35 @@ void Cpu::execute() {
     this->intEnabled = 0;
     printf("CPU: disable interrupts\n");
 
+  } else if(op == pushap) {
+    push(AP);
+
+  } else if(op == popap) {
+    AP = pop();
+
+  } else if(op == pushbp) {
+    push(BP);
+
+  } else if(op == popbp) {
+    BP = pop();
+
+  } else if(op == loadsp_w) {
+    SP = this->memRead(PC);
+    PC++;
+
+  } else if(op == iloadsp_w) {
+    RA = this->memRead(PC);
+    PC++;
+    SP = this->memRead(RA);
+
+  } else if(op == storesp_w) {
+    RA = this->memRead(PC);
+    PC++;
+    this->memWrite(RA, SP);
+  } else if(op == syscall_op) {
+    intCtl->request(0);
+
+
   } else {
       printf("op not implemented! %d\n", op);
       printf("op not implemented! %s\n", oplist[op]);
@@ -611,8 +643,6 @@ int main(int argc, char ** argv) {
         printf("Loading binary %s...\n", argv[1]);
         myCpu.setDebug(debug);
         myCpu.setPC(0);
-        myCpu.setSP(0x4000);
-        myCpu.setBP(0x4000);
         myCpu.loadBin(0,std::string(argv[1]));
         printf("\nLoading done. Starting..\n");
 
@@ -650,8 +680,8 @@ int main(int argc, char ** argv) {
             //if(debug)
             //    usleep(500*1000);
         }
-
 */
+
         SP_min = myCpu.getSP();
         SP_max = myCpu.getSP();
         while(1) {

@@ -14,7 +14,7 @@ typedef struct Marker Marker_t;
 Marker_t * malloc_head;
 
 void malloc_init(size_t begin, size_t end) {
-  printf("Malloc init 0x%04x - 0x%04x\n", begin, end);
+//  printf("Malloc init 0x%04x - 0x%04x\n", begin, end);
 
   malloc_head = (Marker_t *)begin;
   malloc_head->next = 0;

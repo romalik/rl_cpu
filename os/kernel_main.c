@@ -9,25 +9,28 @@
 extern char  __data_end;
 extern char  __code_end;
 extern void __timer_interrupt_vector();
+extern void __system_interrupt_vector();
 unsigned int ticks = 0;
 
+extern void syscall();
 
 void timer_interrupt() {
   ticks++;
 }
 
-
-#define TIMER_INTERRUPT_ADDR_PORT (*(unsigned int *)(0x8003))
+#define TIMER_INTERRUPT_ADDR_PORT INT3_vec
+#define SYSTEM_INTERRUPT_ADDR_PORT INT0_vec
 
 void init_interrupts() {
   TIMER_INTERRUPT_ADDR_PORT = (size_t)(__timer_interrupt_vector);
+  SYSTEM_INTERRUPT_ADDR_PORT = (size_t)(__system_interrupt_vector);
   ei();
 }
 
 int main() {
 
   malloc_init((size_t)&__data_end, (size_t)(0x3000));
-  printf("Init interrupts..\n");
+//  printf("Init interrupts..\n");
   init_interrupts();
 
   printf("Init ata..\n");

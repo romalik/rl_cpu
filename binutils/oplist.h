@@ -95,7 +95,21 @@ enum opname {
     dup_op,
 
     ei,
-    di
+    di,
+
+    pushap,
+    popap,
+
+    pushbp,
+    popbp,
+
+    loadsp_w,
+    iloadsp_w,
+
+    storesp_w,
+    istoresp_w,
+
+    syscall_op
 };
 
 char oplist[][16] = {
@@ -193,6 +207,20 @@ char oplist[][16] = {
 
     "ei",
     "di",
+
+    "pushap",
+    "popap",
+
+    "pushbp",
+    "popbp",
+
+    "loadsp_w",
+    "iloadsp_w",
+
+    "storesp_w",
+    "istoresp_w",
+
+    "syscall",
 
     ""
 
