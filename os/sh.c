@@ -95,6 +95,17 @@ int keyscan(int srgc, char ** argv) {
 
 
 int binwrite(int argc, char ** argv) {
+/*
+    unsigned int buf[64*4];
+    int i;
+
+    for(i = 0; i<256; i++) {
+        buf[i] = (i<<8)+i+1;
+    }
+    
+    ataWriteSectorsLBA(0,buf);
+*/
+    
     int fd;
     fd = rlfs_open(argv[1], 'w');
     rlfs_write(fd, 0x1234);
@@ -106,6 +117,7 @@ int binwrite(int argc, char ** argv) {
     rlfs_write(fd, 0xdead);
     rlfs_write(fd, 0xbeef);
     rlfs_close(fd);
+    
 }
 
 
@@ -114,18 +126,45 @@ int hex2bin(int argc, char ** argv) {
     int fdIn;
     int fdOut;
     int c;
-
+    unsigned int cWord;
+    unsigned int cnt;
     fdIn = rlfs_open(argv[1],'r');
     fdOut = rlfs_open(argv[2],'w');
     if(fdIn < 0) {
         printf("file %s not found\n", argv[i]);
         return 1;
     }
+    cWord = 0;
+    i = 0;
+    cnt = 0;
     while(!rlfs_isEOF(fdIn)) {
+        unsigned int v = 0;
         c = rlfs_read(fdIn);
-        printf("0x%04x ", c);
+        if(c>='a' && c<='f') {
+            v = 10 + (c-'a');
+        } else if(c>='A' && c<='F') {
+            v = 10 + (c-'A');
+        } else if(c>='0' && c<='9') {
+            v = c-'0'; 
+        } else {
+            continue;
+        }
+        cWord = cWord + (v << ((3-i)*4));
+        i++;
+        if(i == 4) {
+            cnt++;
+//            printf("0x%04x ", cWord);
+            rlfs_write(fdOut, cWord);
+            i = 0;
+            cWord = 0;
+            if((cnt % 100) == 0) {
+                printf("%u bytes written\n", cnt);
+            }
+        }
     }
 
+    rlfs_close(fdIn);
+    rlfs_close(fdOut);
     printf("\n");
 
     return 0;
@@ -223,7 +262,7 @@ int cat(int argc, char ** argv) {
 int ls(int argc, char ** argv) {
     int i = 0;
     unsigned int buf[64*4];
-    ataReadSectorsLBA(0,(unsigned char*)buf);
+    ataReadSectorsLBA(0,buf);
     for(i = 0; i < 256; i+=16) {
         if(buf[i] == 0) {
             break;
@@ -330,6 +369,7 @@ int help(int argc, char ** argv);
 
 char builtinCmds[][15] = {
   "help",
+  "hex2bin",
   "test_syscall",
   "uptime",
   "binwrite",
@@ -354,6 +394,7 @@ char builtinCmds[][15] = {
 
 int (*builtinFuncs[]) (int argc, char ** argv) = {
   help,
+  hex2bin,
   test_syscall,
   uptime,
   binwrite,

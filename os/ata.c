@@ -7,7 +7,7 @@ void ataInit() {
 
 
 
-void ataReadDataBuffer(unsigned char *Buffer, unsigned int numBytes)
+void ataReadDataBuffer(unsigned int *Buffer, unsigned int numBytes)
 {
 	unsigned int i;
 
@@ -18,7 +18,7 @@ void ataReadDataBuffer(unsigned char *Buffer, unsigned int numBytes)
 }
 
 
-void ataWriteDataBuffer(unsigned char *Buffer, unsigned int numBytes)
+void ataWriteDataBuffer(unsigned int *Buffer, unsigned int numBytes)
 {
 	unsigned int i;
 
@@ -29,7 +29,7 @@ void ataWriteDataBuffer(unsigned char *Buffer, unsigned int numBytes)
 }
 
 
-unsigned char ataReadSectorsLBA(unsigned int Sector,	unsigned char *Buffer)
+unsigned char ataReadSectorsLBA(unsigned int Sector, unsigned int *Buffer)
 {
   ATA_CONTROL_PORT = CMD_ATA_READ;
   ATA_DATA_PORT = 0;
@@ -39,7 +39,7 @@ unsigned char ataReadSectorsLBA(unsigned int Sector,	unsigned char *Buffer)
 }
 
 
-unsigned char ataWriteSectorsLBA(unsigned int Sector,unsigned char *Buffer)
+unsigned char ataWriteSectorsLBA(unsigned int Sector, unsigned int *Buffer)
 {
   ATA_CONTROL_PORT = CMD_ATA_WRITE;
   ATA_DATA_PORT = 0;
@@ -50,7 +50,7 @@ unsigned char ataWriteSectorsLBA(unsigned int Sector,unsigned char *Buffer)
 
 
 unsigned char ataReadSectors(	unsigned int lba,
-                            	unsigned char *Buffer,
+                            	unsigned int *Buffer,
                             	unsigned long *SectorInCache
                             )
 {
@@ -69,7 +69,7 @@ unsigned char ataReadSectors(	unsigned int lba,
 }
 
 
-unsigned char ataWriteSectors(unsigned int lba, unsigned char *Buffer) {
+unsigned char ataWriteSectors(unsigned int lba, unsigned int *Buffer) {
   	unsigned int cyl, head, sect;
   	unsigned char temp;
 

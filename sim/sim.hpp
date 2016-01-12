@@ -111,7 +111,7 @@ class InterruptController : public VMemDevice {
 };
 
 class HDD : public VMemDevice {
-  char * data;
+  unsigned char * data;
   std::string image_path;
   int size;
   w cmdAddr;
@@ -133,8 +133,8 @@ class HDD : public VMemDevice {
     is.seekg (0, is.end);
     size = is.tellg();
     is.seekg (0, is.beg);
-    data = (char *)(malloc(size));
-    is.read(data, size);
+    data = (unsigned char *)(malloc(size));
+    is.read((char *)data, size);
     is.close();
     cSector = 0;
     cState = 0;
@@ -145,7 +145,7 @@ class HDD : public VMemDevice {
   }
   virtual void terminate() {
     std::ofstream os(image_path.c_str(), std::ofstream::binary);
-    os.write(data, size);
+    os.write((char *)data, size);
     os.close();
   }
   virtual int canOperate(w addr) {
@@ -184,8 +184,8 @@ class HDD : public VMemDevice {
               int dest = cSector*512 + cPos;
               data[dest] = val&0xff;
               data[dest+1] = ((val&0xff00)>>8);
-              printf("HDD write 0x%04x at %d\n", val, dest);
-              printf("dest : 0x%02x dest+1 : 0x%02x\n",data[dest], data[dest+1]);
+      //        printf("HDD write 0x%04x at %d\n", val, dest);
+      //        printf("dest : 0x%02x dest+1 : 0x%02x\n",data[dest], data[dest+1]);
               cPos+=2;
             } else {
               cState = 0;
@@ -208,7 +208,7 @@ class HDD : public VMemDevice {
             if(cPos < 512) {
               int dest = cSector*512 + cPos;
               w retval = data[dest];
-              retval |= ((data[dest+1])<<16);
+              retval |= ((data[dest+1])<<8);
               cPos+=2;
               if(cPos == 512) {
                 cState = 0;

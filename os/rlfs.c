@@ -4,7 +4,7 @@
 struct FileDescriptor openFiles[MAX_FILES];
 
 
-unsigned char WORK_BUFFER[64*4];
+unsigned int WORK_BUFFER[64*4];
 
 void rlfs_init() {
   int i;

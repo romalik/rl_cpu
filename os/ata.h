@@ -12,13 +12,13 @@
 
 
 void            ataInit             (void);
-void            ataReadDataBuffer   (unsigned char *Buffer, unsigned int numBytes);
-void            ataWriteDataBuffer  (unsigned char *Buffer, unsigned int numBytes);
+void            ataReadDataBuffer   (unsigned int *Buffer, unsigned int numBytes);
+void            ataWriteDataBuffer  (unsigned int *Buffer, unsigned int numBytes);
 
-unsigned char   ataReadSectorsLBA      (unsigned int lba, unsigned char *Buffer);
-unsigned char   ataWriteSectorsLBA     (unsigned int lba, unsigned char *Buffer);
+unsigned char   ataReadSectorsLBA      (unsigned int lba, unsigned int *Buffer);
+unsigned char   ataWriteSectorsLBA     (unsigned int lba, unsigned int *Buffer);
 
-unsigned char   ataReadSectors      (unsigned int lba, unsigned char *Buffer, unsigned long * actualBuffer);
-unsigned char   ataWriteSectors     (unsigned int lba, unsigned char *Buffer);
+unsigned char   ataReadSectors      (unsigned int lba, unsigned int *Buffer, unsigned long * actualBuffer);
+unsigned char   ataWriteSectors     (unsigned int lba, unsigned int *Buffer);
 
 #endif

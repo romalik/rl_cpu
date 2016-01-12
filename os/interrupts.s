@@ -21,9 +21,4 @@ jump
 call0_w system_interrupt
 jump
 
-.export syscall
-.label syscall
-iaddrf_b 0
-syscall
-ret
 
