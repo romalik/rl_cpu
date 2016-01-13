@@ -33,7 +33,8 @@ Cpu::Cpu() {
   this->devices.push_back(new RAM(0, 16*1024, 0)); //ROM
   this->devices.push_back(new RAM(0x4000, 16*1024-16, 0)); //RAM
 
-  this->devices.push_back(new ExtRAM(0x8000, 32*1024, 0x7fdf, 16)); //ExtRAM
+  this->devices.push_back(new RAM(0x8000, 32*1024-1, 0)); //RAM
+//  this->devices.push_back(new ExtRAM(0x8000, 32*1024, 0x7fdf, 16)); //ExtRAM
 
   this->devices.push_back(new UART(NULL,0,0, 0x7ffe, &std::cin, NULL));
   this->devices.push_back(new PORT(0x7fff, 0, NULL, &std::cout));

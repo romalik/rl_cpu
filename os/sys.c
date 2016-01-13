@@ -6,6 +6,8 @@
 #include "malloc.h"
 #include "types.h"
 #include <memmap.h>
+#include <syscall.h>
+
 
 /* Syscalls:
  *  1 - put char
@@ -26,11 +28,11 @@ void system_interrupt(void * p) {
   scall_id = *(unsigned int *)p;
 //  printf("KERNEL: syscall %d %c\n", scall_id, (*((unsigned int *)(p)+1)));
 
-  if(scall_id == 1) {
+  if(scall_id == __NR_write) {
     kputc(*((unsigned int *)(p)+1));
-  } else if(scall_id == 2) {
+  } else if(scall_id == __NR_read) {
     *((unsigned int *)(p)+1) = kgetc();
-  } else if(scall_id == 3) {
+  } else if(scall_id == __NR_time) {
     *((unsigned int *)(p)+1) = ticks;
   } else {
     printf("Unknown syscall %d\n", scall_id);

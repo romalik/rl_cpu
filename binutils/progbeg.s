@@ -1,9 +1,7 @@
 .code
-loadsp_w 0x4000
-cnst_w 0x4000
-popap
-cnst_w 0x4000
-popbp
-
+.import main
+.import exit
 call1_w main
-call1_w halt
+call0_w exit
+
+

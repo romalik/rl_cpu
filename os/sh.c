@@ -17,6 +17,45 @@ extern void syscall(void * p);
 
 //extern unsigned int ticks;
 
+int loadBin(int argc, char ** argv) {
+  int fd;
+  size_t cPos;
+
+  fd = rlfs_open(argv[1], 'r');
+  cPos = 0x8000;
+  while(!rlfs_isEOF(fd)) {
+    *(unsigned int *)(cPos) = rlfs_read(fd);
+    cPos++;
+  }
+  rlfs_close(fd);
+  printf("Done.\n");
+  printf("%d words loaded\n", cPos - 0x8000);
+  return 0;
+}
+
+
+int memtest(int argc, char ** argv) {
+  unsigned int cPos = 0x8000;
+
+  while(cPos != 0xffff) {
+    *(unsigned int *)(cPos) = cPos;
+    cPos++;
+  }
+
+  cPos = 0x8000;
+  while(cPos != 0xffff) {
+    if((*(unsigned int *)(cPos)) != cPos) {
+      printf("Fail at 0x%04x\n", cPos);
+      cPos++;
+    }
+  }
+  return 0;
+
+}
+extern int runBin(int argc, char ** argv);
+
+
+
 int test_syscall(int argc, char ** argv) {
   unsigned int n = 42;
   printf("Testing syscall 42..\n");
@@ -102,10 +141,10 @@ int binwrite(int argc, char ** argv) {
     for(i = 0; i<256; i++) {
         buf[i] = (i<<8)+i+1;
     }
-    
+
     ataWriteSectorsLBA(0,buf);
 */
-    
+
     int fd;
     fd = rlfs_open(argv[1], 'w');
     rlfs_write(fd, 0x1234);
@@ -117,7 +156,7 @@ int binwrite(int argc, char ** argv) {
     rlfs_write(fd, 0xdead);
     rlfs_write(fd, 0xbeef);
     rlfs_close(fd);
-    
+
 }
 
 
@@ -145,7 +184,7 @@ int hex2bin(int argc, char ** argv) {
         } else if(c>='A' && c<='F') {
             v = 10 + (c-'A');
         } else if(c>='0' && c<='9') {
-            v = c-'0'; 
+            v = c-'0';
         } else {
             continue;
         }
@@ -368,6 +407,9 @@ int rlfs_size_main(int argc, char ** argv) {
 int help(int argc, char ** argv);
 
 char builtinCmds[][15] = {
+  "memtest",
+  "loadBin",
+  "runBin",
   "help",
   "hex2bin",
   "test_syscall",
@@ -393,6 +435,9 @@ char builtinCmds[][15] = {
 };
 
 int (*builtinFuncs[]) (int argc, char ** argv) = {
+  memtest,
+  loadBin,
+  runBin,
   help,
   hex2bin,
   test_syscall,

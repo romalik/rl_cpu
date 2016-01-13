@@ -27,7 +27,7 @@ void init_interrupts() {
   ei();
 }
 
-int main() {
+int kernel_main() {
 
   malloc_init((size_t)&__data_end, (size_t)(0x3000));
 //  printf("Init interrupts..\n");

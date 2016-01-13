@@ -361,6 +361,10 @@ int main(int argc, char ** argv) {
     int dataOffset = 0;
     int mode = 0;
 
+    for(int i = 0; i<argc; i++) {
+      printf("Arg %d : %s\n", i, argv[i]);
+    }
+
     for(int i = 1; i<argc; i++) {
         if(!strcmp(argv[i], "-o")) {
             i++;
@@ -406,6 +410,9 @@ int main(int argc, char ** argv) {
     linker.mode = mode;
     linker.globalOffset = textOffset;
     linker.dataOffset = dataOffset;
+
+
+  printf("Text offset 0x%04x\nData offset 0x%04x\n", textOffset, dataOffset);
 
     for(int i = 0; i<inFiles.size(); i++) {
         linker.loadFile(inFiles[i]);

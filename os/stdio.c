@@ -1,8 +1,8 @@
 #include "string.h"
 #include "stdio.h"
 #include <memmap.h>
+#include <syscall.h>
 
-extern void syscall(void * p);
 
 void itoa(int n, char s[]);
 
@@ -12,7 +12,7 @@ unsigned int gettime() {
     unsigned int id;
     unsigned int c;
   } s;
-  s.id = 3;
+  s.id = __NR_time;
   s.c = 0;
   syscall(&s);
   return s.c;
@@ -36,7 +36,7 @@ int getc() {
     unsigned int id;
     unsigned int c;
   } s;
-  s.id = 2;
+  s.id = __NR_read;
   s.c = 0;
   syscall(&s);
   return s.c;
@@ -47,7 +47,7 @@ int putc(char c) {
     unsigned int id;
     unsigned int c;
   } s;
-  s.id = 1;
+  s.id = __NR_write;
   s.c = c;
   syscall(&s);
 	return 0;
