@@ -3,6 +3,7 @@
 #include "sh.h"
 #include "rlfs.h"
 #include "malloc.h"
+#include <memmap.h>
 
 char cmdBuf[127];
 int cmdBufSize = 127;
@@ -20,9 +21,11 @@ extern void syscall(void * p);
 int loadBin(int argc, char ** argv) {
   int fd;
   size_t cPos;
-
+  int bank;
+  bank = atoi(argv[2]);
   fd = rlfs_open(argv[1], 'r');
   cPos = 0x8000;
+  BANK_SEL = bank;
   while(!rlfs_isEOF(fd)) {
     *(unsigned int *)(cPos) = rlfs_read(fd);
     cPos++;

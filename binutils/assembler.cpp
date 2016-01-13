@@ -177,7 +177,7 @@ public:
 
         int textSize = ((int)((int)textSizeHigh << 8) | (int)textSizeLow);
         int dataSize = ((int)((int)dataSizeHigh << 8) | (int)dataSizeLow);
-        printf("%s:\n  textSize: %zu words\n  dataSize: %zu words\n  labelLength: %d\n", filename.c_str(), sections[0].code.size(), sections[1].code.size(), labelFullLen);
+        //printf("%s:\n  textSize: %zu words\n  dataSize: %zu words\n  labelLength: %d\n", filename.c_str(), sections[0].code.size(), sections[1].code.size(), labelFullLen);
 
 
     }

@@ -109,7 +109,8 @@ enum opname {
     storesp_w,
     istoresp_w,
 
-    syscall_op
+    syscall_op,
+    reti
 };
 
 char oplist[][16] = {
@@ -221,7 +222,7 @@ char oplist[][16] = {
     "istoresp_w",
 
     "syscall",
-
+    "reti",
     ""
 
 };

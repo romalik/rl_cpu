@@ -435,7 +435,7 @@ public:
       if(addr == bankSelector) {
         cBank = val;
       } else {
-        printf("ExtRAM write 0x%04x\n", val);
+        //printf("ExtRAM write 0x%04x\n", val);
         storage[cBank][addr - begin] = val;
       }
     }
