@@ -1,3 +1,3 @@
 #!/bin/sh 
-hexdump -v $1 | cut -c 9-
+od -v -t x1 $1 | cut -c 9-
 
