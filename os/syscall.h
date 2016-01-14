@@ -3,6 +3,7 @@
 
 extern void syscall(void * p);
 
+
 #define __NR_setup	0	/* used only by init, to get system going */
 #define __NR_exit	1
 #define __NR_fork	2

@@ -520,11 +520,9 @@ void Cpu::execute() {
 
   } else if(op == ei) {
     this->intEnabled = 1;
-    printf("CPU: enable interrupts\n");
 
   } else if(op == di) {
     this->intEnabled = 0;
-    printf("CPU: disable interrupts\n");
 
   } else if(op == pushap) {
     push(AP);

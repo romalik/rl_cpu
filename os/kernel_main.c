@@ -6,6 +6,8 @@
 #include "malloc.h"
 #include "types.h"
 #include "sched.h"
+#include "kernel_worker.h"
+#include <mm.h>
 
 
 extern char  __data_end;
@@ -26,58 +28,6 @@ void init_interrupts() {
 
 
 
-#define KERNEL_TASK_NONE 0
-#define KERNEL_TASK_FORK 1
-#define KERNEL_TASK_EXEC 2
-
-struct KernelTask {
-  unsigned int type;
-  unsigned int src;
-  unsigned int dst;
-};
-
-
-#define MAX_QUEUE_SIZE 15
-
-struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
-
-void kernel_worker_init() {
-  int i = 0;
-  for(i = 0; i<MAX_QUEUE_SIZE; i++) {
-    kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-  }
-
-}
-
-void kernel_worker() {
-  while(1) {
-    int i = 0;
-    for(i = 0; i<MAX_QUEUE_SIZE; i++) {
-      if(kernelTaskQueue[i].type != KERNEL_TASK_NONE) {
-
-      }
-    }
-    printf("kworker online!\n");
-  }
-}
-
-void addKernelTask(unsigned int task, unsigned int src, unsigned int dst) {
-  int i = 0;
-  for(i = 0; i<MAX_QUEUE_SIZE; i++) {
-    if(kernelTaskQueue[i].type == KERNEL_TASK_NONE) {
-      break;
-    }
-  }
-
-  if(i == MAX_QUEUE_SIZE)
-    return;
-
-  kernelTaskQueue[i].type = task;
-  kernelTaskQueue[i].src = src;
-  kernelTaskQueue[i].dst = dst;
-
-
-}
 
 int kernel_main() {
 
@@ -89,15 +39,17 @@ int kernel_main() {
   ataInit();
   printf("Init fs..\n");
   rlfs_init();
+  mm_init();
   printf("Press s for shell, any key for init\n");
+
   if(kgetc() == 's') {
     main_sh();
   } else {
-    int fd1 = rlfs_open("task1.bin", 'r');
-    int fd2 = rlfs_open("task2.bin", 'r');
-
+    unsigned int b;
+    int fd1 = rlfs_open("taskf.bin", 'r');
     size_t cPos = 0x8000;
-    BANK_SEL = 0;
+    mm_allocSegment(&b);
+    BANK_SEL = b;
     printf("load task1\n");
     while(!rlfs_isEOF(fd1)) {
       *(unsigned int *)(cPos) = rlfs_read(fd1);
@@ -105,18 +57,9 @@ int kernel_main() {
     }
     rlfs_close(fd1);
 
-    cPos = 0x8000;
-    BANK_SEL = 1;
-    printf("load task2\n");
-    while(!rlfs_isEOF(fd2)) {
-      *(unsigned int *)(cPos) = rlfs_read(fd2);
-      cPos++;
-    }
-    rlfs_close(fd2);
-
     sched_init();
-    sched_add_proc(1,0);
-    sched_add_proc(2,1);
+
+    sched_add_proc(sched_genPid(),b,0);
 
     printf("Starting scheduler\n");
     sched_start();

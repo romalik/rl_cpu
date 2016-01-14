@@ -228,6 +228,7 @@ static int print(char **out, int *varg) {
 
 /* assuming sizeof(void *) == sizeof(int) */
 
+
 int printf(const char *format, ...) {
 	int *varg = (int *)(&format);
 	return print(0, varg);

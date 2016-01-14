@@ -27,20 +27,35 @@ loadsp_w sched_stack+4
 ;; this shit would work great, if my compiler supported pass-by-reference (func(int &a) {..}). But it does not. So, slow, but cross-compiler version here
 cnst_w sched_stack+4
 popbp
-        addrl_b -1 ;AP
-        addrl_b -2 ;BP
-        addrl_b -3 ;PC
-        addrl_b -4 ;SP
+
+addrl_b -4 ;SP PC BP AP
 call0_w timer_interrupt
-        discard_b 4
+discard_b 1
+
 reti
 
 
 
 .export __system_interrupt_vector
-.import system_interrupt
 .label  __system_interrupt_vector
+
 call0_w system_interrupt
 reti
 
+
+.export __system_interrupt_wrapper
+.import system_interrupt
+.label  __system_interrupt_wrapper
+
+; Stack now: [SP,PC,BP,AP int] [PC ret] [AP ret] [BP ret] <addrl 0>
+
+iaddrf_b 0 ;pointer to syscall struct
+addrl_b -7 ;SP PC BP AP
+call0_w system_interrupt
+
+; Stack now: [SP,PC,BP,AP int] [PC ret] [AP ret] [BP ret] [addrl 0] [addrl 1] <sp>
+
+discard_b 5 ;  PC AP BP SyscallStructPtr IntFramePtr
+
+reti
 
