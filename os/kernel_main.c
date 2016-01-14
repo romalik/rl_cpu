@@ -5,104 +5,15 @@
 #include "rlfs.h"
 #include "malloc.h"
 #include "types.h"
+#include "sched.h"
+
 
 extern char  __data_end;
 extern char  __code_end;
 extern void __timer_interrupt_vector();
 extern void __system_interrupt_vector();
-unsigned int ticks = 0;
-
-unsigned int sched_stack[2*64];
-unsigned sched_active = 0;
 
 extern void syscall();
-
-#define PROC_STATE_NONE 0
-#define PROC_STATE_RUN 1
-#define PROC_STATE_WAIT 2
-#define PROC_STATE_EXIT 3
-
-struct Process {
-  unsigned int pid;
-  unsigned int state;
-  unsigned int ap;
-  unsigned int bp;
-  unsigned int sp;
-  unsigned int pc;
-
-  unsigned int memBank;
-};
-
-#define MAXPROC 15
-
-struct Process procs[MAXPROC];
-unsigned int currentTask = 0;
-
-void sched_init() {
-  int i = 0;
-  for(i = 0; i<MAXPROC; i++) {
-    procs[i].state = PROC_STATE_NONE;
-  }
-  procs[0].state = PROC_STATE_RUN;
-
-}
-
-void sched_add_proc(unsigned int pid, unsigned int bank) {
-  int i = 0;
-  for(i = 0; i<MAXPROC; i++) {
-    if(procs[i].state == PROC_STATE_NONE) {
-      break;
-    }
-  }
-
-  if(i == MAXPROC)
-    return;
-
-  procs[i].pid = pid;
-  procs[i].memBank = bank;
-  procs[i].ap = 0xC000;
-  procs[i].bp = 0xC000;
-  procs[i].sp = 0xC000;
-  procs[i].pc = 0x8000;
-  procs[i].state = PROC_STATE_RUN;
-
-}
-
-void sched_start() {
-  currentTask = 0;
-  sched_active = 1;
-}
-
-void timer_interrupt(unsigned int * ap, unsigned int * bp, unsigned int * pc, unsigned int * sp) {
-  int nextTask;
-  ticks++;
-
-  if(sched_active) {
-    nextTask = currentTask + 1;
-    while(nextTask != currentTask) {
-      if(nextTask == MAXPROC)
-        nextTask = 0;
-
-      if(procs[nextTask].state == PROC_STATE_RUN)
-        break;
-
-      nextTask++;
-
-    }
-
-    procs[currentTask].ap = *ap;
-    procs[currentTask].bp = *bp;
-    procs[currentTask].sp = *sp;
-    procs[currentTask].pc = *pc;
-
-    *ap = procs[nextTask].ap;
-    *bp = procs[nextTask].bp;
-    *sp = procs[nextTask].sp;
-    *pc = procs[nextTask].pc;
-    BANK_SEL = procs[nextTask].memBank;
-    currentTask = nextTask;
-  }
-}
 
 #define TIMER_INTERRUPT_ADDR_PORT INT3_vec
 #define SYSTEM_INTERRUPT_ADDR_PORT INT0_vec
