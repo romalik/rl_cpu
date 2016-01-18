@@ -37,36 +37,9 @@ int loadBin(int argc, char ** argv) {
 }
 
 
-int memtest(int argc, char ** argv) {
-  unsigned int cPos = 0x8000;
-
-  while(cPos != 0xffff) {
-    *(unsigned int *)(cPos) = cPos;
-    cPos++;
-  }
-
-  cPos = 0x8000;
-  while(cPos != 0xffff) {
-    if((*(unsigned int *)(cPos)) != cPos) {
-      printf("Fail at 0x%04x\n", cPos);
-      cPos++;
-    }
-  }
-  return 0;
-
-}
 extern int runBin(int argc, char ** argv);
 
 
-
-int test_syscall(int argc, char ** argv) {
-  unsigned int n = 42;
-  printf("Testing syscall 42..\n");
-  syscall(&n);
-  printf("Back in work..\n");
-
-  return 0;
-}
 
 int uptime(int argc, char ** argv) {
   printf("%u ticks\n", gettime());
@@ -122,46 +95,6 @@ int usemem(int argc, char ** argv) {
   }
   return 0;
 }
-
-int keyscan(int srgc, char ** argv) {
-    while(1) {
-        int c;
-        c = getc();
-        if(c == 0x04) {
-            break;
-        }
-        printf("key pressed: 0x%04x, [%c]\n", c, c);
-    }
-    return 0;
-}
-
-
-int binwrite(int argc, char ** argv) {
-/*
-    unsigned int buf[64*4];
-    int i;
-
-    for(i = 0; i<256; i++) {
-        buf[i] = (i<<8)+i+1;
-    }
-
-    ataWriteSectorsLBA(0,buf);
-*/
-
-    int fd;
-    fd = rlfs_open(argv[1], 'w');
-    rlfs_write(fd, 0x1234);
-    rlfs_write(fd, 0x1234);
-    rlfs_write(fd, 0x1234);
-    rlfs_write(fd, 0x1234);
-
-    rlfs_write(fd, 0x5678);
-    rlfs_write(fd, 0xdead);
-    rlfs_write(fd, 0xbeef);
-    rlfs_close(fd);
-
-}
-
 
 int hex2bin(int argc, char ** argv) {
     int i;
@@ -230,22 +163,6 @@ int hexdump(int argc, char ** argv) {
     }
     printf("\n");
 
-    return 0;
-}
-
-int memdump(int argc, char **argv) {
-    unsigned int * c;
-    unsigned int * end;
-    if(argc < 3) {
-        printf("usage: %s addr_begin addr_end\n", argv[0]);
-        return -1;
-    }
-    c = (unsigned int *)atoi(argv[1]);
-    end = (unsigned int *)atoi(argv[2]);
-    for( ; c<end; c++) {
-        printf("0x%04x ", *c);
-    }
-    printf("\n");
     return 0;
 }
 
@@ -360,68 +277,16 @@ int rlfs_mkfs_main(int argc, char ** argv) {
   printf("done\n");
 }
 
-int rlfs_create_main(int argc, char ** argv) {
-  printf("Creating file\n");
-  rlfs_create("Testfile");
-
-  printf("done\n");
-}
-
-int rlfs_write_main(int argc, char ** argv) {
-  int fd;
-  printf("Writing file\n");
-  fd = rlfs_open("Testfile",'w');
-  rlfs_write(fd, 'H');
-  rlfs_write(fd, 'e');
-  rlfs_write(fd, 'l');
-  rlfs_write(fd, 'l');
-  rlfs_write(fd, 'o');
-  rlfs_write(fd, 0);
-
-  rlfs_close(fd);
-
-  printf("done\n");
-}
-
-int rlfs_read_main(int argc, char ** argv) {
-  int fd;
-  printf("Reading file\n");
-  fd = rlfs_open("Testfile",'r');
-  while(!rlfs_isEOF(fd)) {
-    putc(rlfs_read(fd));
-  }
-  rlfs_close(fd);
-  printf("\ndone\n");
-}
-
-int rlfs_size_main(int argc, char ** argv) {
-  int fd;
-  int size;
-  printf("Size file\n");
-  fd = rlfs_open("Testfile",'r');
-
-  size = rlfs_tellg(fd);
-
-  printf("Size :%d\n", size);
-  rlfs_close(fd);
-  printf("\ndone\n");
-}
-
 int help(int argc, char ** argv);
 
 char builtinCmds[][15] = {
-  "memtest",
   "loadBin",
   "runBin",
   "help",
   "hex2bin",
-  "test_syscall",
   "uptime",
-  "binwrite",
   "usemem",
   "meminfo",
-  "memdump",
-  "keyscan",
   "hexdump",
   "edit",
   "rm",
@@ -430,26 +295,17 @@ char builtinCmds[][15] = {
   "echo",
   "hello",
   "fs_mkfs",
-  "fs_create",
-  "fs_write",
-  "fs_read",
-  "fs_size",
   ""
 };
 
 int (*builtinFuncs[]) (int argc, char ** argv) = {
-  memtest,
   loadBin,
   runBin,
   help,
   hex2bin,
-  test_syscall,
   uptime,
-  binwrite,
   usemem,
   meminfo,
-  memdump,
-  keyscan,
   hexdump,
   edit,
   rm,
@@ -457,11 +313,7 @@ int (*builtinFuncs[]) (int argc, char ** argv) = {
   ls,
   echo_main,
   hello_main,
-  rlfs_mkfs_main,
-  rlfs_create_main,
-  rlfs_write_main,
-  rlfs_read_main,
-  rlfs_size_main
+  rlfs_mkfs_main
 };
 
 int help(int argc, char ** argv) {

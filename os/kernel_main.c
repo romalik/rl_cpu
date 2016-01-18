@@ -8,7 +8,8 @@
 #include "sched.h"
 #include "kernel_worker.h"
 #include <mm.h>
-
+#include <vfs.h>
+#include <blk.h>
 
 extern char  __data_end;
 extern char  __code_end;
@@ -38,15 +39,18 @@ int kernel_main() {
   printf("Init ata..\n");
   ataInit();
   printf("Init fs..\n");
+  block_init();
+  vfs_init();
   rlfs_init();
   mm_init();
+
   printf("Press s for shell, any key for init\n");
 
   if(kgetc() == 's') {
     main_sh();
   } else {
     unsigned int b;
-    int fd1 = rlfs_open("taskf.bin", 'r');
+    int fd1 = rlfs_open("forkbomb.bin", 'r');
     size_t cPos = 0x8000;
     mm_allocSegment(&b);
     BANK_SEL = b;

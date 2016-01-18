@@ -40,7 +40,7 @@ Cpu::Cpu() {
   this->devices.push_back(new PORT(0x7fff, 0, NULL, &std::cout));
 
   this->devices.push_back(new HDD(0x7ffc, 0x7ffd, std::string("hdd")));
-  this->devices.push_back(new Timer(intCtl, 3, 500000ULL));
+  this->devices.push_back(new Timer(intCtl, 3, 50000ULL));
   this->devices.push_back(intCtl);
 
 }
