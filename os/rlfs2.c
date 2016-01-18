@@ -127,13 +127,14 @@ int rlfs_open(char * name, int mode) {
         return -1;
       }
   }
-  openFiles[fd].baseSector = openFiles[fd].currentSector = WORK_BUFFER[i+2];
+  openFiles[fd].baseSector = openFiles[fd].currentSector = b->data[i+2];
   openFiles[fd].size = b->data[i+1];
   openFiles[fd].id = i>>4;
   openFiles[fd].mode = mode;
   openFiles[fd].pos = 0;
   openFiles[fd].posInSector = 0;
 
+  printf("File %s opened: baseSector %d size %d\n", name, openFiles[fd].baseSector, openFiles[fd].size);
 
   if(mode == 'w') {
     /* clear all sector marks for this file */
