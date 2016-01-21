@@ -10,6 +10,11 @@ typedef char		int8_t;
 
 typedef unsigned int	size_t;
 
+typedef unsigned int off_t;
+typedef unsigned int blk_t;
+
+
+
 #define NULL 0
 
 #endif /* ndef TYPES_H */

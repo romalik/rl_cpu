@@ -24,10 +24,13 @@
 #define	VFS_ISDIR(node)	(((node)->flags & 0x7) == VFS_DIRECTORY)
 
 
+
+
+
 struct vfs_node;
 
-typedef unsigned int (*vfs_read_func)(struct vfs_node *node, unsigned int offset, unsigned int size, char *buf);
-typedef unsigned int (*vfs_write_func)(struct vfs_node *node, unsigned int offset, unsigned int size, char *buf);
+typedef unsigned int (*vfs_read_func)(struct vfs_node *node, off_t offset, size_t size, char *buf);
+typedef unsigned int (*vfs_write_func)(struct vfs_node *node, off_t offset, size_t size, char *buf);
 typedef unsigned int (*vfs_open_func)(struct vfs_node *node, int mode);
 typedef void (*vfs_close_func)(struct vfs_node *node);
 typedef struct dirent * (*vfs_readdir_func)(struct vfs_node *node, unsigned int index);
@@ -35,9 +38,10 @@ typedef struct vfs_node * (*vfs_finddir_func)(struct vfs_node *node, char *name)
 
 
 struct vfs_node {
-	unsigned int flags;       /* Includes the node type. See #defines above. */
-	unsigned int inode;       /* This is device-specific - provides a way for a filesystem to identify files. */
-	unsigned int size;      /* Size of the file, in bytes. */
+	unsigned int flags;
+	blk_t inode;
+	off_t size;
+    unsigned int device;
 	vfs_read_func read;
 	vfs_write_func write;
 	vfs_open_func open;
@@ -50,7 +54,8 @@ struct vfs_node {
 struct dirent /* One of these is returned by the readdir call, according to POSIX. */
 {
 	char name[15]; /* Filename. */
-	unsigned int inode;     /* Inode number. Required by POSIX. */
+	blk_t inode;     /* Inode number. Required by POSIX. */
+    unsigned int device;
 };
 
 
