@@ -6,9 +6,9 @@
 #define NBANKS 16
 
 void mm_init();
-unsigned int mm_allocSegment(unsigned int * seg);
+unsigned int mm_allocSegment(unsigned int *seg);
 void mm_freeSegment(unsigned int seg);
-void mm_memcpy(unsigned int * dest, unsigned int * src, unsigned int n, unsigned int bank);
-
+void mm_memcpy(unsigned int *dest, unsigned int *src, unsigned int n,
+               unsigned int bank);
 
 #endif

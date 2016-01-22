@@ -4,7 +4,7 @@
 #include "string.h"
 
 int putc(char c);
-int  puts(char *s);
+int puts(char *s);
 void putDigit(int a);
 void putNum(int a);
 int printf(const char *format, ...);

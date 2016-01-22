@@ -10,7 +10,6 @@
 #include <memmap.h>
 #include <syscall.h>
 
-
 /* Syscalls:
  *  1 - put char
  *    [1][c]
@@ -22,35 +21,31 @@
 
 extern unsigned int ticks;
 
+void system_interrupt(void *p, struct IntFrame *fr) {
+    int scall_id;
+    scall_id = *(unsigned int *)p;
+    //  printf("KERNEL: syscall %d %c\n", scall_id, (*((unsigned int *)(p)+1)));
 
-void system_interrupt(void * p, struct IntFrame * fr) {
-  int scall_id;
-  scall_id = *(unsigned int *)p;
-//  printf("KERNEL: syscall %d %c\n", scall_id, (*((unsigned int *)(p)+1)));
+    if (scall_id == __NR_write) {
+        kputc(*((unsigned int *)(p) + 1));
+    } else if (scall_id == __NR_read) {
+        *((unsigned int *)(p) + 1) = kgetc();
+    } else if (scall_id == __NR_time) {
+        *((unsigned int *)(p) + 1) = ticks;
+    } else if (scall_id == __NR_fork) {
+        di();
+        addKernelTask(KERNEL_TASK_FORK, cProc->pid, 0);
 
-  if(scall_id == __NR_write) {
-    kputc(*((unsigned int *)(p)+1));
-  } else if(scall_id == __NR_read) {
-    *((unsigned int *)(p)+1) = kgetc();
-  } else if(scall_id == __NR_time) {
-    *((unsigned int *)(p)+1) = ticks;
-  } else if(scall_id == __NR_fork) {
-    di();
-    addKernelTask(KERNEL_TASK_FORK, cProc->pid, 0);
+        cProc->ap = fr->ap;
+        cProc->bp = fr->bp;
+        cProc->sp = fr->sp;
+        cProc->pc = fr->pc;
 
-    cProc->ap = fr->ap;
-    cProc->bp = fr->bp;
-    cProc->sp = fr->sp;
-    cProc->pc = fr->pc;
-
-    cProc->state = PROC_STATE_FORKING;
-    ei();
-    while(1) {} //wait for context switch
-  } else {
-    printf("Unknown syscall %d\n", scall_id);
-  }
-
-
-
+        cProc->state = PROC_STATE_FORKING;
+        ei();
+        while (1) {
+        } // wait for context switch
+    } else {
+        printf("Unknown syscall %d\n", scall_id);
+    }
 }
-
