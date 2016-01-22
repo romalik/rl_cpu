@@ -6,48 +6,65 @@
  */
 #include <vfs.h>
 
+
+FILE openFilesTable[OFT_SIZE];
+struct f_ops f_ops_tab[DEV_SIZE] = {
+    {tty_read, tty_write, tty_open, tty_close, NULL, NULL},
+    {rlfs3_read, rlfs3_write, rlfs3_open, rlfs3_close, rlfs3_readdir, rlfs3_finddir}
+};
+
+
 struct vfs_node *vfs_root = NULL; /* The root of the filesystem. */
 
-
-struct vfs_node nodeCache[MAX_INODE_CACHE];
-
+void vfs_init() {
+    unsigned int i = 0;
+    for(i = 0; i<OFT_SIZE; i++) {
+        openFilesTable[i].node.device = 0;
+    }
+}
+    
+    
 unsigned int
-vfs_read(struct vfs_node *node, unsigned int offset, unsigned int size, char *buf)
+vfs_read(struct vfs_node *node, off_t offset, size_t size, unsigned int *buf)
 {
 
 	/* Has the node got a read callback? */
-	if (node->read != NULL)
-		return node->read(node, offset, size, buf);
+	if (f_ops_tab[node->device&0xff].read != NULL)
+		return f_ops_tab[node->device&0xff].read(node, offset, size, buf);
 	else
 		return 0;
 }
 
 unsigned int
-vfs_write(struct vfs_node *node, unsigned int offset, unsigned int size, char *buf)
+vfs_write(struct vfs_node *node, off_t offset, size_t size, unsigned int *buf)
 {
-
-	if (node->write != NULL)
-		return node->write(node, offset, size, buf);
+	if (f_ops_tab[node->device&0xff].write != NULL)
+		return f_ops_tab[node->device&0xff].write(node, offset, size, buf);
 	else
 		return 0;
+
 }
 
-unsigned int
-vfs_open(struct vfs_node *node, int mode)
+FILE * 
+vfs_open(unsigned int *name, int mode)
 {
+    //check for device here
 
-	if (node->open != NULL)
-		return node->open(node, mode);
+	if (f_ops_tab[node->device&0xff].open != NULL)
+		return f_ops_tab[node->device&0xff].open(name, mode);
 	else
 		return 0;
+
 }
 
 void
-vfs_close(struct vfs_node *node)
+vfs_close(FILE * fd)
 {
 
-	if (node->close != NULL)
-		node->close(node);
+	if (f_ops_tab[node->device&0xff].read != NULL)
+		return f_ops_tab[node->device&0xff].read(node, offset, size, buf);
+	else
+		return 0;
 }
 
 struct dirent *
@@ -61,7 +78,7 @@ vfs_readdir(struct vfs_node *node, unsigned int index)
 }
 
 struct vfs_node *
-vfs_finddir(struct vfs_node *node, char *name)
+vfs_finddir(struct vfs_node *node, unsigned int *name)
 {
 
 	if (VFS_ISDIR(node) && node->finddir != NULL)
@@ -70,23 +87,3 @@ vfs_finddir(struct vfs_node *node, char *name)
 		return NULL;
 }
 
-struct vfs_node * getFreeNodeEntry() {
-  unsigned int i;
-  for(i = 0; i<MAX_INODE_CACHE; i++) {
-    if(nodeCache[i].flags == VFS_FREE_ENTRY) {
-      return &nodeCache[i];
-    }
-  }
-
-  return NULL;
-
-}
-
-
-void vfs_init() {
-  unsigned int i;
-  for(i = 0; i<MAX_INODE_CACHE; i++) {
-    nodeCache[i].flags = VFS_FREE_ENTRY;
-  }
-
-}
