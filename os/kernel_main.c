@@ -2,7 +2,7 @@
 #include <string.h>
 #include "sh.h"
 #include "ata.h"
-#include "rlfs.h"
+#include "rlfs3.h"
 #include "malloc.h"
 #include "types.h"
 #include "sched.h"
@@ -37,7 +37,7 @@ int kernel_main() {
     printf("Init fs..\n");
     block_init();
     //  vfs_init();
-    rlfs_init();
+    fs_init();
     mm_init();
 
     printf("Press s for shell, any key for init\n");
@@ -45,7 +45,8 @@ int kernel_main() {
     if (kgetc() == 's') {
         main_sh();
     } else {
-        unsigned int b;
+#if 0
+      unsigned int b;
         int fd1 = rlfs_open("taskf.bin", 'r');
         size_t cPos = 0x8000;
         mm_allocSegment(&b);
@@ -64,6 +65,7 @@ int kernel_main() {
         printf("Starting scheduler\n");
         sched_start();
         kernel_worker();
+#endif
     }
     printf("System halted\n");
     while (1) {

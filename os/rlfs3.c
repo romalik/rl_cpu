@@ -1,231 +1,496 @@
-#include "rlfs2.h"
+#include "rlfs3.h"
+#include <blk.h>
 #include <stdio.h>
+#include <sched.h>
 
-struct FileDescriptor openFiles[MAX_FILES];
+FILE openFiles[MAX_FILES];
+struct fs_node fs_root;
 
-unsigned int WORK_BUFFER[64 * 4];
+/* RLFS3 filesystem
+ *
+ * Block0: superblock (not impl)
+ * Block1-33: free block bitmap
+ * Block34: root node
+ *
+ */
 
-void rlfs2_init() {
+/* Fs node header:
+ *  Flags (16):
+ *    File
+ *    Dir
+ *    CharDevice
+ *    BlockDevice
+ *    Pipe
+ *    Link
+ *    rwxrwxrwx
+ */
+
+/* File/dir node:
+ *  Flags
+ *  SizeL(16)
+ *  SizeH(16)
+ *  150 indexes
+ *  100 index-indexes
+ *  1 triple-index
+ */
+
+/* Dir contents:
+ * 0: [31 words - name, node idx]
+ * 32: ...total 8...
+ */
+
+/* Device/pipe node:
+ *  dev/pipe id
+ */
+
+void fs_mkfs() {
+    struct Block *b;
+    int i;
+    b = bread(0, 0);
+
+    memcpy(b->data, (void *)"RLFS filesystem", 16);
+    b->flags = BLOCK_MODIFIED;
+    bfree(b);
+
+    for (i = 1; i < 35; i++) {
+        size_t n;
+        b = bread(0, i);
+        for (n = 0; n < 256; n++) {
+            b->data[n] = 0;
+        }
+        b->flags = BLOCK_MODIFIED;
+        bfree(b);
+    }
+    b = bread(0, 1);
+    b->data[0] = 0xffff;
+    b->data[1] = 0xffff;
+    b->data[2] = 0x0007;
+    b->flags = BLOCK_MODIFIED;
+    bfree(b);
+
+    b = bread(0, 34);
+    b->data[0] = FS_DIR;
+    b->data[1] = 0x0000;
+    b->data[2] = 0x0000;
+    b->flags = BLOCK_MODIFIED;
+    bfree(b);
+}
+
+void fs_init() {
     int i;
     for (i = 0; i < MAX_FILES; i++) {
-        openFiles[i].id = 0xffff;
+        openFiles[i].mode = FS_MODE_NONE;
     }
 }
 
-void rlfs2_mkfs() {
+int fs_get_free_fd() {
     int i;
-    for (i = 0; i < 256; i++) {
-        WORK_BUFFER[i] = 0;
+    for (i = 0; i < MAX_FILES; i++) {
+        if (openFiles[i].mode == FS_MODE_NONE) {
+            return i;
+        }
     }
-    ataWriteSectorsLBA(0, WORK_BUFFER);
-    WORK_BUFFER[0] = 0x3;
-    ataWriteSectorsLBA(1, WORK_BUFFER);
+    return -1;
 }
 
-int rlfs2_findFreeSector() {
+blk_t fs_findFreeSector() {
     int i;
     int j;
-    printf("Alloc sect\n");
-    ataReadSectorsLBA(1, WORK_BUFFER);
-    for (i = 0; i < 256; i++) {
-        if (WORK_BUFFER[i] != 0xffff) {
-            for (j = 0; j < 16; j++) {
-                if ((WORK_BUFFER[i] & (1 << j)) == 0) {
-                    printf("sect: %d\n", i * 16 + j);
-                    return i * 16 + j;
+    int cBitmap;
+    struct Block *b;
+    for (cBitmap = 0; cBitmap < 32; cBitmap++) {
+        b = bread(0, cBitmap + 1);
+        for (i = 0; i < 256; i++) {
+            if (b->data[i] != 0xffff) {
+                for (j = 0; j < 16; j++) {
+                    if ((b->data[i] & (1 << j)) == 0) {
+                        return (cBitmap << 12) + (i << 4) + j;
+                    }
                 }
             }
         }
     }
+    bfree(b);
     return 0;
 }
 
-void rlfs2_markSector(int sect, int val) {
+void fs_markSector(blk_t sect, int val) {
     int idx;
     int pos;
-    ataReadSectorsLBA(1, WORK_BUFFER);
+    int cBitmap;
+    struct Block *b;
+
+    cBitmap = sect >> 12;
+    sect = sect & 0xfff;
     idx = sect >> 4;
     pos = sect & 0x0f;
+    b = bread(0, cBitmap + 1);
     if (val) {
-        WORK_BUFFER[idx] = (WORK_BUFFER[idx] | (1 << pos));
+        b->data[idx] = (b->data[idx] | (1 << pos));
     } else {
-        WORK_BUFFER[idx] = (WORK_BUFFER[idx] & ~(1 << pos));
+        b->data[idx] = (b->data[idx] & ~(1 << pos));
     }
-    ataWriteSectorsLBA(1, WORK_BUFFER);
+    b->flags = BLOCK_MODIFIED;
+    bfree(b);
 }
 
-int rlfs2_create(char *name) {
-    int freeSect;
-    int i;
-    printf("create file %s\n", name);
-    freeSect = rlfs2_findFreeSector();
-    rlfs2_markSector(freeSect, 1);
-
-    ataReadSectorsLBA(0, WORK_BUFFER);
-    for (i = 0; i < 256; i += 16) {
-        if (WORK_BUFFER[i] == 0 || WORK_BUFFER[i] == 0xffff)
-            break;
-    }
-    WORK_BUFFER[i] = 1;
-    WORK_BUFFER[i + 1] = 0;
-    WORK_BUFFER[i + 2] = freeSect;
-    strcpy((char *)(WORK_BUFFER) + 3 + i, (char *)(name));
-    ataWriteSectorsLBA(0, WORK_BUFFER);
-    printf("created file at %d\n", freeSect);
-    return i;
+blk_t fs_allocBlock() {
+    blk_t newBlock;
+    newBlock = fs_findFreeSector();
+    fs_markSector(newBlock, 1);
+    return newBlock;
 }
 
-void removeMarkersForFile(unsigned int cSector, unsigned int cSize) {
-    while (cSize > 255) {
-        ataReadSectorsLBA(cSector, WORK_BUFFER);
-        cSector = WORK_BUFFER[4 * 64 - 1];
-        rlfs2_markSector(cSector, 0);
-        cSize -= 255;
-    }
+#define fs_freeBlock(b) fs_markSector((b), 0)
+
+stat_t fs_stat(fs_node_t node) {
+    struct Block *b;
+    stat_t s;
+    b = bread(0, node.idx);
+    s.flags = b->data[0];
+    s.size = b->data[1];
+    // s.size |= (b->data[2]<<16);
+    bfree(b);
+    return s;
 }
 
-/* returns handle */
-int rlfs2_open(char *name, int mode) {
-    int fd;
-    int i;
-
-    /* find free descriptor */
-    for (fd = 0; fd < MAX_FILES; fd++) {
-        if (openFiles[fd].id == 0xffff) {
-            break;
-        }
-    }
-    ataReadSectorsLBA(0, WORK_BUFFER);
-    for (i = 0; i < 256; i += 16) {
-        if (!strcmp((char *)(WORK_BUFFER) + i + 3, name) &&
-            (WORK_BUFFER[i] != 0xffff)) {
-            break;
-        }
-    }
-    if (i == 256) {
-        if (mode == 'w') {
-            i = rlfs2_create(name);
+fs_node_t fs_create(fs_node_t where, unsigned int *name, unsigned int flags) {
+    stat_t s;
+    fs_node_t node;
+    s = fs_stat(where);
+    if (s.flags & 0xff == FS_DIR) {
+        node = fs_finddir(where, name);
+        if (node.idx != 0) {
+            node.idx = 0;
         } else {
-            return -1;
-        }
-    }
-    openFiles[fd].baseSector = openFiles[fd].currentSector = WORK_BUFFER[i + 2];
-    openFiles[fd].size = WORK_BUFFER[i + 1];
-    openFiles[fd].id = i >> 4;
-    openFiles[fd].mode = mode;
-    openFiles[fd].pos = 0;
-    openFiles[fd].posInSector = 0;
+            int i;
+            struct Block *b;
+            blk_t newBlock = fs_allocBlock();
 
-    if (mode == 'w') {
-        /* clear all sector marks for this file */
-        removeMarkersForFile(openFiles[fd].baseSector, openFiles[fd].size);
-        openFiles[fd].size = 0;
+            fs_write(where, s.size, 31, name);
+            fs_write(where, s.size + 31, 1, &newBlock);
+            b = bread(0, newBlock);
+            b->data[0] = flags;
+            for (i = 1; i < 256; i++) {
+                b->data[i] = 0;
+            }
+            b->flags = BLOCK_MODIFIED;
+            bfree(b);
+            node.idx = newBlock;
+        }
+    } else {
+        node.idx = 0;
     }
-    return fd;
+
+    return node;
 }
 
-int rlfs2_removeFile(char *filename) {
+fs_node_t fs_finddir(fs_node_t where, unsigned int *what) {
+    fs_node_t node;
+    off_t i;
+    stat_t s;
+    s = fs_stat(where);
+    for (i = 0; i < s.size; i += 32) {
+        dirent_t dEnt;
+        fs_read(where, i, 32, (unsigned int *)&dEnt);
+        if (!strcmp(dEnt.name, what)) {
+            node.idx = dEnt.idx;
+            return node;
+        }
+    }
+    node.idx = 0;
+    return node;
+}
+
+dirent_t fs_readdir(fs_node_t dir, unsigned int n) {
+    dirent_t dEnt;
+    if (fs_read(dir, n << 5, 32, (unsigned int *)&dEnt) == 32) {
+        return dEnt;
+    } else {
+        dEnt.idx = 0;
+        return dEnt;
+    }
+}
+
+unsigned int fs_read(fs_node_t node, off_t offset, size_t size,
+                     unsigned int *buf) {
+    stat_t s;
+    unsigned int offsetInBlock;
+    blk_t cBlockIdx;
+    blk_t cBlock;
+    struct Block *nodeBlock;
+    struct Block *currentBlock;
+    size_t alreadyRead;
+
+    s = fs_stat(node);
+    nodeBlock = bread(0, node.idx);
+
+    if (offset > s.size) {
+        return 0;
+    }
+
+    if (offset + size > s.size) {
+        size = s.size - offset;
+    }
+
+    alreadyRead = 0;
+    cBlockIdx = offset >> 8;
+    cBlock = nodeBlock->data[cBlockIdx + 3];
+    offsetInBlock = offset & 0xff;
+
+    while (size > 0) {
+        size_t read_now = 256 - offsetInBlock;
+        if (size < read_now) {
+            read_now = size;
+        }
+        currentBlock = bread(0, cBlock);
+        memcpy(buf + alreadyRead, currentBlock->data + offsetInBlock, read_now);
+
+        offset += read_now;
+        alreadyRead += read_now;
+        size -= read_now;
+
+        cBlockIdx = offset >> 8;
+        cBlock = nodeBlock->data[cBlockIdx + 3];
+        offsetInBlock = offset & 0xff;
+        bfree(currentBlock);
+    }
+
+    bfree(nodeBlock);
+    return alreadyRead;
+}
+
+unsigned int fs_write(fs_node_t node, off_t offset, size_t size,
+                      unsigned int *buf) {
+    stat_t s;
+    unsigned int offsetInBlock;
+    blk_t cBlockIdx;
+    blk_t cBlock;
+    struct Block *nodeBlock;
+    struct Block *currentBlock;
+    size_t alreadyWritten;
+
+    s = fs_stat(node);
+    nodeBlock = bread(0, node.idx);
+
+    if (offset > s.size) {
+        return 0;
+    }
+
+    alreadyWritten = 0;
+    cBlockIdx = offset >> 8;
+    cBlock = nodeBlock->data[cBlockIdx + 3];
+    if (cBlock == 0) {
+        cBlock = fs_allocBlock();
+        nodeBlock->data[cBlockIdx + 3] = cBlock;
+    }
+    offsetInBlock = offset & 0xff;
+
+    while (size > 0) {
+        size_t write_now = 256 - offsetInBlock;
+        if (size < write_now) {
+            write_now = size;
+        }
+        currentBlock = bread(0, cBlock);
+        memcpy(currentBlock->data + offsetInBlock, buf + alreadyWritten,
+               write_now);
+
+        offset += write_now;
+        alreadyWritten += write_now;
+        size -= write_now;
+
+        cBlockIdx = offset >> 8;
+        cBlock = nodeBlock->data[cBlockIdx + 3];
+        if (cBlock == 0) {
+            cBlock = fs_allocBlock();
+            nodeBlock->data[cBlockIdx + 3] = cBlock;
+        }
+
+        offsetInBlock = offset & 0xff;
+        currentBlock->flags = BLOCK_MODIFIED;
+        bfree(currentBlock);
+    }
+
+    if (offset > s.size) {
+        nodeBlock->data[2] = offset;
+        // nodeBlock->data[3] = offset >> 16;
+    }
+
+    nodeBlock->flags = BLOCK_MODIFIED;
+    bfree(nodeBlock);
+    return alreadyWritten;
+}
+
+void fs_reset(fs_node_t node) {
+    int i;
+    struct Block *b;
+    b = bread(0, node.idx);
+    b->data[1] = 0;
+    b->data[2] = 0;
+    for (i = 3; i < 256; i++) {
+        if (b->data[i] == 0) {
+            break;
+        }
+        fs_freeBlock(b->data[i]);
+        b->data[i] = 0;
+    }
+    b->flags = BLOCK_MODIFIED;
+    bfree(b);
+}
+
+FILE *fs_open(fs_node_t node, unsigned int mode) {
     int fd;
-    int id;
-    int sect;
-    int size;
-    fd = rlfs2_open(filename, 'w');
-    if (fd < 0) {
-        return -1;
+    stat_t s;
+    fd = fs_get_free_fd();
+    s = fs_stat(node);
+    openFiles[fd].mode = mode;
+    openFiles[fd].size = s.size;
+    openFiles[fd].pos = 0;
+    if (mode == FS_MODE_APPEND) {
+        openFiles[fd].pos = s.size;
     }
-    id = openFiles[fd].id;
-    sect = openFiles[fd].baseSector;
-    size = openFiles[fd].size;
-    rlfs2_close(fd);
-    ataReadSectorsLBA(0, WORK_BUFFER);
-    WORK_BUFFER[id << 4] = 0xffff;
-    ataWriteSectorsLBA(0, WORK_BUFFER);
-    removeMarkersForFile(sect, size);
-    return 0;
-}
-
-int rlfs2_close(int fd) {
-    int entryPos;
-    entryPos = openFiles[fd].id << 4;
-    ataReadSectorsLBA(0, WORK_BUFFER);
-    WORK_BUFFER[entryPos + 1] = openFiles[fd].size;
-    openFiles[fd].id = 0xffff;
-    ataWriteSectorsLBA(0, WORK_BUFFER);
-    return 0;
-}
-
-int rlfs2_getNextSector(fd) {
-    ataReadSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
-    return WORK_BUFFER[64 * 4 - 1];
-}
-
-int rlfs2_seek(int fd, int pos) {
-    int cPos;
-    cPos = pos;
-    if (pos > openFiles[fd].size) {
-        return -1;
+    openFiles[fd].node = node;
+    if (mode == FS_MODE_WRITE) {
+        fs_reset(node);
     }
-    while (cPos > 255) {
-        openFiles[fd].currentSector = rlfs2_getNextSector(fd);
-        cPos -= 255;
-    }
-    openFiles[fd].pos = pos;
-    openFiles[fd].posInSector = cPos;
-    return 0;
+
+    return &openFiles[fd];
 }
 
-int rlfs2_write(int fd, int c) {
-    ataReadSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
-    WORK_BUFFER[openFiles[fd].posInSector] = c;
-    openFiles[fd].pos++;
-    openFiles[fd].posInSector++;
+fs_node_t fs_lookup(unsigned int *name) {
+    fs_node_t wd;
+    size_t cStart = 0;
+    size_t cEnd = 0;
+    size_t cLen = 0;
+    if (name[0] == '/') {
+        wd = fs_root;
+    } else {
+        wd = cProc->cwd;
+    }
+    if (*name == 0) {
+        return wd;
+    }
 
-    if (openFiles[fd].pos < openFiles[fd].size) {
-        ataWriteSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
-        if (openFiles[fd].posInSector == 255) {
-            openFiles[fd].currentSector = WORK_BUFFER[64 * 4 - 1];
-            openFiles[fd].posInSector = 0;
+    while (1) {
+        unsigned int cBuf[32];
+        while (name[cStart] == '/')
+            cStart++;
+
+        if (name[cStart] == 0) {
+            /* /path/to/directory/  <-- return node of directory */
+            break;
+        }
+
+        cEnd = cStart + 1;
+        while (name[cEnd] != '/' && name[cEnd] != 0)
+            cEnd++;
+
+        cLen = cEnd - cStart - 1;
+        memcpy(cBuf, name + cStart, cLen);
+        cBuf[cLen] = 0;
+
+        wd = fs_finddir(wd, cBuf);
+        if (wd.idx == 0) {
+            /* file not found */
+            break;
+        }
+        if (name[cEnd] == 0) {
+            /* /path/to/some/shit <-- return node of shit */
+            break;
+        }
+
+        cStart = cEnd;
+    }
+
+    return wd;
+}
+
+void fs_proc_name(unsigned int *name, unsigned int **dir, unsigned int **file) {
+    unsigned int *brk;
+    size_t len;
+    len = strlen(name);
+    brk = name + len - 1;
+    while (brk > name && *brk != '/') {
+        brk--;
+    }
+
+    if (brk == name) {
+        // no slashes in path, set dir to zero string
+        *dir = name + len;
+        *file = name;
+    } else {
+        *brk = 0;
+        *dir = name;
+        *file = brk + 1;
+    }
+}
+
+void fs_close(FILE *fd) {
+    fd->mode = FS_MODE_NONE;
+}
+
+size_t k_write(FILE *fd, unsigned int *buf, size_t size) {
+    fs_write(fd->node, fd->pos, size, buf);
+    fd->pos += size;
+    return size;
+}
+
+size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
+    if (size + fd->pos > fd->size) {
+        size = fd->size - fd->pos;
+    }
+    fs_read(fd->node, fd->pos, size, buf);
+    fd->pos += size;
+    return size;
+}
+
+FILE *k_open(unsigned int *name, unsigned int mode) {
+    fs_node_t nd;
+    unsigned int *dirname;
+    unsigned int *filename;
+
+    fs_proc_name(name, &dirname, &filename);
+    nd = fs_lookup(name);
+    if (nd.idx) {
+        fs_node_t nf;
+        nf = fs_finddir(nd, filename);
+        if (nf.idx) {
+            return fs_open(nf, mode);
+        } else {
+            if (mode == FS_MODE_WRITE || mode == FS_MODE_APPEND) {
+                nf = fs_create(nd, filename, FS_FILE);
+                return fs_open(nf, mode);
+            } else {
+                // no file
+                return NULL;
+            }
         }
     } else {
-        openFiles[fd].size++;
-        ataWriteSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
-        if (openFiles[fd].posInSector == 255) {
-            int newSector = rlfs2_findFreeSector();
-
-            ataReadSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
-            WORK_BUFFER[64 * 4 - 1] = newSector;
-            ataWriteSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
-            openFiles[fd].currentSector = newSector;
-            openFiles[fd].posInSector = 0;
-            rlfs2_markSector(newSector, 1);
-        }
+        // no dir
+        return NULL;
     }
 }
+stat_t k_stat(unsigned int *name) {
+    fs_node_t nd;
 
-int rlfs2_read(int fd) {
-    int retval;
-    ataReadSectorsLBA(openFiles[fd].currentSector, WORK_BUFFER);
-    if (openFiles[fd].pos < openFiles[fd].size) {
-        retval = WORK_BUFFER[openFiles[fd].posInSector];
-        openFiles[fd].pos++;
-        openFiles[fd].posInSector++;
-        if (openFiles[fd].posInSector == 255) {
-            openFiles[fd].currentSector = WORK_BUFFER[64 * 4 - 1];
-            openFiles[fd].posInSector = 0;
-        }
-        return retval;
+    nd = fs_lookup(name);
+    if (nd.idx) {
+        return fs_stat(nd);
     } else {
-        return 0;
+        stat_t res;
+        res.flags = FS_NONE;
+        return res;
     }
 }
 
-int rlfs2_isEOF(int fd) {
-    if (openFiles[fd].pos == openFiles[fd].size)
-        return 1;
-    else
-        return 0;
+void k_close(FILE *fd) {
+    fd->mode = FS_NONE;
 }
 
-int rlfs2_tellg(int fd) {
-    return openFiles[fd].size;
+void k_seek(FILE *fd, off_t pos) {
+    if (fd->size < pos) {
+        fd->pos = fd->size;
+    } else {
+        fd->pos = pos;
+    }
 }

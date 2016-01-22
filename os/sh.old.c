@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "sh.h"
-#include "rlfs3.h"
+#include "rlfs.h"
 #include "malloc.h"
 #include <memmap.h>
 
@@ -19,22 +19,20 @@ extern void syscall(void *p);
 // extern unsigned int ticks;
 
 int loadBin(int argc, char **argv) {
-    /*
-      int fd;
-        size_t cPos;
-        int bank;
-        bank = atoi(argv[2]);
-        fd = rlfs_open(argv[1], 'r');
-        cPos = 0x8000;
-        BANK_SEL = bank;
-        while (!rlfs_isEOF(fd)) {
-            *(unsigned int *)(cPos) = rlfs_read(fd);
-            cPos++;
-        }
-        rlfs_close(fd);
-        printf("Done.\n");
-        printf("%d words loaded\n", cPos - 0x8000);
-    */
+    int fd;
+    size_t cPos;
+    int bank;
+    bank = atoi(argv[2]);
+    fd = rlfs_open(argv[1], 'r');
+    cPos = 0x8000;
+    BANK_SEL = bank;
+    while (!rlfs_isEOF(fd)) {
+        *(unsigned int *)(cPos) = rlfs_read(fd);
+        cPos++;
+    }
+    rlfs_close(fd);
+    printf("Done.\n");
+    printf("%d words loaded\n", cPos - 0x8000);
     return 0;
 }
 
@@ -93,145 +91,136 @@ int usemem(int argc, char **argv) {
 }
 
 int hex2bin(int argc, char **argv) {
-    /*
-      int i;
-        int fdIn;
-        int fdOut;
-        int c;
-        unsigned int cWord;
-        unsigned int cnt;
-        fdIn = rlfs_open(argv[1], 'r');
-        fdOut = rlfs_open(argv[2], 'w');
-        if (fdIn < 0) {
-            printf("file %s not found\n", argv[i]);
-            return 1;
+    int i;
+    int fdIn;
+    int fdOut;
+    int c;
+    unsigned int cWord;
+    unsigned int cnt;
+    fdIn = rlfs_open(argv[1], 'r');
+    fdOut = rlfs_open(argv[2], 'w');
+    if (fdIn < 0) {
+        printf("file %s not found\n", argv[i]);
+        return 1;
+    }
+    cWord = 0;
+    i = 0;
+    cnt = 0;
+    while (!rlfs_isEOF(fdIn)) {
+        unsigned int v = 0;
+        c = rlfs_read(fdIn);
+        if (c >= 'a' && c <= 'f') {
+            v = 10 + (c - 'a');
+        } else if (c >= 'A' && c <= 'F') {
+            v = 10 + (c - 'A');
+        } else if (c >= '0' && c <= '9') {
+            v = c - '0';
+        } else {
+            continue;
         }
-        cWord = 0;
-        i = 0;
-        cnt = 0;
-        while (!rlfs_isEOF(fdIn)) {
-            unsigned int v = 0;
-            c = rlfs_read(fdIn);
-            if (c >= 'a' && c <= 'f') {
-                v = 10 + (c - 'a');
-            } else if (c >= 'A' && c <= 'F') {
-                v = 10 + (c - 'A');
-            } else if (c >= '0' && c <= '9') {
-                v = c - '0';
-            } else {
-                continue;
-            }
-            cWord = cWord + (v << ((3 - i) * 4));
-            i++;
-            if (i == 4) {
-                cnt++;
-                //            printf("0x%04x ", cWord);
-                rlfs_write(fdOut, cWord);
-                i = 0;
-                cWord = 0;
-                if ((cnt % 100) == 0) {
-                    printf("%u bytes written\n", cnt);
-                }
+        cWord = cWord + (v << ((3 - i) * 4));
+        i++;
+        if (i == 4) {
+            cnt++;
+            //            printf("0x%04x ", cWord);
+            rlfs_write(fdOut, cWord);
+            i = 0;
+            cWord = 0;
+            if ((cnt % 100) == 0) {
+                printf("%u bytes written\n", cnt);
             }
         }
+    }
 
-        rlfs_close(fdIn);
-        rlfs_close(fdOut);
-        printf("\n");
-    */
+    rlfs_close(fdIn);
+    rlfs_close(fdOut);
+    printf("\n");
+
     return 0;
 }
 
 int hexdump(int argc, char **argv) {
-    /*
-      int i;
-        for (i = 1; i < argc; i++) {
-            int fd = rlfs_open(argv[i], 'r');
-            int c;
-            if (fd < 0) {
-                printf("file %s not found\n", argv[i]);
-                continue;
-            }
-            while (!rlfs_isEOF(fd)) {
-                c = rlfs_read(fd);
-                printf("0x%04x ", c);
-            }
+    int i;
+    for (i = 1; i < argc; i++) {
+        int fd = rlfs_open(argv[i], 'r');
+        int c;
+        if (fd < 0) {
+            printf("file %s not found\n", argv[i]);
+            continue;
         }
-        printf("\n");
-    */
+        while (!rlfs_isEOF(fd)) {
+            c = rlfs_read(fd);
+            printf("0x%04x ", c);
+        }
+    }
+    printf("\n");
+
     return 0;
 }
 
 int edit(int argc, char **argv) {
-    /*
-      int i;
-        int fd;
-        int c;
-        fd = rlfs_open(argv[1], 'w');
-        while (1) {
-            c = getc();
-            if (c == 0x04) {
-                break;
-            } else {
-                putc(c);
-                rlfs_write(fd, c);
-            }
+    int i;
+    int fd;
+    int c;
+    fd = rlfs_open(argv[1], 'w');
+    while (1) {
+        c = getc();
+        if (c == 0x04) {
+            break;
+        } else {
+            putc(c);
+            rlfs_write(fd, c);
         }
-        rlfs_close(fd);
-    */
+    }
+    rlfs_close(fd);
+
     return 0;
 }
 
 int rm(int argc, char **argv) {
-    /*
-      int i;
-        for (i = 1; i < argc; i++) {
-            int r;
-            r = rlfs_removeFile(argv[i]);
-            if (r < 0) {
-                printf("File not found: %s!\n", argv[i]);
-            }
+    int i;
+    for (i = 1; i < argc; i++) {
+        int r;
+        r = rlfs_removeFile(argv[i]);
+        if (r < 0) {
+            printf("File not found: %s!\n", argv[i]);
         }
-    */
+    }
     return 0;
 }
 
 int cat(int argc, char **argv) {
-    /*
-      int i = 0;
-        if (argc == 1) {
-        } else {
-            for (i = 1; i < argc; i++) {
-                int fd = rlfs_open(argv[i], 'r');
-                if (fd < 0) {
-                    printf("File [%s] not found!\n", argv[i]);
-                } else {
-                    while (!rlfs_isEOF(fd)) {
-                        putc(rlfs_read(fd));
-                    }
-                    rlfs_close(fd);
+    int i = 0;
+    if (argc == 1) {
+    } else {
+        for (i = 1; i < argc; i++) {
+            int fd = rlfs_open(argv[i], 'r');
+            if (fd < 0) {
+                printf("File [%s] not found!\n", argv[i]);
+            } else {
+                while (!rlfs_isEOF(fd)) {
+                    putc(rlfs_read(fd));
                 }
+                rlfs_close(fd);
             }
         }
-    */
+    }
     return 0;
 }
 
 int ls(int argc, char **argv) {
-    /*
-      int i = 0;
-        unsigned int buf[64 * 4];
-        ataReadSectorsLBA(0, buf);
-        for (i = 0; i < 256; i += 16) {
-            if (buf[i] == 0) {
-                break;
-            } else if (buf[i] == 0xffff) {
-                continue;
-            } else {
-                printf("%06d : %s\n", buf[i + 1], (buf + i + 3));
-            }
+    int i = 0;
+    unsigned int buf[64 * 4];
+    ataReadSectorsLBA(0, buf);
+    for (i = 0; i < 256; i += 16) {
+        if (buf[i] == 0) {
+            break;
+        } else if (buf[i] == 0xffff) {
+            continue;
+        } else {
+            printf("%06d : %s\n", buf[i + 1], (buf + i + 3));
         }
-    */
+    }
     return 0;
 }
 
@@ -273,7 +262,7 @@ int load_main(int argc, char **argv) {
 
 int rlfs_mkfs_main(int argc, char **argv) {
     printf("Making filesystem\n");
-    fs_mkfs();
+    rlfs_mkfs();
     printf("done\n");
 }
 

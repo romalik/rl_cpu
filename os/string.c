@@ -13,7 +13,7 @@ int atoi(const char *s) {
     return res;
 }
 
-int strcmp(const char *s1, const char *s2) {
+int strcmp(void *s1, void *s2) {
     const unsigned char *c1 = (const unsigned char *)s1;
     const unsigned char *c2 = (const unsigned char *)s2;
     unsigned char ch;
@@ -28,8 +28,8 @@ int strcmp(const char *s1, const char *s2) {
     return d;
 }
 
-int strlen(char *s) {
-    char *p = s;
+int strlen(void *s) {
+    char *p = (char *)s;
     int n = 0;
     while (*p) {
         p++;

@@ -2,6 +2,7 @@
 #define SCHED_H__
 #include <types.h>
 #include <memmap.h>
+#include <rlfs3.h>
 
 #define PROC_STATE_NONE 0
 #define PROC_STATE_RUN 1
@@ -20,6 +21,7 @@ struct Process {
     unsigned int pc;
 
     unsigned int memBank;
+    struct fs_node cwd;
 };
 
 extern struct Process *cProc;

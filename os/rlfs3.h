@@ -1,65 +1,105 @@
-#ifndef RLFS_H__
-#define RLFS_H__
+#ifndef RLFS3_H__
+#define RLFS3_H__
 #include <stdio.h>
 #include <string.h>
 #include "ata.h"
-#include <vfs.h>
+#include <types.h>
 #define MAX_FILES 10
 
-/*  Block 0: Directory root
+#define FS_NONE 0
+#define FS_FILE 1
+#define FS_DIR 2
+#define FS_CHAR_DEV 3
+#define FS_BLOCK_DEV 4
+#define FS_PIPE 5
+#define FS_LINK 6
+
+#define FS_MODE_NONE 0
+#define FS_MODE_READ 'r'
+#define FS_MODE_WRITE 'w'
+#define FS_MODE_APPEND 'a'
+
+/* RLFS3 filesystem
+ *
+ * Block0: superblock (not impl)
+ * Block1-33: free block bitmap
+ * Block34: root node
  *
  */
 
-/*  Dir:
- *
- *  0:  FileName(15*16) FileHeaderPtr(16)
- *  16:  FileName(15*16) FileHeaderPtr(16)
- *  ...
- *  ...
- *      FFFF
+/* Fs node header:
+ *  Flags (16):
+ *    File
+ *    Dir
+ *    CharDevice
+ *    BlockDevice
+ *    Pipe
+ *    Link
+ *    rwxrwxrwx
  */
 
-/* File header:
- *  attrs(16)
- *  size(16)
- *  254 block indexes
- *
- *
+/* File/dir node:
+ *  Flags
+ *  SizeL(16)
+ *  SizeH(16)
+ *  150 indexes
+ *  100 index-indexes
+ *  1 triple-index
  */
 
-struct FileDescriptor {
-    int id;
-    int mode;
-    int size;
-    int pos;
-    int posInSector;
-    int baseSector;
-    int currentSector;
-};
+/* Dir contents:
+ * 0: [31 words - name, node idx]
+ * 32: ...total 8...
+ */
 
-void rlfs2_init();
+/* Device/pipe node:
+ *  dev/pipe id
+ */
 
-void rlfs2_mkfs();
+typedef struct fs_node { blk_t idx; } fs_node_t;
 
-int rlfs2_create(char *name);
+typedef struct dirent {
+    unsigned int name[31];
+    blk_t idx;
+} dirent_t;
 
-/* returns handle */
-int rlfs2_open(char *name, int mode);
+typedef struct __FILE {
+    unsigned int mode;
+    fs_node_t node;
+    off_t size;
+    off_t pos;
+} FILE;
 
-int rlfs2_close(int fd);
+typedef struct __stat {
+    off_t size;
+    unsigned int flags;
+} stat_t;
 
-int rlfs2_seek(int fd, int pos);
+extern FILE openFiles[MAX_FILES];
+extern struct fs_node fs_root;
 
-int rlfs2_write(int fd, int c);
+void fs_mkfs();
 
-int rlfs2_read(int fd);
+fs_node_t fs_create(fs_node_t where, unsigned int *name, unsigned int flags);
 
-int rlfs2_isEOF(int fd);
+fs_node_t fs_finddir(fs_node_t where, unsigned int *what);
+dirent_t fs_readdir(fs_node_t dir, unsigned int n);
 
-int rlfs2_tellg(int fd);
+unsigned int fs_read(fs_node_t node, off_t offset, size_t size,
+                     unsigned int *buf);
+unsigned int fs_write(fs_node_t node, off_t offset, size_t size,
+                      unsigned int *buf);
 
-int rlfs2_removeFile(char *filename);
+FILE *fs_open(fs_node_t node, unsigned int mode);
+void fs_close(FILE *fd);
 
-int rlfs2_removeFile(char *filename);
+size_t k_write(FILE *fd, unsigned int *buf, size_t size);
+size_t k_read(FILE *fd, unsigned int *buf, size_t size);
+
+FILE *k_open(unsigned int *name, unsigned int mode);
+stat_t k_stat(unsigned int *name);
+
+void k_close(FILE *fd);
+void k_seek(FILE *fd, off_t pos);
 
 #endif
