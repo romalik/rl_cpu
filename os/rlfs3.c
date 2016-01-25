@@ -46,6 +46,7 @@ struct fs_node fs_root;
 void fs_mkfs() {
     struct Block *b;
     int i;
+    size_t n;
     b = bread(0, 0);
 
     memcpy(b->data, (void *)"RLFS filesystem", 16);
@@ -53,7 +54,6 @@ void fs_mkfs() {
     bfree(b);
 
     for (i = 1; i < 35; i++) {
-        size_t n;
         b = bread(0, i);
         for (n = 0; n < 256; n++) {
             b->data[n] = 0;
@@ -72,8 +72,13 @@ void fs_mkfs() {
     b->data[0] = FS_DIR;
     b->data[1] = 0x0000;
     b->data[2] = 0x0000;
+    for (n = 3; n < 256; n++) {
+        b->data[n] = 0;
+    }
     b->flags = BLOCK_MODIFIED;
     bfree(b);
+
+    block_sync();
 }
 
 void fs_init() {
@@ -81,6 +86,7 @@ void fs_init() {
     for (i = 0; i < MAX_FILES; i++) {
         openFiles[i].mode = FS_MODE_NONE;
     }
+    fs_root.idx = 34;
 }
 
 int fs_get_free_fd() {
@@ -96,21 +102,25 @@ int fs_get_free_fd() {
 blk_t fs_findFreeSector() {
     int i;
     int j;
-    int cBitmap;
+    int cBitmap = 0;
     struct Block *b;
-    for (cBitmap = 0; cBitmap < 32; cBitmap++) {
-        b = bread(0, cBitmap + 1);
-        for (i = 0; i < 256; i++) {
-            if (b->data[i] != 0xffff) {
-                for (j = 0; j < 16; j++) {
-                    if ((b->data[i] & (1 << j)) == 0) {
-                        return (cBitmap << 12) + (i << 4) + j;
-                    }
+    // for (cBitmap = 0; cBitmap < 32; cBitmap++) {
+    b = bread(0, cBitmap + 1);
+    for (i = 0; i < 256; i++) {
+        if (b->data[i] != 0xffff) {
+            for (j = 0; j < 16; j++) {
+                if ((b->data[i] & (1 << j)) == 0) {
+                    bfree(b);
+
+                    printf("Found free sector %d mask %04X i %d j %d\n",
+                           (i << 4) + j, b->data[i], i, j);
+                    return /*(cBitmap << 12) +*/ (i << 4) + j;
                 }
             }
         }
     }
     bfree(b);
+    //}
     return 0;
 }
 
@@ -120,7 +130,9 @@ void fs_markSector(blk_t sect, int val) {
     int cBitmap;
     struct Block *b;
 
-    cBitmap = sect >> 12;
+    printf("Mark sector %d %d\n", sect, val);
+
+    cBitmap = 0; // sect >> 12;
     sect = sect & 0xfff;
     idx = sect >> 4;
     pos = sect & 0x0f;
@@ -138,6 +150,7 @@ blk_t fs_allocBlock() {
     blk_t newBlock;
     newBlock = fs_findFreeSector();
     fs_markSector(newBlock, 1);
+    printf("Alloc block %d\n", newBlock);
     return newBlock;
 }
 
@@ -151,6 +164,9 @@ stat_t fs_stat(fs_node_t node) {
     s.size = b->data[1];
     // s.size |= (b->data[2]<<16);
     bfree(b);
+
+    printf("FS stat node %d flags %04x size %d\n", node.idx, s.flags, s.size);
+
     return s;
 }
 
@@ -158,8 +174,11 @@ fs_node_t fs_create(fs_node_t where, unsigned int *name, unsigned int flags) {
     stat_t s;
     fs_node_t node;
     s = fs_stat(where);
-    if (s.flags & 0xff == FS_DIR) {
+    printf("FS create at node %d stat %04x\n", where.idx, s.flags);
+    if ((s.flags & 0xff) == FS_DIR) {
+        printf("is a dir\n");
         node = fs_finddir(where, name);
+        printf("Finddir result: %d\n", node.idx);
         if (node.idx != 0) {
             node.idx = 0;
         } else {
@@ -167,6 +186,8 @@ fs_node_t fs_create(fs_node_t where, unsigned int *name, unsigned int flags) {
             struct Block *b;
             blk_t newBlock = fs_allocBlock();
 
+            printf("Dirent: at inode %d off %d write block %d\n", where.idx,
+                   s.size, newBlock);
             fs_write(where, s.size, 31, name);
             fs_write(where, s.size + 31, 1, &newBlock);
             b = bread(0, newBlock);
@@ -189,15 +210,20 @@ fs_node_t fs_finddir(fs_node_t where, unsigned int *what) {
     fs_node_t node;
     off_t i;
     stat_t s;
+
+    printf("Finding dirent %s at node %d\n", what, where.idx);
+
     s = fs_stat(where);
     for (i = 0; i < s.size; i += 32) {
         dirent_t dEnt;
         fs_read(where, i, 32, (unsigned int *)&dEnt);
         if (!strcmp(dEnt.name, what)) {
             node.idx = dEnt.idx;
+            printf("Found! %d\n", node.idx);
             return node;
         }
     }
+    printf("Not found\n");
     node.idx = 0;
     return node;
 }
@@ -368,7 +394,7 @@ fs_node_t fs_lookup(unsigned int *name) {
         wd = cProc->cwd;
     }
     if (*name == 0) {
-        return wd;
+        return fs_root; // wd;
     }
 
     while (1) {
@@ -414,7 +440,7 @@ void fs_proc_name(unsigned int *name, unsigned int **dir, unsigned int **file) {
         brk--;
     }
 
-    if (brk == name) {
+    if (brk == name && ((*brk) != '/')) {
         // no slashes in path, set dir to zero string
         *dir = name + len;
         *file = name;
@@ -444,13 +470,21 @@ size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
     return size;
 }
 
-FILE *k_open(unsigned int *name, unsigned int mode) {
+int k_isEOF(FILE *fd) {
+    return (fd->pos >= fd->size);
+}
+
+FILE *k_open(void *name, unsigned int mode) {
     fs_node_t nd;
     unsigned int *dirname;
     unsigned int *filename;
 
-    fs_proc_name(name, &dirname, &filename);
-    nd = fs_lookup(name);
+    fs_proc_name((unsigned int *)name, &dirname, &filename);
+
+    printf("k_open: dir %s name %s\n", dirname, filename);
+
+    nd = fs_lookup(dirname);
+    printf("Dir lookup result %d\n", nd.idx);
     if (nd.idx) {
         fs_node_t nf;
         nf = fs_finddir(nd, filename);
@@ -470,7 +504,7 @@ FILE *k_open(unsigned int *name, unsigned int mode) {
         return NULL;
     }
 }
-stat_t k_stat(unsigned int *name) {
+stat_t k_stat(void *name) {
     fs_node_t nd;
 
     nd = fs_lookup(name);

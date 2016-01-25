@@ -23,5 +23,6 @@ extern struct Block blockCache[];
 struct Block *bread(unsigned int device, unsigned int n);
 void bfree(struct Block *b);
 void block_init();
+void block_sync();
 
 #endif

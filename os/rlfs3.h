@@ -96,10 +96,14 @@ void fs_close(FILE *fd);
 size_t k_write(FILE *fd, unsigned int *buf, size_t size);
 size_t k_read(FILE *fd, unsigned int *buf, size_t size);
 
-FILE *k_open(unsigned int *name, unsigned int mode);
-stat_t k_stat(unsigned int *name);
+FILE *k_open(void *name, unsigned int mode);
+stat_t k_stat(void *name);
 
 void k_close(FILE *fd);
 void k_seek(FILE *fd, off_t pos);
+
+int k_isEOF(FILE *fd);
+
+void fs_init();
 
 #endif

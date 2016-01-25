@@ -18,6 +18,32 @@ extern void syscall(void *p);
 
 // extern unsigned int ticks;
 
+int fs_test(int argc, char **argv) {
+    FILE *fd;
+    unsigned int teststring[] = "This is a test string";
+    unsigned int test2[40];
+    stat_t s;
+
+    printf("Write file\n");
+    fs_init();
+    fd = k_open("/test", 'w');
+    k_write(fd, teststring, strlen(teststring) + 1);
+    k_close(fd);
+
+    printf("Stat file\n");
+    s = k_stat("/test");
+    printf("Size %d\n", s.size);
+
+    printf("Read file\n");
+    fd = k_open("/test", 'r');
+    k_read(fd, test2, s.size);
+    k_close(fd);
+
+    printf("File : %s\n", test2);
+
+    block_sync();
+}
+
 int loadBin(int argc, char **argv) {
     /*
       int fd;
@@ -279,15 +305,15 @@ int rlfs_mkfs_main(int argc, char **argv) {
 
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"loadBin", "runBin", "help",    "hex2bin",
-                          "uptime",  "usemem", "meminfo", "hexdump",
-                          "edit",    "rm",     "cat",     "ls",
-                          "echo",    "hello",  "fs_mkfs", ""};
+char builtinCmds[][15] = {"fs_test", "loadBin", "runBin",  "help",    "hex2bin",
+                          "uptime",  "usemem",  "meminfo", "hexdump", "edit",
+                          "rm",      "cat",     "ls",      "echo",    "hello",
+                          "fs_mkfs", ""};
 
 int (*builtinFuncs[])(int argc, char **argv) = {
-    loadBin, runBin,  help,      hex2bin,    uptime,
-    usemem,  meminfo, hexdump,   edit,       rm,
-    cat,     ls,      echo_main, hello_main, rlfs_mkfs_main};
+    fs_test, loadBin,   runBin,     help,          hex2bin, uptime,
+    usemem,  meminfo,   hexdump,    edit,          rm,      cat,
+    ls,      echo_main, hello_main, rlfs_mkfs_main};
 
 int help(int argc, char **argv) {
     int i = 0;
