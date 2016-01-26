@@ -29,7 +29,7 @@ void block_sync() {
 
 struct Block *bread(unsigned int device, unsigned int n) {
     unsigned int i;
-    printf("bread: %d %d\n", device, n);
+//    printf("bread: %d %d\n", device, n);
     while (1) {
         for (i = 0; i < BLOCK_CACHE_SIZE; i++) {
             if (blockCache[i].flags != BLOCK_FREE) {
