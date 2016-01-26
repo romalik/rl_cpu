@@ -15,8 +15,8 @@ void dump_blocks() {
 
 void block_sync() {
     int i;
-    printf("Try sync\n");
-    dump_blocks();
+//    printf("Try sync\n");
+//    dump_blocks();
     for (i = 0; i < BLOCK_CACHE_SIZE; i++) {
         if (blockCache[i].cnt == 0) {
             if (blockCache[i].flags == BLOCK_MODIFIED) {
@@ -29,7 +29,7 @@ void block_sync() {
 
 struct Block *bread(unsigned int device, unsigned int n) {
     unsigned int i;
-    //  printf("bread: %d %d\n", device, n);
+    printf("bread: %d %d\n", device, n);
     while (1) {
         for (i = 0; i < BLOCK_CACHE_SIZE; i++) {
             if (blockCache[i].flags != BLOCK_FREE) {

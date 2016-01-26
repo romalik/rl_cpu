@@ -344,7 +344,7 @@ public:
                     }
                 }
             }
-            printf("%s: %lu words\n", filename.c_str(), p - image);
+            printf("%s: %lu words\n", filename.c_str(), (p - image)/2);
         }
 
         file.write(image, 0xffff*2);

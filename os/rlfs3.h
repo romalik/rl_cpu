@@ -83,7 +83,7 @@ void fs_mkfs();
 fs_node_t fs_create(fs_node_t where, unsigned int *name, unsigned int flags);
 
 fs_node_t fs_finddir(fs_node_t where, unsigned int *what);
-dirent_t fs_readdir(fs_node_t dir, unsigned int n);
+dirent_t fs_readdir(fs_node_t dir, off_t n);
 
 unsigned int fs_read(fs_node_t node, off_t offset, size_t size,
                      unsigned int *buf);
@@ -105,5 +105,10 @@ void k_seek(FILE *fd, off_t pos);
 int k_isEOF(FILE *fd);
 
 void fs_init();
+
+FILE * k_opendir(void *dirname);
+dirent_t k_readdir(FILE * dir);
+
+int k_mkdir(void *__path);
 
 #endif
