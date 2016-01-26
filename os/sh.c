@@ -4,7 +4,7 @@
 #include "rlfs3.h"
 #include "malloc.h"
 #include <memmap.h>
-
+#include <sched.h>
 char cmdBuf[127];
 int cmdBufSize = 127;
 int cmdBufPos = 0;
@@ -17,6 +17,11 @@ extern char __code_end;
 extern void syscall(void *p);
 
 // extern unsigned int ticks;
+
+int sync(int argc, char **argv) {
+    block_sync();
+    return 0;
+}
 
 int fs_test(int argc, char **argv) {
     FILE *fd;
@@ -45,30 +50,45 @@ int fs_test(int argc, char **argv) {
     return 0;
 }
 
-int mkdir(int argc, char ** argv) {
-    if(argc > 1) {
+int mkdir(int argc, char **argv) {
+    if (argc > 1) {
         k_mkdir(argv[1]);
     }
     return 0;
 }
 
-int ls(int argc, char ** argv) {
-    if(argc > 1) {
-        FILE * dir;
+int ls(int argc, char **argv) {
+    FILE *dir;
+    if (argc > 1) {
         dir = k_opendir(argv[1]);
-        if(!dir) {
-            printf("no dir\n");
-            return 0;
-        } else {
-            while(1) {
-                dirent_t dEnt;
-                dEnt = k_readdir(dir);
-                if(dEnt.idx == 0) {
-                    k_close(dir);
-                    return 0;
-                }
-                printf("%s\n", dEnt.name);
+    } else {
+        dir = k_opendir(".");
+    }
+    if (!dir) {
+        printf("no dir\n");
+        return 0;
+    } else {
+        while (1) {
+            dirent_t dEnt;
+            dEnt = k_readdir(dir);
+            if (dEnt.idx == 0) {
+                k_close(dir);
+                return 0;
             }
+            printf("%s\n", dEnt.name);
+        }
+    }
+    return 0;
+}
+
+int cd(int argc, char **argv) {
+    if (argc > 1) {
+        stat_t s;
+        s = k_stat(argv[1]);
+        if (s.flags == FS_DIR) {
+            cProc->cwd = s.node;
+        } else {
+            printf("bad file");
         }
     }
     return 0;
@@ -219,24 +239,24 @@ int hexdump(int argc, char **argv) {
 }
 
 int edit(int argc, char **argv) {
-      int i;
-        FILE * fd;
-        int c;
-        fd = k_open(argv[1], 'w');
-        if(!fd) {
-            printf("no file\n");
-            return 0;
+    int i;
+    FILE *fd;
+    int c;
+    fd = k_open(argv[1], 'w');
+    if (!fd) {
+        printf("no file\n");
+        return 0;
+    }
+    while (1) {
+        c = getc();
+        if (c == 0x04) {
+            break;
+        } else {
+            putc(c);
+            k_write(fd, (unsigned int *)&c, 1);
         }
-        while (1) {
-            c = getc();
-            if (c == 0x04) {
-                break;
-            } else {
-                putc(c);
-                k_write(fd, (unsigned int *)&c, 1);
-            }
-        }
-        k_close(fd);
+    }
+    k_close(fd);
     return 0;
 }
 
@@ -255,25 +275,24 @@ int rm(int argc, char **argv) {
 }
 
 int cat(int argc, char **argv) {
-    
-      int i = 0;
-        if (argc == 1) {
-        } else {
-            for (i = 1; i < argc; i++) {
-                FILE * fd = k_open(argv[i], 'r');
-                if (!fd) {
-                    printf("File [%s] not found!\n", argv[i]);
-                } else {
-                    while (!k_isEOF(fd)) {
-                        unsigned int val = 0;
-                        k_read(fd, &val, 1);
-                        putc(val);
-                    }
-                    k_close(fd);
+    int i = 0;
+    if (argc == 1) {
+    } else {
+        for (i = 1; i < argc; i++) {
+            FILE *fd = k_open(argv[i], 'r');
+            if (!fd) {
+                printf("File [%s] not found!\n", argv[i]);
+            } else {
+                while (!k_isEOF(fd)) {
+                    unsigned int val = 0;
+                    k_read(fd, &val, 1);
+                    putc(val);
                 }
+                k_close(fd);
             }
         }
-    
+    }
+
     return 0;
 }
 
@@ -321,15 +340,15 @@ int rlfs_mkfs_main(int argc, char **argv) {
 
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"mkdir", "fs_test", "loadBin", "runBin",  "help",    "hex2bin",
-                          "uptime",  "usemem",  "meminfo", "hexdump", "edit",
-                          "rm",      "cat",     "ls",      "echo",    "hello",
-                          "fs_mkfs", ""};
+char builtinCmds[][15] = {"sync",    "cd",      "mkdir",   "fs_test", "loadBin",
+                          "runBin",  "help",    "hex2bin", "uptime",  "usemem",
+                          "meminfo", "hexdump", "edit",    "rm",      "cat",
+                          "ls",      "echo",    "hello",   "fs_mkfs", ""};
 
 int (*builtinFuncs[])(int argc, char **argv) = {
-    mkdir, fs_test, loadBin,   runBin,     help,          hex2bin, uptime,
-    usemem,  meminfo,   hexdump,    edit,          rm,      cat,
-    ls,      echo_main, hello_main, rlfs_mkfs_main};
+    sync,    cd,     mkdir,     fs_test,    loadBin,       runBin, help,
+    hex2bin, uptime, usemem,    meminfo,    hexdump,       edit,   rm,
+    cat,     ls,     echo_main, hello_main, rlfs_mkfs_main};
 
 int help(int argc, char **argv) {
     int i = 0;
@@ -400,7 +419,6 @@ int main_sh() {
                     printf("Bad command\n");
                 }
             }
-            block_sync();
             printf("# ");
         }
     }

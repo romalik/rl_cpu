@@ -47,6 +47,7 @@ void fs_mkfs() {
     struct Block *b;
     int i;
     size_t n;
+    fs_node_t dir;
     b = bread(0, 0);
 
     memcpy(b->data, (void *)"RLFS filesystem", 16);
@@ -77,6 +78,13 @@ void fs_mkfs() {
     }
     b->flags = BLOCK_MODIFIED;
     bfree(b);
+
+    dir.idx = 34;
+
+    fs_write(dir, 0, 31, (unsigned int *)("."));
+    fs_write(dir, 31, 1, &(dir.idx));
+    fs_write(dir, 32, 31, (unsigned int *)(".."));
+    fs_write(dir, 63, 1, &(dir.idx));
 
     block_sync();
 }
@@ -111,10 +119,11 @@ blk_t fs_findFreeSector() {
             for (j = 0; j < 16; j++) {
                 if ((b->data[i] & (1 << j)) == 0) {
                     bfree(b);
-/*
-                    printf("Found free sector %d mask %04X i %d j %d\n",
-                           (i << 4) + j, b->data[i], i, j);
-                           */
+                    /*
+                                        printf("Found free sector %d mask %04X i
+                       %d j %d\n",
+                                               (i << 4) + j, b->data[i], i, j);
+                                               */
                     return /*(cBitmap << 12) +*/ (i << 4) + j;
                 }
             }
@@ -131,7 +140,7 @@ void fs_markSector(blk_t sect, int val) {
     int cBitmap;
     struct Block *b;
 
-//    printf("Mark sector %d %d\n", sect, val);
+    //    printf("Mark sector %d %d\n", sect, val);
 
     cBitmap = 0; // sect >> 12;
     sect = sect & 0xfff;
@@ -151,7 +160,7 @@ blk_t fs_allocBlock() {
     blk_t newBlock;
     newBlock = fs_findFreeSector();
     fs_markSector(newBlock, 1);
-//    printf("Alloc block %d\n", newBlock);
+    //    printf("Alloc block %d\n", newBlock);
     return newBlock;
 }
 
@@ -163,10 +172,13 @@ stat_t fs_stat(fs_node_t node) {
     b = bread(0, node.idx);
     s.flags = b->data[0];
     s.size = b->data[1];
+
+    s.node = node;
     // s.size |= (b->data[2]<<16);
     bfree(b);
 
-//    printf("FS stat node %d flags %04x size %d\n", node.idx, s.flags, s.size);
+    //    printf("FS stat node %d flags %04x size %d\n", node.idx, s.flags,
+    //    s.size);
 
     return s;
 }
@@ -175,11 +187,12 @@ fs_node_t fs_create(fs_node_t where, unsigned int *name, unsigned int flags) {
     stat_t s;
     fs_node_t node;
     s = fs_stat(where);
-    printf("FS create at node %d stat %04x name %s\n", where.idx, s.flags, name);
+    printf("FS create at node %d stat %04x name %s\n", where.idx, s.flags,
+           name);
     if ((s.flags & 0xff) == FS_DIR) {
-//        printf("is a dir\n");
+        //        printf("is a dir\n");
         node = fs_finddir(where, name);
-//        printf("Finddir result: %d\n", node.idx);
+        //        printf("Finddir result: %d\n", node.idx);
         if (node.idx != 0) {
             node.idx = 0;
         } else {
@@ -297,14 +310,13 @@ unsigned int fs_write(fs_node_t node, off_t offset, size_t size,
     struct Block *currentBlock;
     size_t alreadyWritten;
 
-//    printf("Write [%s] to node %d off %d size %d\n", buf, node.idx, offset, size);
-
+    //    printf("Write [%s] to node %d off %d size %d\n", buf, node.idx,
+    //    offset, size);
 
     nodeBlock = bread(0, node.idx);
 
     s.flags = nodeBlock->data[0];
     s.size = nodeBlock->data[1];
-
 
     if (offset > s.size) {
         return 0;
@@ -390,7 +402,7 @@ FILE *fs_open(fs_node_t node, unsigned int mode) {
     return &openFiles[fd];
 }
 
-fs_node_t fs_lookup(unsigned int *name, fs_node_t * parent) {
+fs_node_t fs_lookup(unsigned int *name, fs_node_t *parent) {
     fs_node_t wd;
     size_t cStart = 0;
     size_t cEnd = 0;
@@ -401,7 +413,7 @@ fs_node_t fs_lookup(unsigned int *name, fs_node_t * parent) {
         wd = cProc->cwd;
     }
 
-    if(parent) 
+    if (parent)
         *parent = wd;
 
     if (*name == 0) {
@@ -426,16 +438,17 @@ fs_node_t fs_lookup(unsigned int *name, fs_node_t * parent) {
         memcpy(cBuf, name + cStart, cLen);
         cBuf[cLen] = 0;
 
-        if(parent)
+        if (parent)
             *parent = wd;
 
         wd = fs_finddir(wd, cBuf);
         if (wd.idx == 0) {
             /* file not found */
-            if(name[cEnd] != 0) { // "/path/to/nonexist/file" <-- shit happens already on nonexist dir
-                //no such parent directory either
-                
-                if(parent)
+            if (name[cEnd] != 0) { // "/path/to/nonexist/file" <-- shit happens
+                                   // already on nonexist dir
+                // no such parent directory either
+
+                if (parent)
                     parent->idx = 0;
             }
             break;
@@ -450,8 +463,6 @@ fs_node_t fs_lookup(unsigned int *name, fs_node_t * parent) {
 
     return wd;
 }
-
-
 
 void fs_close(FILE *fd) {
     fd->mode = FS_MODE_NONE;
@@ -479,7 +490,7 @@ int k_isEOF(FILE *fd) {
 FILE *k_open(void *__name, unsigned int mode) {
     fs_node_t parent;
     fs_node_t file;
-    unsigned int * name = (unsigned int *)__name;
+    unsigned int *name = (unsigned int *)__name;
 
     file = fs_lookup(name, &parent);
     printf("File lookup result %d\n", file.idx);
@@ -488,13 +499,14 @@ FILE *k_open(void *__name, unsigned int mode) {
             return fs_open(file, mode);
         } else {
             /* get filename */
-            unsigned int * s;
-            for(s = name + strlen(name); s>=name; s--) {
-                if(*s == '/') {
-                    s++;
+            unsigned int *s = name + strlen(name);
+            while (s >= name) {
+                if (*s == '/') {
                     break;
                 }
+                s--;
             }
+            s++;
             printf("Cropped filename %s\n", s);
 
             if (mode == FS_MODE_WRITE || mode == FS_MODE_APPEND) {
@@ -535,20 +547,20 @@ void k_seek(FILE *fd, off_t pos) {
     }
 }
 
-FILE * k_opendir(void *dirname) {
+FILE *k_opendir(void *dirname) {
     fs_node_t d_inode;
 
     d_inode = fs_lookup(dirname, NULL);
-    if(d_inode.idx == 0) {
+    if (d_inode.idx == 0) {
         return NULL;
     } else {
         return fs_open(d_inode, 'r');
     }
 }
 
-dirent_t k_readdir(FILE * dir) {
+dirent_t k_readdir(FILE *dir) {
     dirent_t res;
-    if(dir->size > dir->pos) {
+    if (dir->size > dir->pos) {
         res = fs_readdir(dir->node, dir->pos);
         dir->pos += 32;
     } else {
@@ -560,26 +572,27 @@ dirent_t k_readdir(FILE * dir) {
 int k_mkdir(void *__path) {
     fs_node_t dir;
     fs_node_t parent;
-    
-    unsigned int * path = (unsigned int *)__path;
+
+    unsigned int *path = (unsigned int *)__path;
 
     dir = fs_lookup(path, &parent);
 
-    if(dir.idx) {
-        //file exists!
+    if (dir.idx) {
+        // file exists!
         return 0;
     } else {
-        if(parent.idx == 0) {
-            //parent doesn't exist!
+        if (parent.idx == 0) {
+            // parent doesn't exist!
             return 0;
         } else {
-            unsigned int * s;
-            for(s = path + strlen(path); s>=path; s--) {
-                if(*s == '/') {
-                    s++;
+            unsigned int *s = path + strlen(path);
+            while (s >= path) {
+                if (*s == '/') {
                     break;
                 }
+                s--;
             }
+            s++;
             dir = fs_create(parent, s, FS_DIR);
 
             fs_write(dir, 0, 31, (unsigned int *)("."));

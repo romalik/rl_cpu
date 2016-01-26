@@ -15,6 +15,9 @@ void sched_init() {
         procs[i].state = PROC_STATE_NONE;
     }
     procs[0].state = PROC_STATE_RUN;
+    currentTask = 0;
+    cProc = procs;
+    cProc->cwd = fs_root;
 }
 
 unsigned int sched_genPid() {
@@ -64,8 +67,6 @@ void ps() {
 }
 
 void sched_start() {
-    currentTask = 0;
-    cProc = procs;
     sched_active = 1;
 }
 

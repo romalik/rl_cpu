@@ -71,6 +71,7 @@ typedef struct __FILE {
 } FILE;
 
 typedef struct __stat {
+    fs_node_t node;
     off_t size;
     unsigned int flags;
 } stat_t;
@@ -106,8 +107,8 @@ int k_isEOF(FILE *fd);
 
 void fs_init();
 
-FILE * k_opendir(void *dirname);
-dirent_t k_readdir(FILE * dir);
+FILE *k_opendir(void *dirname);
+dirent_t k_readdir(FILE *dir);
 
 int k_mkdir(void *__path);
 

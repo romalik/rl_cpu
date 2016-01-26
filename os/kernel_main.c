@@ -39,6 +39,7 @@ int kernel_main() {
     //  vfs_init();
     fs_init();
     mm_init();
+    sched_init();
 
     printf("Press s for shell, any key for init\n");
 
@@ -58,7 +59,6 @@ int kernel_main() {
         }
         rlfs_close(fd1);
 
-        sched_init();
 
         sched_add_proc(sched_genPid(), b, 0);
 

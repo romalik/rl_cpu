@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <time.h>
 
 long long gettime_ms() {
     struct timeval te;
@@ -641,9 +642,11 @@ int main(int argc, char ** argv) {
         test();
     } else {
         int debug = 0;
+        int ips = 0;
         if(argc > 2) {
             if(!strcmp(argv[2], "-d")) {
-                debug = 1;
+                //debug = 1;
+                ips = atol(argv[3]);
             }
         }
 
@@ -687,11 +690,24 @@ int main(int argc, char ** argv) {
             //if(debug)
             //    usleep(500*1000);
         }
+        return 0;
 */
 
         SP_min = myCpu.getSP();
         SP_max = myCpu.getSP();
+
+        int mcsPerInstr = 0;
+        if(ips) {
+          mcsPerInstr = 1000000 / ips;
+        }
+
         while(1) {
+            unsigned long tstart;
+            if(ips) {
+              struct timeval tv;
+              gettimeofday(&tv,NULL);
+              tstart = 1000000 * tv.tv_sec + tv.tv_usec;
+            }
             myCpu.execute();
 
             if(myCpu.getSP() > SP_max) {
@@ -701,6 +717,18 @@ int main(int argc, char ** argv) {
             if(myCpu.getSP() < SP_min) {
                 SP_min = myCpu.getSP();
             }
+            if(ips) {
+              struct timespec ts;
+              struct timeval tv;
+
+              gettimeofday(&tv,NULL);
+              unsigned long t = 1000000 * tv.tv_sec + tv.tv_usec;
+
+              ts.tv_sec = 0;
+              ts.tv_nsec = 1000*(mcsPerInstr - (t-tstart));
+              nanosleep(&ts,NULL);
+            }
+
         }
 
     }
