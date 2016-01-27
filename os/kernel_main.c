@@ -46,18 +46,16 @@ int kernel_main() {
     if (kgetc() == 's') {
         main_sh();
     } else {
-#if 0
       unsigned int b;
-        int fd1 = rlfs_open("taskf.bin", 'r');
+        FILE * fd1 = k_open("/bin/test_fork", 'r');
         size_t cPos = 0x8000;
         mm_allocSegment(&b);
         BANK_SEL = b;
         printf("load task1\n");
-        while (!rlfs_isEOF(fd1)) {
-            *(unsigned int *)(cPos) = rlfs_read(fd1);
-            cPos++;
+        while (!k_isEOF(fd1)) {
+            cPos += k_read(fd1, (unsigned int*)cPos, fd1->size);
         }
-        rlfs_close(fd1);
+        k_close(fd1);
 
 
         sched_add_proc(sched_genPid(), b, 0);
@@ -65,7 +63,6 @@ int kernel_main() {
         printf("Starting scheduler\n");
         sched_start();
         kernel_worker();
-#endif
     }
     printf("System halted\n");
     while (1) {
