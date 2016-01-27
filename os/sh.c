@@ -95,22 +95,19 @@ int cd(int argc, char **argv) {
 }
 
 int loadBin(int argc, char **argv) {
-    /*
-      int fd;
+      FILE * fd;
         size_t cPos;
         int bank;
         bank = atoi(argv[2]);
-        fd = rlfs_open(argv[1], 'r');
+        fd = k_open(argv[1], 'r');
         cPos = 0x8000;
         BANK_SEL = bank;
-        while (!rlfs_isEOF(fd)) {
-            *(unsigned int *)(cPos) = rlfs_read(fd);
-            cPos++;
+        while (!k_isEOF(fd)) {
+            cPos += k_read(fd, (unsigned int *)cPos, fd->size);
         }
-        rlfs_close(fd);
+        k_close(fd);
         printf("Done.\n");
         printf("%d words loaded\n", cPos - 0x8000);
-    */
     return 0;
 }
 
@@ -169,25 +166,24 @@ int usemem(int argc, char **argv) {
 }
 
 int hex2bin(int argc, char **argv) {
-    /*
       int i;
-        int fdIn;
-        int fdOut;
-        int c;
+        FILE * fdIn;
+        FILE * fdOut;
+        unsigned int c;
         unsigned int cWord;
         unsigned int cnt;
-        fdIn = rlfs_open(argv[1], 'r');
-        fdOut = rlfs_open(argv[2], 'w');
-        if (fdIn < 0) {
+        fdIn = k_open(argv[1], 'r');
+        fdOut = k_open(argv[2], 'w');
+        if (fdIn == NULL) {
             printf("file %s not found\n", argv[i]);
             return 1;
         }
         cWord = 0;
         i = 0;
         cnt = 0;
-        while (!rlfs_isEOF(fdIn)) {
+        while (!k_isEOF(fdIn)) {
             unsigned int v = 0;
-            c = rlfs_read(fdIn);
+            k_read(fdIn, &c, 1);
             if (c >= 'a' && c <= 'f') {
                 v = 10 + (c - 'a');
             } else if (c >= 'A' && c <= 'F') {
@@ -202,7 +198,7 @@ int hex2bin(int argc, char **argv) {
             if (i == 4) {
                 cnt++;
                 //            printf("0x%04x ", cWord);
-                rlfs_write(fdOut, cWord);
+                k_write(fdOut, &cWord, 1);
                 i = 0;
                 cWord = 0;
                 if ((cnt % 100) == 0) {
@@ -211,10 +207,10 @@ int hex2bin(int argc, char **argv) {
             }
         }
 
-        rlfs_close(fdIn);
-        rlfs_close(fdOut);
+        k_close(fdIn);
+        k_close(fdOut);
         printf("\n");
-    */
+    
     return 0;
 }
 
