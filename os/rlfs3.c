@@ -1,6 +1,6 @@
 #include "rlfs3.h"
 #include <blk.h>
-#include <stdio.h>
+#include <kstdio.h>
 #include <sched.h>
 
 FILE openFiles[MAX_FILES];
@@ -168,7 +168,7 @@ blk_t fs_allocBlock() {
 
 int fs_stat(fs_node_t * node, stat_t * res) {
     struct Block *b;
-    
+
     b = bread(0, node->idx);
     res->flags = b->data[0];
     res->size = b->data[1];

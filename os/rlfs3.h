@@ -1,6 +1,6 @@
 #ifndef RLFS3_H__
 #define RLFS3_H__
-#include <stdio.h>
+#include <kstdio.h>
 #include <string.h>
 #include "ata.h"
 #include <types.h>

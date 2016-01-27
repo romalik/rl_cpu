@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <kstdio.h>
 #include <string.h>
 #include "sh.h"
 #include "rlfs3.h"
@@ -210,7 +210,7 @@ int hex2bin(int argc, char **argv) {
         k_close(fdIn);
         k_close(fdOut);
         printf("\n");
-    
+
     return 0;
 }
 

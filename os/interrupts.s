@@ -13,7 +13,9 @@ ret
 .import timer_interrupt
 .import sched_stack
 .label __timer_interrupt_vector
+;di
 call0_w __timer_interrupt_wrapper
+;ei
 
 .import __builtin_memcpy
 .label __timer_interrupt_wrapper
@@ -38,8 +40,9 @@ reti
 
 .export __system_interrupt_vector
 .label  __system_interrupt_vector
-
+;di
 call0_w system_interrupt
+;ei
 reti
 
 

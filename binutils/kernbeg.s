@@ -1,9 +1,9 @@
 .code
 .import kernel_main
-loadsp_w 0x4000
-cnst_w 0x4000
+loadsp_w __data_end
+cnst_w __data_end
 popap
-cnst_w 0x4000
+cnst_w __data_end
 popbp
 
 call1_w kernel_main

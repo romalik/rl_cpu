@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <kstdio.h>
 #include <string.h>
 #include "sh.h"
 #include "ata.h"
@@ -32,23 +32,22 @@ int kernel_main() {
     //  printf("Init interrupts..\n");
     init_interrupts();
 
-    printf("Init ata..\n");
     ataInit();
-    printf("Init fs..\n");
     block_init();
-    //  vfs_init();
     fs_init();
     mm_init();
     sched_init();
+    kernel_worker_init();
 
     printf("Press s for shell, any key for init\n");
 
-    if (kgetc() == 's') {
+    if (getc() == 's') {
         main_sh();
     } else {
       unsigned int b;
         FILE * fd1 = k_open("/bin/test_fork", 'r');
         size_t cPos = 0x8000;
+
         mm_allocSegment(&b);
         BANK_SEL = b;
         printf("load task1\n");
@@ -62,7 +61,7 @@ int kernel_main() {
 
         printf("Starting scheduler\n");
         sched_start();
-        kernel_worker();
+        while(1) {}
     }
     printf("System halted\n");
     while (1) {

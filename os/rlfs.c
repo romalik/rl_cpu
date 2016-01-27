@@ -1,5 +1,5 @@
 #include "rlfs.h"
-#include <stdio.h>
+#include <kstdio.h>
 
 struct FileDescriptor openFiles[MAX_FILES];
 

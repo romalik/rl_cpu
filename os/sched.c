@@ -1,23 +1,24 @@
 #include <sched.h>
 #include <memmap.h>
 
-unsigned int sched_stack[2 * 64];
+unsigned int sched_stack[8 * 64];
 unsigned sched_active = 0;
 unsigned int ticks = 0;
 struct Process *cProc;
 unsigned int nextPid = 0;
 
 struct Process procs[MAXPROC];
-unsigned int currentTask = 0;
+unsigned int currentTask = MAXPROC;
+
+
+extern unsigned int kernel_worker_stack[];
+extern void kernel_worker_entry();
+
 void sched_init() {
     int i = 0;
     for (i = 0; i < MAXPROC; i++) {
         procs[i].state = PROC_STATE_NONE;
     }
-    procs[0].state = PROC_STATE_RUN;
-    currentTask = 0;
-    cProc = procs;
-    cProc->cwd = fs_root;
 }
 
 unsigned int sched_genPid() {
@@ -86,7 +87,7 @@ void timer_interrupt(struct IntFrame *fr) {
 
             nextTask++;
         }
-        if (procs[currentTask].state != PROC_STATE_FORKING) {
+        if (procs[currentTask].state == PROC_STATE_RUN) {
             procs[currentTask].ap = fr->ap;
             procs[currentTask].bp = fr->bp;
             procs[currentTask].sp = fr->sp;
@@ -98,9 +99,11 @@ void timer_interrupt(struct IntFrame *fr) {
         fr->sp = procs[nextTask].sp;
         fr->pc = procs[nextTask].pc;
         BANK_SEL = procs[nextTask].memBank;
+        printf("Sched switch %d -> %d\n", currentTask, nextTask);
         currentTask = nextTask;
         cProc = &(procs[nextTask]);
         ei();
+
     }
 }
 

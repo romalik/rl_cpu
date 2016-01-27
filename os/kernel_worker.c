@@ -3,13 +3,16 @@
 
 struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
 
-#define FORK_BUFFER_SIZE 4 * 64
+#define FORK_BUFFER_SIZE 64 * 64
 
 unsigned int forkBuffer[FORK_BUFFER_SIZE];
+unsigned int kernel_worker_stack[64*64];
+
 
 void copyBanks(unsigned int dest, unsigned int src) {
     unsigned int copied = 0;
     while (copied < 0x8000) {
+        printf("Copying pages.. di\n", copied);
         di();
         mm_memcpy(forkBuffer, (unsigned int *)(0x8000 + copied),
                   FORK_BUFFER_SIZE, src);
@@ -17,17 +20,35 @@ void copyBanks(unsigned int dest, unsigned int src) {
                   FORK_BUFFER_SIZE, dest);
         copied += FORK_BUFFER_SIZE;
         ei();
+        printf("Copying pages.. 0x%04x completed\n", copied);
     }
+}
+
+void kernel_worker_entry() {
+  kernel_worker();
 }
 
 void kernel_worker_init() {
     int i = 0;
+    struct Process p;
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
     }
+
+    p.pid = 0;
+    p.state = PROC_STATE_RUN;
+    p.ap = p.bp = p.sp = (unsigned int)kernel_worker_stack;
+    p.pc = (unsigned int)kernel_worker_entry;
+    p.memBank = 0;
+    p.cwd = fs_root;
+    sched_add_proc(0, 0, &p);
+
+
 }
 
 extern void ps();
+
+
 
 void kernel_worker() {
     while (1) {
@@ -36,6 +57,7 @@ void kernel_worker() {
             if (kernelTaskQueue[i].type != KERNEL_TASK_NONE) {
                 if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
                     struct Process *p;
+                    printf("Kernel worker: forking!\n");
                     if (findProcByPid(kernelTaskQueue[i].src, &p)) {
                         struct ForkSyscallStruct {
                             unsigned int id;
@@ -46,13 +68,15 @@ void kernel_worker() {
                         int currentBank;
                         int newBank;
                         int newPid;
-
+                        printf("Kworker: di\n");
                         di();
                         if (!mm_allocSegment(&newBank)) {
                             printf("Kernel Worker: No more banks!!\n");
                             // panic here!
                         }
+                        printf("KWorker new bank %d\n", newBank);
                         ei();
+                        printf("KWorker not reached here?\n");
                         currentBank = p->memBank;
                         copyBanks(newBank, currentBank);
 
@@ -86,7 +110,7 @@ void kernel_worker() {
                 }
             }
         }
-        //    printf("kworker online!\n");
+            printf("kworker online!\n");
     }
 }
 

@@ -1,7 +1,7 @@
 #ifndef ATA_H__
 #define ATA_H__
 #include <memmap.h>
-#include <stdio.h>
+#include <kstdio.h>
 #include <string.h>
 
 #define CMD_ATA_READ 1
