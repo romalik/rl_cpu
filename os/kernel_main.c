@@ -28,7 +28,7 @@ void init_interrupts() {
 }
 
 int kernel_main() {
-    malloc_init((size_t)&__data_end, (size_t)(0x3000));
+    // malloc_init((size_t)&__data_end, (size_t)(0x3000));
     //  printf("Init interrupts..\n");
     init_interrupts();
 
@@ -44,25 +44,26 @@ int kernel_main() {
     if (getc() == 's') {
         main_sh();
     } else {
-      unsigned int b;
-        FILE * fd1 = k_open("/bin/test_fork", 'r');
+        unsigned int b;
+        FILE *fd1 = k_open("/bin/task", 'r');
         size_t cPos = 0x8000;
 
         mm_allocSegment(&b);
         BANK_SEL = b;
         printf("load task1\n");
         while (!k_isEOF(fd1)) {
-            cPos += k_read(fd1, (unsigned int*)cPos, fd1->size);
+            cPos += k_read(fd1, (unsigned int *)cPos, fd1->size);
         }
         k_close(fd1);
-
 
         sched_add_proc(sched_genPid(), b, 0);
 
         printf("Starting scheduler\n");
         sched_start();
-        while(1) {}
+        while (1) {
+        }
     }
+
     printf("System halted\n");
     while (1) {
     }

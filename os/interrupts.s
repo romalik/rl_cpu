@@ -13,7 +13,7 @@ ret
 .import timer_interrupt
 .import sched_stack
 .label __timer_interrupt_vector
-;di
+di
 call0_w __timer_interrupt_wrapper
 ;ei
 
@@ -33,7 +33,7 @@ popbp
 addrl_b -4 ;SP PC BP AP
 call0_w timer_interrupt
 discard_b 1
-
+ei
 reti
 
 

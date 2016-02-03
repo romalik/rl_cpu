@@ -140,12 +140,22 @@ static int printi(char **out, int i, int b, int sg, int width, int pad,
     s = print_buf + PRINT_BUF_LEN - 1;
     *s = '\0';
 
-    while (u) {
-        t = u % b;
-        if (t >= 10)
-            t += letbase - '0' - 10;
-        *--s = t + '0';
-        u /= b;
+    if (b == 16) {
+        while (u) {
+            t = u & 0xf;
+            if (t >= 10)
+                t += letbase - '0' - 10;
+            *--s = t + '0';
+            u = u >> 4;
+        }
+    } else {
+        while (u) {
+            t = u % b;
+            if (t >= 10)
+                t += letbase - '0' - 10;
+            *--s = t + '0';
+            u /= b;
+        }
     }
 
     if (neg) {

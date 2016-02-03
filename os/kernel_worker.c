@@ -6,8 +6,7 @@ struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
 #define FORK_BUFFER_SIZE 64 * 64
 
 unsigned int forkBuffer[FORK_BUFFER_SIZE];
-unsigned int kernel_worker_stack[64*64];
-
+unsigned int kernel_worker_stack[64 * 64];
 
 void copyBanks(unsigned int dest, unsigned int src) {
     unsigned int copied = 0;
@@ -25,7 +24,7 @@ void copyBanks(unsigned int dest, unsigned int src) {
 }
 
 void kernel_worker_entry() {
-  kernel_worker();
+    kernel_worker();
 }
 
 void kernel_worker_init() {
@@ -36,19 +35,15 @@ void kernel_worker_init() {
     }
 
     p.pid = 0;
-    p.state = PROC_STATE_RUN;
+    p.state = PROC_STATE_NEW;
     p.ap = p.bp = p.sp = (unsigned int)kernel_worker_stack;
     p.pc = (unsigned int)kernel_worker_entry;
     p.memBank = 0;
     p.cwd = fs_root;
     sched_add_proc(0, 0, &p);
-
-
 }
 
 extern void ps();
-
-
 
 void kernel_worker() {
     while (1) {
@@ -110,7 +105,6 @@ void kernel_worker() {
                 }
             }
         }
-            printf("kworker online!\n");
     }
 }
 

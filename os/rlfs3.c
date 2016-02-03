@@ -166,7 +166,7 @@ blk_t fs_allocBlock() {
 
 #define fs_freeBlock(b) fs_markSector((b), 0)
 
-int fs_stat(fs_node_t * node, stat_t * res) {
+int fs_stat(fs_node_t *node, stat_t *res) {
     struct Block *b;
 
     b = bread(0, node->idx);
@@ -177,22 +177,23 @@ int fs_stat(fs_node_t * node, stat_t * res) {
     // s.size |= (b->data[2]<<16);
     bfree(b);
 
-        //printf("FS stat node %d flags %04x size %d\n", node->idx, res->flags,
-        //res->size);
+    // printf("FS stat node %d flags %04x size %d\n", node->idx, res->flags,
+    // res->size);
 
     return FS_OK;
 }
 
-int fs_create(fs_node_t * where, unsigned int *name, unsigned int flags, fs_node_t * res) {
+int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
+              fs_node_t *res) {
     stat_t s;
     int rv;
     fs_stat(where, &s);
-    //printf("FS create at node %d stat %04x name %s\n", where->idx, s.flags,
+    // printf("FS create at node %d stat %04x name %s\n", where->idx, s.flags,
     //       name);
     if ((s.flags & 0xff) == FS_DIR) {
-        //printf("Dir ok! check file\n");
+        // printf("Dir ok! check file\n");
         rv = fs_finddir(where, name, res);
-        //printf("fs_finddir(%s) = %d\n", name, rv);
+        // printf("fs_finddir(%s) = %d\n", name, rv);
         if (rv == FS_OK) {
             return FS_FILE_EXISTS;
         } else {
@@ -200,7 +201,7 @@ int fs_create(fs_node_t * where, unsigned int *name, unsigned int flags, fs_node
             struct Block *b;
             blk_t newBlock = fs_allocBlock();
 
-            //printf("Dirent: at inode %d off %d write block %d\n", where->idx,
+            // printf("Dirent: at inode %d off %d write block %d\n", where->idx,
             //       s.size, newBlock);
             fs_write(where, s.size, 31, name);
             fs_write(where, s.size + 31, 1, &newBlock);
@@ -220,11 +221,11 @@ int fs_create(fs_node_t * where, unsigned int *name, unsigned int flags, fs_node
     return FS_OK;
 }
 
-int fs_finddir(fs_node_t * where, unsigned int *what, fs_node_t * res) {
+int fs_finddir(fs_node_t *where, unsigned int *what, fs_node_t *res) {
     off_t i;
     stat_t s;
 
-    //printf("Finding dirent %s at node %d\n", what, where->idx);
+    // printf("Finding dirent %s at node %d\n", what, where->idx);
 
     fs_stat(where, &s);
     for (i = 0; i < s.size; i += 32) {
@@ -232,15 +233,15 @@ int fs_finddir(fs_node_t * where, unsigned int *what, fs_node_t * res) {
         fs_read(where, i, 32, (unsigned int *)&dEnt);
         if (!strcmp(dEnt.name, what)) {
             res->idx = dEnt.idx;
-            //printf("Found! %d\n", res->idx);
+            // printf("Found! %d\n", res->idx);
             return FS_OK;
         }
     }
-    //printf("Not found\n");
+    // printf("Not found\n");
     return FS_NO_FILE;
 }
 
-int fs_readdir(fs_node_t * dir, off_t n, dirent_t * res) {
+int fs_readdir(fs_node_t *dir, off_t n, dirent_t *res) {
     if (fs_read(dir, n, 32, (unsigned int *)res) == 32) {
         return FS_OK;
     } else {
@@ -248,7 +249,7 @@ int fs_readdir(fs_node_t * dir, off_t n, dirent_t * res) {
     }
 }
 
-unsigned int fs_read(fs_node_t * node, off_t offset, size_t size,
+unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
                      unsigned int *buf) {
     stat_t s;
     unsigned int offsetInBlock;
@@ -298,7 +299,7 @@ unsigned int fs_read(fs_node_t * node, off_t offset, size_t size,
     return alreadyRead;
 }
 
-unsigned int fs_write(fs_node_t * node, off_t offset, size_t size,
+unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
                       unsigned int *buf) {
     stat_t s;
     unsigned int offsetInBlock;
@@ -308,8 +309,8 @@ unsigned int fs_write(fs_node_t * node, off_t offset, size_t size,
     struct Block *currentBlock;
     size_t alreadyWritten;
 
-        //printf("Write [%s] to node %d off %d size %d\n", buf, node->idx,
-        //offset, size);
+    // printf("Write [%s] to node %d off %d size %d\n", buf, node->idx,
+    // offset, size);
 
     nodeBlock = bread(0, node->idx);
 
@@ -364,7 +365,7 @@ unsigned int fs_write(fs_node_t * node, off_t offset, size_t size,
     return alreadyWritten;
 }
 
-void fs_reset(fs_node_t * node) {
+void fs_reset(fs_node_t *node) {
     int i;
     struct Block *b;
     b = bread(0, node->idx);
@@ -381,7 +382,7 @@ void fs_reset(fs_node_t * node) {
     bfree(b);
 }
 
-FILE *fs_open(fs_node_t * node, unsigned int mode) {
+FILE *fs_open(fs_node_t *node, unsigned int mode) {
     int fd;
     stat_t s;
     fd = fs_get_free_fd();
@@ -400,7 +401,7 @@ FILE *fs_open(fs_node_t * node, unsigned int mode) {
     return &openFiles[fd];
 }
 
-int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t * res) {
+int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t *res) {
     size_t cStart = 0;
     size_t cEnd = 0;
     size_t cLen = 0;
@@ -457,7 +458,7 @@ int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t * res) {
         cStart = cEnd;
     }
 
-    return FS_OK; //should never get here o_O
+    return FS_OK; // should never get here o_O
 }
 
 void fs_close(FILE *fd) {
@@ -490,7 +491,7 @@ FILE *k_open(void *__name, unsigned int mode) {
     unsigned int *name = (unsigned int *)__name;
 
     rv = fs_lookup(name, &parent, &file);
-    //printf("File lookup result %d\n", rv);
+    // printf("File lookup result %d\n", rv);
     if (rv != FS_NO_DIR) {
         if (rv == FS_OK) {
             return fs_open(&file, mode);
@@ -504,11 +505,11 @@ FILE *k_open(void *__name, unsigned int mode) {
                 s--;
             }
             s++;
-            //printf("Cropped filename %s\n", s);
+            // printf("Cropped filename %s\n", s);
 
             if (mode == FS_MODE_WRITE || mode == FS_MODE_APPEND) {
                 rv = fs_create(&parent, s, FS_FILE, &file);
-                //printf("fs create rv %d\n", rv);
+                // printf("fs create rv %d\n", rv);
                 return fs_open(&file, mode);
             } else {
                 // no file
@@ -594,7 +595,7 @@ int k_mkdir(void *__path) {
             }
             s++;
             rv = fs_create(&parent, s, FS_DIR, &dir);
-                //printf("fs create rv %d\n", rv);
+            // printf("fs create rv %d\n", rv);
 
             fs_write(&dir, 0, 31, (unsigned int *)("."));
             fs_write(&dir, 31, 1, &(dir.idx));

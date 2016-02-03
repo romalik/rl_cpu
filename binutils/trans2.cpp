@@ -519,6 +519,33 @@ void optimize() {
     }
 }
 
+
+void optimize2() {
+    std::vector< RCEntry >::iterator it = output.begin();
+    while(it != output.end()) {
+        std::vector< RCEntry >::iterator p1It;
+        std::vector< RCEntry >::iterator p2It;
+        if(it != output.begin() && it != output.begin()+1 && it->isDirective == 0 && it->argType == ARG_NONE && it->name == rc_store && it->size == SIZE_WORD) {
+            p1It = it - 1;
+            p2It = it - 2;
+            if(
+                p1It->isDirective == 0 && p1It->name == rc_addrf && p1It->needIndir == 1 &&
+                p2It->isDirective == 0 && p2It->name == rc_addrf && p2It->needIndir == 0 &&
+                !strcmp(p1It->arg, p2It->arg)
+               )
+            {
+                        it = p2It;
+                        it = output.erase(it);
+                        it = output.erase(it);
+                        it = output.erase(it);
+                        continue;
+            }
+        }
+        it++;
+
+    }
+}
+
 void dumpCode() {
     for(int i = 0; i<output.size(); i++) {
         if(output[i].isDirective == 1) {
@@ -561,8 +588,11 @@ int main(int argc, char ** argv) {
         parseLine(line);
     }
 
-    if(argc > 1 && !strcmp(argv[1], "-o")) {
+    if(argc > 1 && !memcmp(argv[1], "-o", 2)) {
         optimize();
+        if(argv[1][2] == '2') {
+          optimize2();
+        }
     }
     dumpCode();
     return 0;

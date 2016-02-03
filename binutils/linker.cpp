@@ -433,7 +433,7 @@ int main(int argc, char ** argv) {
     linker.writeBin(outFile);
 //    printf("Done.\n");
 
-//    linker.dumpLabels();
+    linker.dumpLabels();
     return 0;
 
 }

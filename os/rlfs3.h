@@ -19,7 +19,6 @@
 #define FS_MODE_WRITE 'w'
 #define FS_MODE_APPEND 'a'
 
-
 #define FS_OK 0
 #define FS_NO_FILE 1
 #define FS_NOT_A_DIR 2
@@ -88,17 +87,18 @@ extern struct fs_node fs_root;
 
 void fs_mkfs();
 
-int fs_create(fs_node_t * where, unsigned int *name, unsigned int flags, fs_node_t * res);
+int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
+              fs_node_t *res);
 
-int fs_finddir(fs_node_t * where, unsigned int *what, fs_node_t * res);
-int fs_readdir(fs_node_t * dir, off_t n, dirent_t * res);
+int fs_finddir(fs_node_t *where, unsigned int *what, fs_node_t *res);
+int fs_readdir(fs_node_t *dir, off_t n, dirent_t *res);
 
-unsigned int fs_read(fs_node_t * node, off_t offset, size_t size,
+unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
                      unsigned int *buf);
-unsigned int fs_write(fs_node_t * node, off_t offset, size_t size,
+unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
                       unsigned int *buf);
 
-FILE *fs_open(fs_node_t * node, unsigned int mode);
+FILE *fs_open(fs_node_t *node, unsigned int mode);
 void fs_close(FILE *fd);
 
 size_t k_write(FILE *fd, unsigned int *buf, size_t size);

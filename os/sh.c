@@ -95,19 +95,19 @@ int cd(int argc, char **argv) {
 }
 
 int loadBin(int argc, char **argv) {
-      FILE * fd;
-        size_t cPos;
-        int bank;
-        bank = atoi(argv[2]);
-        fd = k_open(argv[1], 'r');
-        cPos = 0x8000;
-        BANK_SEL = bank;
-        while (!k_isEOF(fd)) {
-            cPos += k_read(fd, (unsigned int *)cPos, fd->size);
-        }
-        k_close(fd);
-        printf("Done.\n");
-        printf("%d words loaded\n", cPos - 0x8000);
+    FILE *fd;
+    size_t cPos;
+    int bank;
+    bank = atoi(argv[2]);
+    fd = k_open(argv[1], 'r');
+    cPos = 0x8000;
+    BANK_SEL = bank;
+    while (!k_isEOF(fd)) {
+        cPos += k_read(fd, (unsigned int *)cPos, fd->size);
+    }
+    k_close(fd);
+    printf("Done.\n");
+    printf("%d words loaded\n", cPos - 0x8000);
     return 0;
 }
 
@@ -166,50 +166,50 @@ int usemem(int argc, char **argv) {
 }
 
 int hex2bin(int argc, char **argv) {
-      int i;
-        FILE * fdIn;
-        FILE * fdOut;
-        unsigned int c;
-        unsigned int cWord;
-        unsigned int cnt;
-        fdIn = k_open(argv[1], 'r');
-        fdOut = k_open(argv[2], 'w');
-        if (fdIn == NULL) {
-            printf("file %s not found\n", argv[i]);
-            return 1;
+    int i;
+    FILE *fdIn;
+    FILE *fdOut;
+    unsigned int c;
+    unsigned int cWord;
+    unsigned int cnt;
+    fdIn = k_open(argv[1], 'r');
+    fdOut = k_open(argv[2], 'w');
+    if (fdIn == NULL) {
+        printf("file %s not found\n", argv[i]);
+        return 1;
+    }
+    cWord = 0;
+    i = 0;
+    cnt = 0;
+    while (!k_isEOF(fdIn)) {
+        unsigned int v = 0;
+        k_read(fdIn, &c, 1);
+        if (c >= 'a' && c <= 'f') {
+            v = 10 + (c - 'a');
+        } else if (c >= 'A' && c <= 'F') {
+            v = 10 + (c - 'A');
+        } else if (c >= '0' && c <= '9') {
+            v = c - '0';
+        } else {
+            continue;
         }
-        cWord = 0;
-        i = 0;
-        cnt = 0;
-        while (!k_isEOF(fdIn)) {
-            unsigned int v = 0;
-            k_read(fdIn, &c, 1);
-            if (c >= 'a' && c <= 'f') {
-                v = 10 + (c - 'a');
-            } else if (c >= 'A' && c <= 'F') {
-                v = 10 + (c - 'A');
-            } else if (c >= '0' && c <= '9') {
-                v = c - '0';
-            } else {
-                continue;
-            }
-            cWord = cWord + (v << ((3 - i) * 4));
-            i++;
-            if (i == 4) {
-                cnt++;
-                //            printf("0x%04x ", cWord);
-                k_write(fdOut, &cWord, 1);
-                i = 0;
-                cWord = 0;
-                if ((cnt % 100) == 0) {
-                    printf("%u bytes written\n", cnt);
-                }
+        cWord = cWord + (v << ((3 - i) * 4));
+        i++;
+        if (i == 4) {
+            cnt++;
+            //            printf("0x%04x ", cWord);
+            k_write(fdOut, &cWord, 1);
+            i = 0;
+            cWord = 0;
+            if ((cnt % 100) == 0) {
+                printf("%u bytes written\n", cnt);
             }
         }
+    }
 
-        k_close(fdIn);
-        k_close(fdOut);
-        printf("\n");
+    k_close(fdIn);
+    k_close(fdOut);
+    printf("\n");
 
     return 0;
 }

@@ -9,7 +9,7 @@
 #define PROC_STATE_WAIT 2
 #define PROC_STATE_EXIT 3
 #define PROC_STATE_FORKING 4
-
+#define PROC_STATE_NEW 5
 extern unsigned int ticks;
 
 struct Process {
