@@ -1,8 +1,8 @@
 #!/bin/sh
 
 
-../format.sh -i *.c
-../format.sh -i *.h
+#../format.sh -i *.c
+#../format.sh -i *.h
 
 asm interrupts.s interrupts.o
 asm syscall.s syscall.o

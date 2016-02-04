@@ -71,11 +71,11 @@ void kernel_worker() {
                         }
                         printf("KWorker new bank %d\n", newBank);
                         ei();
-                        printf("KWorker not reached here?\n");
                         currentBank = p->memBank;
                         copyBanks(newBank, currentBank);
 
                         di();
+                        p->state = PROC_STATE_RUN;
                         newPid = sched_genPid();
                         newProcess = sched_add_proc(newPid, newBank, p);
 
@@ -95,7 +95,6 @@ void kernel_worker() {
                                                 // in first arg in arg space
                         sStruct->pid = newPid;
 
-                        p->state = PROC_STATE_RUN;
                         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
                         ei();
                     } else {

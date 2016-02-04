@@ -15,10 +15,40 @@ ret
 .label __timer_interrupt_vector
 di
 call0_w __timer_interrupt_wrapper
-;ei
+ei
+reti
+
 
 .import __builtin_memcpy
+.import ticks
+.import ticksToSwitch
 .label __timer_interrupt_wrapper
+
+; ticks++
+; if ticksToSwitch
+; ticksToSwitch--
+; if(ticksToSwitch == 0) 
+;    call0_w timer_interrupt;
+
+cnst_w ticks
+icnst_w ticks
+add_b 1
+store
+
+icnst_w ticksToSwitch
+cnst_b 0
+eq_w __tiwrapper_exit
+
+cnst_w ticksToSwitch
+icnst_w ticksToSwitch
+sub_b 1
+store
+
+icnst_w ticksToSwitch
+cnst_b 0
+ne_w __tiwrapper_exit
+
+
 cnst_w sched_stack
 addrl_b -7
 cnst_b 4
@@ -36,6 +66,8 @@ discard_b 1
 ei
 reti
 
+.label __tiwrapper_exit
+ret
 
 
 .export __system_interrupt_vector
