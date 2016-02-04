@@ -1,11 +1,12 @@
 #!/bin/sh
 
 
-#../format.sh -i *.c
-#../format.sh -i *.h
+../format.sh -i *.c
+../format.sh -i *.h
 
 asm interrupts.s interrupts.o
 asm syscall.s syscall.o
+
 
 lcc -Wo"-kernel" -I./ ./rlfs3.c ./blk.c  ./mm.c ./kernel_worker.c ./fork.c ./syscall.o ./exit.c ./kstdio.c ./sched.c ./sys.c ./string.c ./interrupts.o ./kernel_main.c ./malloc.c ./ata.c ./sh.c -o image
 

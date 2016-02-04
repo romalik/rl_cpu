@@ -11,15 +11,15 @@ unsigned int kernel_worker_stack[64 * 64];
 void copyBanks(unsigned int dest, unsigned int src) {
     unsigned int copied = 0;
     while (copied < 0x8000) {
-        printf("Copying pages.. di\n", copied);
         di();
+        printf("Copying pages.. di\n", copied);
         mm_memcpy(forkBuffer, (unsigned int *)(0x8000 + copied),
                   FORK_BUFFER_SIZE, src);
         mm_memcpy((unsigned int *)(0x8000 + copied), forkBuffer,
                   FORK_BUFFER_SIZE, dest);
         copied += FORK_BUFFER_SIZE;
-        ei();
         printf("Copying pages.. 0x%04x completed\n", copied);
+        ei();
     }
 }
 

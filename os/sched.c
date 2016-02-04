@@ -41,7 +41,7 @@ void ps() {
 struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
                                struct Process *p) {
     int i = 0;
-    
+
     for (i = 0; i < MAXPROC; i++) {
         if (procs[i].state == PROC_STATE_NONE) {
             break;
@@ -78,47 +78,47 @@ void sched_start() {
 }
 
 void timer_interrupt(struct IntFrame *fr) {
-            int nextTask;
-            printf("Switch from PC 0x%04x\n", fr->pc);
-            nextTask = currentTask + 1;
-            while (nextTask != currentTask) {
-                if (nextTask >= MAXPROC)
-                    nextTask = 0;
+    int nextTask;
+    printf("Switch from PC 0x%04x\n", fr->pc);
+    nextTask = currentTask + 1;
+    while (nextTask != currentTask) {
+        if (nextTask >= MAXPROC)
+            nextTask = 0;
 
-                if (procs[nextTask].state == PROC_STATE_RUN)
-                    break;
+        if (procs[nextTask].state == PROC_STATE_RUN)
+            break;
 
-                if (procs[nextTask].state == PROC_STATE_NEW)
-                    break;
+        if (procs[nextTask].state == PROC_STATE_NEW)
+            break;
 
-                nextTask++;
-            }
-            if ((nextTask == currentTask) &&
-                (procs[currentTask].state == PROC_STATE_RUN)) {
-                return;
-            }
-            if (currentTask < MAXPROC) {
-                if (procs[currentTask].state == PROC_STATE_RUN) {
-                    procs[currentTask].ap = fr->ap;
-                    procs[currentTask].bp = fr->bp;
-                    procs[currentTask].sp = fr->sp;
-                    procs[currentTask].pc = fr->pc;
-                }
-            }
-            if (procs[nextTask].state == PROC_STATE_NEW) {
-                procs[nextTask].state = PROC_STATE_RUN;
-            }
+        nextTask++;
+    }
+    if ((nextTask == currentTask) &&
+        (procs[currentTask].state == PROC_STATE_RUN)) {
+        return;
+    }
+    if (currentTask < MAXPROC) {
+        if (procs[currentTask].state == PROC_STATE_RUN) {
+            procs[currentTask].ap = fr->ap;
+            procs[currentTask].bp = fr->bp;
+            procs[currentTask].sp = fr->sp;
+            procs[currentTask].pc = fr->pc;
+        }
+    }
+    if (procs[nextTask].state == PROC_STATE_NEW) {
+        procs[nextTask].state = PROC_STATE_RUN;
+    }
 
-            fr->ap = procs[nextTask].ap;
-            fr->bp = procs[nextTask].bp;
-            fr->sp = procs[nextTask].sp;
-            fr->pc = procs[nextTask].pc;
-            BANK_SEL = procs[nextTask].memBank;
-            printf("Sched switch %d -> %d\n", currentTask, nextTask);
-            printf("Switch to PC 0x%04x\n", fr->pc);
-            currentTask = nextTask;
-            cProc = &(procs[nextTask]);
-            ticksToSwitch = 10;
+    fr->ap = procs[nextTask].ap;
+    fr->bp = procs[nextTask].bp;
+    fr->sp = procs[nextTask].sp;
+    fr->pc = procs[nextTask].pc;
+    BANK_SEL = procs[nextTask].memBank;
+    printf("Sched switch %d -> %d\n", currentTask, nextTask);
+    printf("Switch to PC 0x%04x\n", fr->pc);
+    currentTask = nextTask;
+    cProc = &(procs[nextTask]);
+    ticksToSwitch = 10;
 }
 
 unsigned int findProcByPid(unsigned int pid, struct Process **p) {

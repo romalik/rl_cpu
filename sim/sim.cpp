@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <time.h>
 
+
 long long gettime_ms() {
     struct timeval te;
     gettimeofday(&te, NULL);
@@ -57,13 +58,24 @@ Cpu::~Cpu() {
 w SP_min;
 w SP_max;
 
+long long totalInstr = 0;
+long long startTime = 0;
+
 void Cpu::terminate() {
+
+  long long cTime = gettime_ms();
+  int dT = cTime - startTime;
+  long ipsActual = totalInstr/(static_cast<float>(dT)/1000.0f);
+
+  printf("CPU terminating\n");
+
+
   for(int i = 0; i<this->devices.size(); i++) {
     this->devices[i]->terminate();
   }
-  printf("CPU terminating\n");
 
   printf("SP_min: 0x%04x\nSP_max 0x%04x\n", SP_min, SP_max);
+  printf("Average ips %d\n", ipsActual);
 
 }
 void Cpu::memWrite(w addr, w val) {
@@ -678,10 +690,6 @@ int main(int argc, char ** argv) {
         while(1) {
             cnt++;
             if(cnt > 1000) {
-                long long cTime = gettime_ms();
-                int dT = cTime - prevTime;
-                float avTime = (static_cast<float>(dT)/1000.0f)/1000.0f;
-                printf("Average time: %f\nAverage ips %d\n", avTime, static_cast<int>(1.0f/avTime));
 
                 prevTime = cTime;
                 cnt = 0;
@@ -696,19 +704,23 @@ int main(int argc, char ** argv) {
         SP_min = myCpu.getSP();
         SP_max = myCpu.getSP();
 
-        int mcsPerInstr = 0;
+        long long nsPerInstr = 0;
         if(ips) {
-          mcsPerInstr = 1000000 / ips;
+          nsPerInstr = 1000000000LL / ips;
         }
 
+        printf("IPS: %d = %d ns/instr\n", ips, nsPerInstr);
+
+        startTime = gettime_ms();
+        totalInstr = 0;
         while(1) {
-            unsigned long tstart;
+            struct timespec tsStart;
             if(ips) {
-              struct timeval tv;
-              gettimeofday(&tv,NULL);
-              tstart = 1000000 * tv.tv_sec + tv.tv_usec;
+              clock_gettime(CLOCK_REALTIME, &tsStart);
             }
             myCpu.execute();
+
+            totalInstr++;
 
             if(myCpu.getSP() > SP_max) {
                 SP_max = myCpu.getSP();
@@ -718,15 +730,22 @@ int main(int argc, char ** argv) {
                 SP_min = myCpu.getSP();
             }
             if(ips) {
-              struct timespec ts;
-              struct timeval tv;
+              while(1) {
+                struct timespec tsEnd;
+                struct timespec tsDelay;
+                long long nsSpent = 0;
+                long long nsDelay = 0;
 
-              gettimeofday(&tv,NULL);
-              unsigned long t = 1000000 * tv.tv_sec + tv.tv_usec;
+                clock_gettime(CLOCK_REALTIME, &tsEnd);
 
-              ts.tv_sec = 0;
-              ts.tv_nsec = 1000*(mcsPerInstr - (t-tstart));
-              nanosleep(&ts,NULL);
+                nsSpent = (tsEnd.tv_sec * 1000000000LL + tsEnd.tv_nsec) - (tsStart.tv_sec*1000000000LL + tsStart.tv_nsec);
+
+                nsDelay = nsPerInstr - nsSpent;
+                if(nsDelay <= 0) {
+                  break;
+                }
+
+              }
             }
 
         }
