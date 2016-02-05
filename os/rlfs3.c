@@ -5,6 +5,7 @@
 
 FILE openFiles[MAX_FILES];
 struct fs_node fs_root;
+struct devOpTable devList[MAX_DEVS];
 
 /* RLFS3 filesystem
  *
@@ -40,7 +41,8 @@ struct fs_node fs_root;
  */
 
 /* Device/pipe node:
- *  dev/pipe id
+ *  Flags
+ *  major|minor
  */
 
 void fs_mkfs() {
@@ -389,12 +391,14 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
     fs_stat(node, &s);
     openFiles[fd].mode = mode;
     openFiles[fd].size = s.size;
+    openFiles[fd].flags = s.flags;
     openFiles[fd].pos = 0;
     if (mode == FS_MODE_APPEND) {
         openFiles[fd].pos = s.size;
     }
     openFiles[fd].node = *node;
-    if (mode == FS_MODE_WRITE) {
+    if (mode == FS_MODE_WRITE && s.flags != FS_BLOCK_DEV &&
+        s.flags != FS_CHAR_DEV) {
         fs_reset(node);
     }
 
@@ -466,18 +470,52 @@ void fs_close(FILE *fd) {
 }
 
 size_t k_write(FILE *fd, unsigned int *buf, size_t size) {
-    fs_write(&(fd->node), fd->pos, size, buf);
-    fd->pos += size;
-    return size;
+    if (fd->flags == FS_BLOCK_DEV) {
+        return 0;
+    } else if (fd->flags == FS_CHAR_DEV) {
+        unsigned int major;
+        unsigned int minor;
+        struct devOpTable *ops;
+        major = (fd->device >> 8);
+        minor = (fd->device & 0xff);
+        ops = &devList[major];
+        while (size) {
+            ops->write(minor, *buf);
+            buf++;
+            size--;
+        }
+        return size;
+    } else {
+        fs_write(&(fd->node), fd->pos, size, buf);
+        fd->pos += size;
+        return size;
+    }
 }
 
 size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
-    if (size + fd->pos > fd->size) {
-        size = fd->size - fd->pos;
+    if (fd->flags == FS_BLOCK_DEV) {
+        return 0;
+    } else if (fd->flags == FS_CHAR_DEV) {
+        unsigned int major;
+        unsigned int minor;
+        struct devOpTable *ops;
+        major = (fd->device >> 8);
+        minor = (fd->device & 0xff);
+        ops = &devList[major];
+        while (size) {
+            *buf = ops->read(minor);
+            buf++;
+            size--;
+        }
+        return size;
+    } else {
+        if (size + fd->pos > fd->size) {
+            size = fd->size - fd->pos;
+        }
+        fs_read(&(fd->node), fd->pos, size, buf);
+        fd->pos += size;
+        return size;
     }
-    fs_read(&(fd->node), fd->pos, size, buf);
-    fd->pos += size;
-    return size;
 }
 
 int k_isEOF(FILE *fd) {
@@ -605,4 +643,54 @@ int k_mkdir(void *__path) {
             return 0;
         }
     }
+}
+
+int k_mknod(void *__path, int type, unsigned int major, unsigned int minor) {
+    fs_node_t devNode;
+    fs_node_t parent;
+    int rv;
+    unsigned int *path = (unsigned int *)__path;
+
+    rv = fs_lookup(path, &parent, &devNode);
+
+    if (rv == FS_OK) {
+        // file exists!
+        return FS_FILE_EXISTS;
+    } else {
+        if (rv == FS_NO_DIR) {
+            // parent doesn't exist!
+            return FS_NO_DIR;
+        } else {
+            unsigned int *s = path + strlen(path);
+            struct Block *b;
+            while (s >= path) {
+                if (*s == '/') {
+                    break;
+                }
+                s--;
+            }
+            s++;
+            if (type == 'c') {
+                type = FS_CHAR_DEV;
+            } else {
+                type = FS_BLOCK_DEV;
+            }
+            rv = fs_create(&parent, s, type, &devNode);
+            // printf("fs create rv %d\n", rv);
+            b = bread(0, devNode.idx);
+            b->data[1] = ((major << 8) | (minor & 0xff));
+            b->flags = BLOCK_MODIFIED;
+            bfree(b);
+
+            return 0;
+        }
+    }
+}
+
+int k_regDevice(unsigned int major, void *writeFunc, void *readFunc) {
+    if (major < MAX_DEVS) {
+        devList[major].write = writeFunc;
+        devList[major].read = readFunc;
+    }
+    return 0;
 }

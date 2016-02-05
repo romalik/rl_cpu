@@ -71,16 +71,20 @@ extern void syscall(void *p);
 #define __NR_getpgrp 65
 #define __NR_setsid 66
 
-    struct forkSyscall {
-        unsigned int id;
-        unsigned int pid;
-    };
+struct forkSyscall {
+    unsigned int id;
+    unsigned int pid;
+};
 
-    struct execSyscall {
-        unsigned int id;
-        void * filename;
-        void * argv;
-        void * envp;
-    };
+struct execSyscall {
+    unsigned int id;
+    void *filename;
+    void *argv;
+    void *envp;
+};
 
+struct exitSyscall {
+    unsigned int id;
+    unsigned int code;
+};
 #endif

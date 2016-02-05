@@ -1,13 +1,15 @@
 #include <stdio.h>
 
 int main(int argc, char **argv) {
-    while(1) {
+    int i = 0;
+    while (i < 5) {
         int j;
-        printf("Hello from hello.c!!\n");
-        for(j = 0; j<10000; j++) {
+        printf("Hello from hello.c!! %d\n", i);
+        for (j = 0; j < 10000; j++) {
             j--;
             j++;
         }
+        i++;
     }
 
     return 0;

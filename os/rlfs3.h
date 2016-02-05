@@ -4,7 +4,9 @@
 #include <string.h>
 #include "ata.h"
 #include <types.h>
+
 #define MAX_FILES 10
+#define MAX_DEVS 10
 
 #define FS_NONE 0
 #define FS_FILE 1
@@ -64,6 +66,11 @@
 
 typedef struct fs_node { blk_t idx; } fs_node_t;
 
+struct devOpTable {
+    unsigned int (*write)(unsigned int minor, unsigned int val);
+    unsigned int (*read)(unsigned int minor);
+};
+
 typedef struct dirent {
     unsigned int name[31];
     blk_t idx;
@@ -74,6 +81,8 @@ typedef struct __FILE {
     fs_node_t node;
     off_t size;
     off_t pos;
+    unsigned int device; // for dev files
+    unsigned int flags;
 } FILE;
 
 typedef struct __stat {
@@ -84,6 +93,7 @@ typedef struct __stat {
 
 extern FILE openFiles[MAX_FILES];
 extern struct fs_node fs_root;
+extern struct devOpTable devList[MAX_DEVS];
 
 void fs_mkfs();
 
@@ -118,5 +128,8 @@ FILE *k_opendir(void *dirname);
 dirent_t k_readdir(FILE *dir);
 
 int k_mkdir(void *__path);
+int k_mknod(void *__path, int type, unsigned int major, unsigned int minor);
+
+int k_regDevice(unsigned int major, void *writeFunc, void *readFunc);
 
 #endif

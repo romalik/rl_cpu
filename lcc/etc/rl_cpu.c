@@ -25,7 +25,10 @@ char *as[] = { LCCDIR "asm_bc", "$1", "$2", "$3", 0 };
 char kernbeg[] = LCCLIBDIR"kernbeg.o";
 char userbeg[] = LCCLIBDIR"progbeg.o";
 
-char *ld[] = { LCCDIR "link", "-o", "$3", userbeg, LCCLIBDIR "rt.o", LCCLIBDIR "math.o", "$1", "$2", LCCLIBDIR "progend.o", 0};
+char kernend[] = LCCLIBDIR"kernend.o";
+char userend[] = LCCLIBDIR"progend.o";
+
+char *ld[] = { LCCDIR "link", "-o", "$3", userbeg, LCCLIBDIR "rt.o", LCCLIBDIR "math.o", "$1", "$2", userend, 0};
 
 
 
@@ -42,6 +45,7 @@ int option(char *arg) {
        ld[0] = &arg[4];
    else if (strncmp(arg, "-kernel", 7) == 0) {
        ld[3] = kernbeg;
+       ld[8] = kernend;
    } else
        return 0;
    return 1;

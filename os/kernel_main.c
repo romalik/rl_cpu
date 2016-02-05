@@ -10,6 +10,7 @@
 #include <mm.h>
 //#include <vfs.h>
 #include <blk.h>
+#include <tty.h>
 
 extern char __data_end;
 extern char __code_end;
@@ -38,6 +39,8 @@ int kernel_main() {
     mm_init();
     sched_init();
     kernel_worker_init();
+
+    k_regDevice(0, tty_write, tty_read);
 
     printf("Press s for shell, any key for init\n");
 

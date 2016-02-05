@@ -67,8 +67,9 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         procs[i].state = p->state;
     }
 
-    printf("Proc pid %d entry %d added\n", pid, i);
-    ps();
+    // printf("Proc pid %d entry %d added\n", pid, i);
+
+    // ps();
 
     return &procs[i];
 }
@@ -79,7 +80,7 @@ void sched_start() {
 
 void timer_interrupt(struct IntFrame *fr) {
     int nextTask;
-    printf("Switch from PC 0x%04x\n", fr->pc);
+    // printf("Switch from PC 0x%04x\n", fr->pc);
     nextTask = currentTask + 1;
     while (nextTask != currentTask) {
         if (nextTask >= MAXPROC)
@@ -114,8 +115,8 @@ void timer_interrupt(struct IntFrame *fr) {
     fr->sp = procs[nextTask].sp;
     fr->pc = procs[nextTask].pc;
     BANK_SEL = procs[nextTask].memBank;
-    printf("Sched switch %d -> %d\n", currentTask, nextTask);
-    printf("Switch to PC 0x%04x\n", fr->pc);
+    // printf("Sched switch %d -> %d\n", currentTask, nextTask);
+    // printf("Switch to PC 0x%04x\n", fr->pc);
     currentTask = nextTask;
     cProc = &(procs[nextTask]);
     ticksToSwitch = 10;

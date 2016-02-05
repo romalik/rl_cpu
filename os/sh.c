@@ -23,6 +23,37 @@ int sync(int argc, char **argv) {
     return 0;
 }
 
+int mknod(int argc, char **argv) {
+    if (argc != 5) {
+        printf("Bad format\n");
+    } else {
+        unsigned int type;
+        unsigned int major;
+        unsigned int minor;
+
+        type = argv[2][0];
+        major = atoi(argv[3]);
+        minor = atoi(argv[4]);
+
+        k_mknod(argv[1], type, major, minor);
+    }
+    return 0;
+}
+
+int testDev(int argc, char **argv) {
+    if (argc < 2) {
+        printf("Bad!\n");
+    } else {
+        FILE *fileDev = k_open(argv[1], 'w');
+        if (fileDev) {
+            k_write(fileDev,
+                    (unsigned int *)"Test string to write on a device\n", 33);
+            k_close(fileDev);
+        }
+    }
+    return 0;
+}
+
 int fs_test(int argc, char **argv) {
     FILE *fd;
     unsigned int teststring[] = "This is a test string";
@@ -336,15 +367,16 @@ int rlfs_mkfs_main(int argc, char **argv) {
 
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"sync",    "cd",      "mkdir",   "fs_test", "loadBin",
-                          "runBin",  "help",    "hex2bin", "uptime",  "usemem",
-                          "meminfo", "hexdump", "edit",    "rm",      "cat",
-                          "ls",      "echo",    "hello",   "fs_mkfs", ""};
+char builtinCmds[][15] = {"mknod",   "testDev", "sync",    "cd",      "mkdir",
+                          "fs_test", "loadBin", "runBin",  "help",    "hex2bin",
+                          "uptime",  "usemem",  "meminfo", "hexdump", "edit",
+                          "rm",      "cat",     "ls",      "echo",    "hello",
+                          "fs_mkfs", ""};
 
 int (*builtinFuncs[])(int argc, char **argv) = {
-    sync,    cd,     mkdir,     fs_test,    loadBin,       runBin, help,
-    hex2bin, uptime, usemem,    meminfo,    hexdump,       edit,   rm,
-    cat,     ls,     echo_main, hello_main, rlfs_mkfs_main};
+    mknod,  testDev, sync,    cd,     mkdir,     fs_test,    loadBin,
+    runBin, help,    hex2bin, uptime, usemem,    meminfo,    hexdump,
+    edit,   rm,      cat,     ls,     echo_main, hello_main, rlfs_mkfs_main};
 
 int help(int argc, char **argv) {
     int i = 0;
