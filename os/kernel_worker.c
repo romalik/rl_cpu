@@ -1,5 +1,9 @@
 #include <kernel_worker.h>
 #include <sched.h>
+#include <syscall.h>
+
+
+
 
 struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
 
@@ -45,20 +49,11 @@ void kernel_worker_init() {
 
 extern void ps();
 
-void kernel_worker() {
-    while (1) {
-        int i = 0;
-        for (i = 0; i < MAX_QUEUE_SIZE; i++) {
-            if (kernelTaskQueue[i].type != KERNEL_TASK_NONE) {
-                if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
+void do_kernel_task_fork(int i) {
                     struct Process *p;
                     printf("Kernel worker: forking!\n");
-                    if (findProcByPid(kernelTaskQueue[i].src, &p)) {
-                        struct ForkSyscallStruct {
-                            unsigned int id;
-                            unsigned int pid;
-                        };
-                        struct ForkSyscallStruct *sStruct;
+                    if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+                        struct forkSyscall *sStruct;
                         struct Process *newProcess;
                         int currentBank;
                         int newBank;
@@ -81,7 +76,7 @@ void kernel_worker() {
 
                         // set zero pid retval for child
                         BANK_SEL = newBank;
-                        sStruct = (struct ForkSyscallStruct *)(*((
+                        sStruct = (struct forkSyscall *)(*((
                             size_t *)(newProcess->ap))); // syscall struct
                                                          // pointer sits in
                                                          // first arg in arg
@@ -90,7 +85,7 @@ void kernel_worker() {
 
                         // set child pid as retval for parent
                         BANK_SEL = currentBank;
-                        sStruct = (struct ForkSyscallStruct *)(*((
+                        sStruct = (struct forkSyscall *)(*((
                             size_t *)(p->ap))); // syscall struct pointer sits
                                                 // in first arg in arg space
                         sStruct->pid = newPid;
@@ -99,15 +94,63 @@ void kernel_worker() {
                         ei();
                     } else {
                         printf("Kernel Worker: pid %d not found!\n",
-                               kernelTaskQueue[i].src);
+                               kernelTaskQueue[i].callerPid);
                     }
+
+}
+
+
+#define EXECVE_READ_CHUNK_SIZE 0x1000
+
+void do_kernel_task_execve(int i) {
+    struct Process *p;
+    printf("Kernel worker: forking!\n");
+    if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+        struct execSyscall *sStruct;
+        FILE * fd;
+        size_t cPos = 0x8000;
+        sStruct = (struct execSyscall *)(*((size_t *)(p->ap))); // syscall struct pointer sits
+                                                                // in first arg in arg space
+
+        fd = k_open(sStruct->filename, 'r');
+
+        while(!k_isEOF(fd)) {
+            di();
+            BANK_SEL = p->memBank;
+            cPos += k_read(fd, (unsigned int *)cPos, EXECVE_READ_CHUNK_SIZE);
+            ei();
+        }
+        
+        di();
+        p->pc = 0x8000;
+        p->sp = p->bp = p->ap = 0xC000;
+        p->state = PROC_STATE_RUN;
+
+        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+        ei();
+
+    } else {
+        //hmmm... 
+    }
+}
+
+
+void kernel_worker() {
+    while (1) {
+        int i = 0;
+        for (i = 0; i < MAX_QUEUE_SIZE; i++) {
+            if (kernelTaskQueue[i].type != KERNEL_TASK_NONE) {
+                if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
+                    do_kernel_task_fork(i);
+                } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXECVE) {
+                    do_kernel_task_execve(i);
                 }
             }
         }
     }
 }
 
-void addKernelTask(unsigned int task, unsigned int src, unsigned int dst) {
+void addKernelTask(unsigned int task, unsigned int callerPid, void * args) {
     int i = 0;
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
         if (kernelTaskQueue[i].type == KERNEL_TASK_NONE) {
@@ -119,6 +162,6 @@ void addKernelTask(unsigned int task, unsigned int src, unsigned int dst) {
         return;
 
     kernelTaskQueue[i].type = task;
-    kernelTaskQueue[i].src = src;
-    kernelTaskQueue[i].dst = dst;
+    kernelTaskQueue[i].callerPid = callerPid;
+    kernelTaskQueue[i].args = args;
 }

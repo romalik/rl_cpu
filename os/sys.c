@@ -41,7 +41,14 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
 
-        cProc->state = PROC_STATE_FORKING;
+        cProc->state = PROC_STATE_KWORKER;
+        ei();
+        while (1) {
+        } // wait for context switch
+    } else if (scall_id == __NR_execve) {
+        di();
+        addKernelTask(KERNEL_TASK_EXECVE, cProc->pid, p);
+        cProc->state = PROC_STATE_KWORKER;
         ei();
         while (1) {
         } // wait for context switch

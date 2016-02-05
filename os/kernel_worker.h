@@ -5,18 +5,18 @@
 
 #define KERNEL_TASK_NONE 0
 #define KERNEL_TASK_FORK 1
-#define KERNEL_TASK_EXEC 2
+#define KERNEL_TASK_EXECVE 2
 
 struct KernelTask {
     unsigned int type;
-    unsigned int src;
-    unsigned int dst;
+    unsigned int callerPid;
+    void * args;
 };
 
 #define MAX_QUEUE_SIZE 15
 
 void kernel_worker_init();
 void kernel_worker();
-void addKernelTask(unsigned int task, unsigned int src, unsigned int dst);
+void addKernelTask(unsigned int task, unsigned int callerPid, void * args);
 
 #endif

@@ -45,7 +45,7 @@ int kernel_main() {
         main_sh();
     } else {
         unsigned int b;
-        FILE *fd1 = k_open("/bin/task", 'r');
+        FILE *fd1 = k_open("/bin/task1", 'r');
         size_t cPos = 0x8000;
 
         mm_allocSegment(&b);

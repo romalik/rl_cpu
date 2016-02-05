@@ -6,7 +6,10 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <time.h>
-
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
 
 long long gettime_ms() {
     struct timeval te;
@@ -716,7 +719,18 @@ int main(int argc, char ** argv) {
         while(1) {
             struct timespec tsStart;
             if(ips) {
-              clock_gettime(CLOCK_REALTIME, &tsStart);
+
+#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+                clock_serv_t cclock;
+                mach_timespec_t mts;
+                host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+                clock_get_time(cclock, &mts);
+                mach_port_deallocate(mach_task_self(), cclock);
+                tsStart.tv_sec = mts.tv_sec;
+                tsStart.tv_nsec = mts.tv_nsec;
+#else
+                clock_gettime(CLOCK_REALTIME, &tsStart);
+#endif
             }
             myCpu.execute();
 
@@ -736,8 +750,17 @@ int main(int argc, char ** argv) {
                 long long nsSpent = 0;
                 long long nsDelay = 0;
 
+#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+                clock_serv_t cclock;
+                mach_timespec_t mts;
+                host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+                clock_get_time(cclock, &mts);
+                mach_port_deallocate(mach_task_self(), cclock);
+                tsEnd.tv_sec = mts.tv_sec;
+                tsEnd.tv_nsec = mts.tv_nsec;
+#else
                 clock_gettime(CLOCK_REALTIME, &tsEnd);
-
+#endif
                 nsSpent = (tsEnd.tv_sec * 1000000000LL + tsEnd.tv_nsec) - (tsStart.tv_sec*1000000000LL + tsStart.tv_nsec);
 
                 nsDelay = nsPerInstr - nsSpent;
