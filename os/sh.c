@@ -22,6 +22,11 @@ int sync(int argc, char **argv) {
     block_sync();
     return 0;
 }
+int cls(int argc, char **argv) {
+    printf("%c[1J%c[HThis should clear screen!\n", 0x1b, 0x1b);
+    return 0;
+}
+
 
 int mknod(int argc, char **argv) {
     if (argc != 5) {
@@ -367,13 +372,13 @@ int rlfs_mkfs_main(int argc, char **argv) {
 
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"mknod",   "testDev", "sync",    "cd",      "mkdir",
+char builtinCmds[][15] = {"cls","mknod",   "testDev", "sync",    "cd",      "mkdir",
                           "fs_test", "loadBin", "runBin",  "help",    "hex2bin",
                           "uptime",  "usemem",  "meminfo", "hexdump", "edit",
                           "rm",      "cat",     "ls",      "echo",    "hello",
                           "fs_mkfs", ""};
 
-int (*builtinFuncs[])(int argc, char **argv) = {
+int (*builtinFuncs[])(int argc, char **argv) = {cls,
     mknod,  testDev, sync,    cd,     mkdir,     fs_test,    loadBin,
     runBin, help,    hex2bin, uptime, usemem,    meminfo,    hexdump,
     edit,   rm,      cat,     ls,     echo_main, hello_main, rlfs_mkfs_main};
