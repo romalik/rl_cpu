@@ -1,8 +1,12 @@
 #ifndef RLFS3_H__
 #define RLFS3_H__
+
+#if STANDALONE
+#include <stdio.h>
+#else
 #include <kstdio.h>
+#endif
 #include <string.h>
-#include "ata.h"
 #include <types.h>
 
 #define MAX_FILES 10

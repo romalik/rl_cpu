@@ -1,6 +1,6 @@
 #include <kstdio.h>
 #include <string.h>
-#include "sh.h"
+#include "sh_builtin.h"
 #include "ata.h"
 #include "rlfs3.h"
 #include "malloc.h"
@@ -22,6 +22,8 @@ extern void syscall();
 #define TIMER_INTERRUPT_ADDR_PORT INT3_vec
 #define SYSTEM_INTERRUPT_ADDR_PORT INT0_vec
 
+#define INIT_PATH "/bin/sh"
+
 void init_interrupts() {
     TIMER_INTERRUPT_ADDR_PORT = (size_t)(__timer_interrupt_vector);
     SYSTEM_INTERRUPT_ADDR_PORT = (size_t)(__system_interrupt_vector);
@@ -42,18 +44,18 @@ int kernel_main() {
 
     k_regDevice(0, tty_write, tty_read);
 
-    printf("Press s for shell, any key for init\n");
+    printf("Press s for builtin shell, any key for init [%s]\n", INIT_PATH);
 
     if (getc() == 's') {
         main_sh();
     } else {
         unsigned int b;
-        FILE *fd1 = k_open("/bin/task1", 'r');
+        FILE *fd1 = k_open(INIT_PATH, 'r');
         size_t cPos = 0x8000;
 
         mm_allocSegment(&b);
         BANK_SEL = b;
-        printf("load task1\n");
+        printf("Loading init\n");
         while (!k_isEOF(fd1)) {
             cPos += k_read(fd1, (unsigned int *)cPos, fd1->size);
         }

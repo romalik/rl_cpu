@@ -1,8 +1,11 @@
 #include "rlfs3.h"
 #include <blk.h>
+#if STANDALONE
+#include <stdio.h>
+#else
 #include <kstdio.h>
 #include <sched.h>
-
+#endif
 FILE openFiles[MAX_FILES];
 struct fs_node fs_root;
 struct devOpTable devList[MAX_DEVS];
@@ -418,7 +421,12 @@ int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t *res) {
     if (name[0] == '/') {
         *res = fs_root;
     } else {
+
+#if STANDALONE
+        *res = fs_root;
+#else
         *res = cProc->cwd;
+#endif
     }
 
     if (parent)

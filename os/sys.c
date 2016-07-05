@@ -1,6 +1,5 @@
 #include <kstdio.h>
 #include <string.h>
-#include "sh.h"
 #include "ata.h"
 #include "rlfs3.h"
 #include "malloc.h"
