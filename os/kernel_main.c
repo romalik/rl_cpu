@@ -22,7 +22,7 @@ extern void syscall();
 #define TIMER_INTERRUPT_ADDR_PORT INT3_vec
 #define SYSTEM_INTERRUPT_ADDR_PORT INT0_vec
 
-#define INIT_PATH "/bin/sh"
+#define INIT_PATH "/sh.bin"
 
 void init_interrupts() {
     TIMER_INTERRUPT_ADDR_PORT = (size_t)(__timer_interrupt_vector);

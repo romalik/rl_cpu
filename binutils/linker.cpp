@@ -332,6 +332,9 @@ public:
         char image[0xffff*2];
         memset(image, 0, 0xffff*2);
         char *p = image;
+
+        size_t binarySize = 0;
+
         if(mode == 0) { //small mode
             for(int sect = 0; sect < 2; sect++) {//write code first
                 for(int i = 0; i<sections.size(); i++) {
@@ -345,9 +348,10 @@ public:
                 }
             }
             printf("%s: %lu words\n", filename.c_str(), (p - image)/2);
+            binarySize = p-image;
         }
 
-        file.write(image, 0xffff*2);
+        file.write(image, binarySize);
         file.close();
     }
 
