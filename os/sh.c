@@ -12,7 +12,6 @@ int cls(int argc, char **argv) {
     return 0;
 }
 
-
 int cd(int argc, char **argv) {
     /*
     if (argc > 1) {
@@ -28,7 +27,6 @@ int cd(int argc, char **argv) {
     return 0;
 }
 
-
 int echo_main(int argc, char **argv) {
     int i = 0;
 
@@ -39,12 +37,11 @@ int echo_main(int argc, char **argv) {
     return 0;
 }
 
-
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"cls",  "cd", "help",  "echo",  ""};
+char builtinCmds[][15] = {"cls", "cd", "help", "echo", ""};
 
-int (*builtinFuncs[])(int argc, char **argv) = {cls, cd,  help,  echo_main};
+int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, echo_main};
 
 int help(int argc, char **argv) {
     int i = 0;

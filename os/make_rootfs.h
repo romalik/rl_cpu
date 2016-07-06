@@ -1,7 +1,6 @@
 //#include "types.h"
 
-
-typedef unsigned int blk_t;
+typedef uint16_t blk_t;
 
 #define BLOCK_FREE 0x00
 #define BLOCK_USED 0x01
@@ -11,20 +10,19 @@ typedef unsigned int blk_t;
 #define BLOCK_CACHE_SIZE 16
 
 struct Block {
-    unsigned int flags;
-    unsigned int device;
-    unsigned int n;
-    unsigned int cnt;
-    unsigned int *data;
+    uint16_t flags;
+    uint16_t device;
+    uint16_t n;
+    uint16_t cnt;
+    uint16_t *data;
 };
 
 extern struct Block blockCache[];
 
-struct Block *bread(unsigned int device, unsigned int n);
+struct Block *bread(uint16_t device, uint16_t n);
 void bfree(struct Block *b);
 void block_init();
 void block_sync();
-
 
 #define MAX_FILES 10
 #define MAX_DEVS 10
@@ -88,28 +86,28 @@ void block_sync();
 typedef struct fs_node { blk_t idx; } fs_node_t;
 
 struct devOpTable {
-    unsigned int (*write)(unsigned int minor, unsigned int val);
-    unsigned int (*read)(unsigned int minor);
+    uint16_t (*write)(uint16_t minor, uint16_t val);
+    uint16_t (*read)(uint16_t minor);
 };
 
 typedef struct dirent {
-    unsigned int name[31];
+    uint16_t name[31];
     blk_t idx;
 } dirent_t;
 
 typedef struct __FILE {
-    unsigned int mode;
+    uint16_t mode;
     fs_node_t node;
     off_t size;
     off_t pos;
-    unsigned int device; // for dev files
-    unsigned int flags;
+    uint16_t device; // for dev files
+    uint16_t flags;
 } FILE;
 
 typedef struct __stat {
     fs_node_t node;
     off_t size;
-    unsigned int flags;
+    uint16_t flags;
 } stat_t;
 
 extern FILE openFiles[MAX_FILES];
@@ -118,24 +116,21 @@ extern struct devOpTable devList[MAX_DEVS];
 
 void fs_mkfs();
 
-int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
-              fs_node_t *res);
+int fs_create(fs_node_t *where, uint16_t *name, uint16_t flags, fs_node_t *res);
 
-int fs_finddir(fs_node_t *where, unsigned int *what, fs_node_t *res);
+int fs_finddir(fs_node_t *where, uint16_t *what, fs_node_t *res);
 int fs_readdir(fs_node_t *dir, off_t n, dirent_t *res);
 
-unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
-                     unsigned int *buf);
-unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
-                      unsigned int *buf);
+uint16_t fs_read(fs_node_t *node, off_t offset, size_t size, uint16_t *buf);
+uint16_t fs_write(fs_node_t *node, off_t offset, size_t size, uint16_t *buf);
 
-FILE *fs_open(fs_node_t *node, unsigned int mode);
+FILE *fs_open(fs_node_t *node, uint16_t mode);
 void fs_close(FILE *fd);
 
-size_t k_write(FILE *fd, unsigned int *buf, size_t size);
-size_t k_read(FILE *fd, unsigned int *buf, size_t size);
+size_t k_write(FILE *fd, uint16_t *buf, size_t size);
+size_t k_read(FILE *fd, uint16_t *buf, size_t size);
 
-FILE *k_open(void *name, unsigned int mode);
+FILE *k_open(void *name, uint16_t mode);
 stat_t k_stat(void *name);
 
 void k_close(FILE *fd);
@@ -149,7 +144,6 @@ FILE *k_opendir(void *dirname);
 dirent_t k_readdir(FILE *dir);
 
 int k_mkdir(void *__path);
-int k_mknod(void *__path, int type, unsigned int major, unsigned int minor);
+int k_mknod(void *__path, int type, uint16_t major, uint16_t minor);
 
-int k_regDevice(unsigned int major, void *writeFunc, void *readFunc);
-
+int k_regDevice(uint16_t major, void *writeFunc, void *readFunc);

@@ -27,7 +27,6 @@ int cls(int argc, char **argv) {
     return 0;
 }
 
-
 int mknod(int argc, char **argv) {
     if (argc != 5) {
         printf("Bad format\n");
@@ -134,13 +133,18 @@ int loadBin(int argc, char **argv) {
     FILE *fd;
     size_t cPos;
     int bank;
+    unsigned int read_size = 0x8000;
     bank = atoi(argv[2]);
     fd = k_open(argv[1], 'r');
     cPos = 0x8000;
     BANK_SEL = bank;
-    while (!k_isEOF(fd)) {
-        cPos += k_read(fd, (unsigned int *)cPos, fd->size);
-    }
+
+    if (fd->size < read_size)
+        read_size = fd->size;
+
+    //    while (!k_isEOF(fd)) {
+    cPos += k_read(fd, (unsigned int *)cPos, read_size);
+    //    }
     k_close(fd);
     printf("Done.\n");
     printf("%d words loaded\n", cPos - 0x8000);
@@ -372,16 +376,17 @@ int rlfs_mkfs_main(int argc, char **argv) {
 
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"cls","mknod",   "testDev", "sync",    "cd",      "mkdir",
-                          "fs_test", "loadBin", "runBin",  "help",    "hex2bin",
-                          "uptime",  "usemem",  "meminfo", "hexdump", "edit",
-                          "rm",      "cat",     "ls",      "echo",    "hello",
-                          "fs_mkfs", ""};
+char builtinCmds[][15] = {"cls",     "mknod",   "testDev", "sync",    "cd",
+                          "mkdir",   "fs_test", "loadBin", "runBin",  "help",
+                          "hex2bin", "uptime",  "usemem",  "meminfo", "hexdump",
+                          "edit",    "rm",      "cat",     "ls",      "echo",
+                          "hello",   "fs_mkfs", ""};
 
-int (*builtinFuncs[])(int argc, char **argv) = {cls,
-    mknod,  testDev, sync,    cd,     mkdir,     fs_test,    loadBin,
-    runBin, help,    hex2bin, uptime, usemem,    meminfo,    hexdump,
-    edit,   rm,      cat,     ls,     echo_main, hello_main, rlfs_mkfs_main};
+int (*builtinFuncs[])(int argc, char **argv) = {
+    cls,     mknod,     testDev,    sync,          cd,      mkdir,
+    fs_test, loadBin,   runBin,     help,          hex2bin, uptime,
+    usemem,  meminfo,   hexdump,    edit,          rm,      cat,
+    ls,      echo_main, hello_main, rlfs_mkfs_main};
 
 int help(int argc, char **argv) {
     int i = 0;

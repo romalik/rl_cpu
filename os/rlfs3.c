@@ -177,11 +177,9 @@ int fs_stat(fs_node_t *node, stat_t *res) {
     b = bread(0, node->idx);
     res->flags = b->data[0];
     res->size = b->data[1];
-    if(res->flags == FS_CHAR_DEV) {
+    if (res->flags == FS_CHAR_DEV) {
         res->size = 1;
     }
-
-    
 
     res->node = *node;
     // s.size |= (b->data[2]<<16);
@@ -421,7 +419,6 @@ int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t *res) {
     if (name[0] == '/') {
         *res = fs_root;
     } else {
-
 #if STANDALONE
         *res = fs_root;
 #else

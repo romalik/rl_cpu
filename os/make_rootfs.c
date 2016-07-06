@@ -1,26 +1,26 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
+
 #define FILE MY_FILE
+#define stat_t my_stat_t
+#define dirent_t my_dirent_t
+#define dirent my_dirent
 
 #include "make_rootfs.h"
 
+uint16_t *hdd_image;
 
-unsigned int * hdd_image;
-
-void ataWriteSectorsLBA(unsigned int n, unsigned int * data) {
-    printf("write blk %lld\n", n);
-    memcpy(hdd_image + n*512,data,512); 
+void ataWriteSectorsLBA(uint16_t n, uint16_t *data) {
+    memcpy(hdd_image + n * 256, data, 256);
 }
 
-
-void ataReadSectorsLBA(unsigned int n, unsigned int * data) {
-    printf("read blk %lld\n", n);
-    memcpy(data,hdd_image + n*512,512); 
-
+void ataReadSectorsLBA(uint16_t n, uint16_t *data) {
+    memcpy(data, hdd_image + n * 256, 256);
 }
 
 struct Block blockCache[BLOCK_CACHE_SIZE];
-unsigned int blockDataCache[BLOCK_CACHE_SIZE * 64 * 4];
+uint16_t blockDataCache[BLOCK_CACHE_SIZE * 64 * 4];
 
 void dump_blocks() {
     int i;
@@ -45,8 +45,8 @@ void block_sync() {
     }
 }
 
-struct Block *bread(unsigned int device, unsigned int n) {
-    unsigned int i;
+struct Block *bread(uint16_t device, uint16_t n) {
+    uint16_t i;
     //    printf("bread: %d %d\n", device, n);
     while (1) {
         for (i = 0; i < BLOCK_CACHE_SIZE; i++) {
@@ -79,15 +79,17 @@ void bfree(struct Block *b) {
 }
 
 void block_init() {
-    unsigned int i;
+    uint16_t i;
     for (i = 0; i < BLOCK_CACHE_SIZE; i++) {
         blockCache[i].flags = BLOCK_FREE;
     }
 }
 
-
 FILE openFiles[MAX_FILES];
+
 struct fs_node fs_root;
+struct fs_node fs_cwd;
+
 struct devOpTable devList[MAX_DEVS];
 
 /* RLFS3 filesystem
@@ -135,7 +137,7 @@ void fs_mkfs() {
     fs_node_t dir;
     b = bread(0, 0);
 
-    memcpy(b->data, (void *)"RLFS filesystem", 16);
+    memcpy(b->data, (void *)L"RLFS filesystem", 16);
     b->flags = BLOCK_MODIFIED;
     bfree(b);
 
@@ -166,9 +168,9 @@ void fs_mkfs() {
 
     dir.idx = 34;
 
-    fs_write(&dir, 0, 31, (unsigned int *)("."));
+    fs_write(&dir, 0, 31, (uint16_t *)(L"."));
     fs_write(&dir, 31, 1, &(dir.idx));
-    fs_write(&dir, 32, 31, (unsigned int *)(".."));
+    fs_write(&dir, 32, 31, (uint16_t *)(L".."));
     fs_write(&dir, 63, 1, &(dir.idx));
 
     block_sync();
@@ -257,11 +259,9 @@ int fs_stat(fs_node_t *node, stat_t *res) {
     b = bread(0, node->idx);
     res->flags = b->data[0];
     res->size = b->data[1];
-    if(res->flags == FS_CHAR_DEV) {
+    if (res->flags == FS_CHAR_DEV) {
         res->size = 1;
     }
-
-    
 
     res->node = *node;
     // s.size |= (b->data[2]<<16);
@@ -273,7 +273,7 @@ int fs_stat(fs_node_t *node, stat_t *res) {
     return FS_OK;
 }
 
-int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
+int fs_create(fs_node_t *where, uint16_t *name, uint16_t flags,
               fs_node_t *res) {
     stat_t s;
     int rv;
@@ -311,38 +311,37 @@ int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
     return FS_OK;
 }
 
-int fs_finddir(fs_node_t *where, unsigned int *what, fs_node_t *res) {
+int fs_finddir(fs_node_t *where, uint16_t *what, fs_node_t *res) {
     off_t i;
     stat_t s;
 
-    // printf("Finding dirent %s at node %d\n", what, where->idx);
+    printf("Finding dirent %s at node %d\n", what, where->idx);
 
     fs_stat(where, &s);
     for (i = 0; i < s.size; i += 32) {
         dirent_t dEnt;
-        fs_read(where, i, 32, (unsigned int *)&dEnt);
-        if (!strcmp(dEnt.name, what)) {
+        fs_read(where, i, 32, (uint16_t *)&dEnt);
+        if (!wcscmp(dEnt.name, what)) {
             res->idx = dEnt.idx;
-            // printf("Found! %d\n", res->idx);
+            printf("Found! %d\n", res->idx);
             return FS_OK;
         }
     }
-    // printf("Not found\n");
+    printf("Not found\n");
     return FS_NO_FILE;
 }
 
 int fs_readdir(fs_node_t *dir, off_t n, dirent_t *res) {
-    if (fs_read(dir, n, 32, (unsigned int *)res) == 32) {
+    if (fs_read(dir, n, 32, (uint16_t *)res) == 32) {
         return FS_OK;
     } else {
         return FS_NO_FILE;
     }
 }
 
-unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
-                     unsigned int *buf) {
+uint16_t fs_read(fs_node_t *node, off_t offset, size_t size, uint16_t *buf) {
     stat_t s;
-    unsigned int offsetInBlock;
+    uint16_t offsetInBlock;
     blk_t cBlockIdx;
     blk_t cBlock;
     struct Block *nodeBlock;
@@ -373,7 +372,8 @@ unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
             read_now = size;
         }
         currentBlock = bread(0, cBlock);
-        memcpy(buf + alreadyRead, currentBlock->data + offsetInBlock, read_now);
+        memcpy(buf + alreadyRead, currentBlock->data + offsetInBlock,
+               read_now * 2);
 
         offset += read_now;
         alreadyRead += read_now;
@@ -389,10 +389,9 @@ unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
     return alreadyRead;
 }
 
-unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
-                      unsigned int *buf) {
+uint16_t fs_write(fs_node_t *node, off_t offset, size_t size, uint16_t *buf) {
     stat_t s;
-    unsigned int offsetInBlock;
+    uint16_t offsetInBlock;
     blk_t cBlockIdx;
     blk_t cBlock;
     struct Block *nodeBlock;
@@ -427,7 +426,7 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
         }
         currentBlock = bread(0, cBlock);
         memcpy(currentBlock->data + offsetInBlock, buf + alreadyWritten,
-               write_now);
+               write_now * 2);
 
         offset += write_now;
         alreadyWritten += write_now;
@@ -472,7 +471,7 @@ void fs_reset(fs_node_t *node) {
     bfree(b);
 }
 
-FILE *fs_open(fs_node_t *node, unsigned int mode) {
+FILE *fs_open(fs_node_t *node, uint16_t mode) {
     int fd;
     stat_t s;
     fd = fs_get_free_fd();
@@ -493,7 +492,13 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
     return &openFiles[fd];
 }
 
-int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t *res) {
+void fs_cd(uint16_t *name) {
+    stat_t s;
+    s = k_stat(name);
+    fs_cwd = s.node;
+}
+
+int fs_lookup(uint16_t *name, fs_node_t *parent, fs_node_t *res) {
     size_t cStart = 0;
     size_t cEnd = 0;
     size_t cLen = 0;
@@ -501,7 +506,7 @@ int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t *res) {
     if (name[0] == '/') {
         *res = fs_root;
     } else {
-        *res = fs_root;
+        *res = fs_cwd;
     }
 
     if (parent)
@@ -512,8 +517,8 @@ int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t *res) {
     }
 
     while (1) {
-        unsigned int cBuf[32];
-        while (name[cStart] == '/')
+        uint16_t cBuf[32];
+        while (name[cStart] == L'/')
             cStart++;
 
         if (name[cStart] == 0) {
@@ -522,11 +527,11 @@ int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t *res) {
         }
 
         cEnd = cStart + 1;
-        while (name[cEnd] != '/' && name[cEnd] != 0)
+        while (name[cEnd] != L'/' && name[cEnd] != 0)
             cEnd++;
 
         cLen = cEnd - cStart;
-        memcpy(cBuf, name + cStart, cLen);
+        memcpy(cBuf, name + cStart, cLen * sizeof(uint16_t));
         cBuf[cLen] = 0;
 
         if (parent)
@@ -557,12 +562,12 @@ void fs_close(FILE *fd) {
     fd->mode = FS_MODE_NONE;
 }
 
-size_t k_write(FILE *fd, unsigned int *buf, size_t size) {
+size_t k_write(FILE *fd, uint16_t *buf, size_t size) {
     if (fd->flags == FS_BLOCK_DEV) {
         return 0;
     } else if (fd->flags == FS_CHAR_DEV) {
-        unsigned int major;
-        unsigned int minor;
+        uint16_t major;
+        uint16_t minor;
         struct devOpTable *ops;
         major = (fd->device >> 8);
         minor = (fd->device & 0xff);
@@ -580,12 +585,12 @@ size_t k_write(FILE *fd, unsigned int *buf, size_t size) {
     }
 }
 
-size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
+size_t k_read(FILE *fd, uint16_t *buf, size_t size) {
     if (fd->flags == FS_BLOCK_DEV) {
         return 0;
     } else if (fd->flags == FS_CHAR_DEV) {
-        unsigned int major;
-        unsigned int minor;
+        uint16_t major;
+        uint16_t minor;
         struct devOpTable *ops;
         major = (fd->device >> 8);
         minor = (fd->device & 0xff);
@@ -610,11 +615,11 @@ int k_isEOF(FILE *fd) {
     return (fd->pos >= fd->size);
 }
 
-FILE *k_open(void *__name, unsigned int mode) {
+FILE *k_open(void *__name, uint16_t mode) {
     fs_node_t parent;
     fs_node_t file;
     int rv;
-    unsigned int *name = (unsigned int *)__name;
+    uint16_t *name = (uint16_t *)__name;
 
     rv = fs_lookup(name, &parent, &file);
     // printf("File lookup result %d\n", rv);
@@ -623,7 +628,7 @@ FILE *k_open(void *__name, unsigned int mode) {
             return fs_open(&file, mode);
         } else {
             /* get filename */
-            unsigned int *s = name + strlen(name);
+            uint16_t *s = name + wcslen(name);
             while (s >= name) {
                 if (*s == '/') {
                     break;
@@ -700,7 +705,7 @@ int k_mkdir(void *__path) {
     fs_node_t dir;
     fs_node_t parent;
     int rv;
-    unsigned int *path = (unsigned int *)__path;
+    uint16_t *path = (uint16_t *)__path;
 
     rv = fs_lookup(path, &parent, &dir);
 
@@ -712,7 +717,7 @@ int k_mkdir(void *__path) {
             // parent doesn't exist!
             return FS_NO_DIR;
         } else {
-            unsigned int *s = path + strlen(path);
+            uint16_t *s = path + wcslen(path);
             while (s >= path) {
                 if (*s == '/') {
                     break;
@@ -723,9 +728,9 @@ int k_mkdir(void *__path) {
             rv = fs_create(&parent, s, FS_DIR, &dir);
             // printf("fs create rv %d\n", rv);
 
-            fs_write(&dir, 0, 31, (unsigned int *)("."));
+            fs_write(&dir, 0, 31, (uint16_t *)(L"."));
             fs_write(&dir, 31, 1, &(dir.idx));
-            fs_write(&dir, 32, 31, (unsigned int *)(".."));
+            fs_write(&dir, 32, 31, (uint16_t *)(L".."));
             fs_write(&dir, 63, 1, &(parent.idx));
 
             return 0;
@@ -733,11 +738,11 @@ int k_mkdir(void *__path) {
     }
 }
 
-int k_mknod(void *__path, int type, unsigned int major, unsigned int minor) {
+int k_mknod(void *__path, int type, uint16_t major, uint16_t minor) {
     fs_node_t devNode;
     fs_node_t parent;
     int rv;
-    unsigned int *path = (unsigned int *)__path;
+    uint16_t *path = (uint16_t *)__path;
 
     rv = fs_lookup(path, &parent, &devNode);
 
@@ -749,7 +754,7 @@ int k_mknod(void *__path, int type, unsigned int major, unsigned int minor) {
             // parent doesn't exist!
             return FS_NO_DIR;
         } else {
-            unsigned int *s = path + strlen(path);
+            uint16_t *s = path + wcslen(path);
             struct Block *b;
             while (s >= path) {
                 if (*s == '/') {
@@ -775,7 +780,7 @@ int k_mknod(void *__path, int type, unsigned int major, unsigned int minor) {
     }
 }
 
-int k_regDevice(unsigned int major, void *writeFunc, void *readFunc) {
+int k_regDevice(uint16_t major, void *writeFunc, void *readFunc) {
     if (major < MAX_DEVS) {
         devList[major].write = writeFunc;
         devList[major].read = readFunc;
@@ -783,32 +788,135 @@ int k_regDevice(unsigned int major, void *writeFunc, void *readFunc) {
     return 0;
 }
 
-
 #undef FILE
+#undef stat_t
+#undef dirent_t
+#undef dirent
 
-int main(int argc, char ** argv) {
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <dirent.h>
+#include <time.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
 
-    if(argc != 4) {
+void charToUInt16(void *dest, const char *src) {
+    char *destC = dest;
+    char *s = src;
+    while (*s) {
+        *destC = *s;
+        destC++;
+        *destC = 0;
+        destC++;
+        s++;
+    }
+    *destC = 0;
+    destC++;
+    *destC = 0;
+}
+
+void display_contents(char *name) {
+    struct stat sb;
+    struct tm *t;
+    char link_read[255];
+    ssize_t bytes_read;
+    lstat(name, &sb);
+
+    printf("%s ", S_ISDIR(sb.st_mode) ? "directory" : "file     ");
+
+    printf("%5.0lu ", sb.st_size);
+
+    printf("%s\n", name);
+
+    uint16_t nameW[100];
+
+    block_sync();
+
+    charToUInt16(nameW, name);
+
+    if (name[0] == '.') {
+        printf("skip\n");
+    } else if (S_ISDIR(sb.st_mode)) {
+        printf("create dir %s\n", name);
+        k_mkdir(nameW);
+        printf("fs_cd: %d -> ", fs_cwd.idx);
+        fs_cd(nameW);
+        printf("%d\n", fs_cwd.idx);
+        chdir(name);
+        DIR *d = opendir(".");
+        get_contents(d);
+        chdir("..");
+        fs_cd(L"..");
+    } else {
+        printf("create file %s\n", name);
+        MY_FILE *myFile = k_open(nameW, FS_MODE_WRITE);
+        FILE *fd = fopen(name, "r");
+        int n = 0;
+
+        uint16_t buf[2];
+
+        while (n = fread(buf, sizeof(uint16_t), 1, fd)) {
+            uint16_t cBuf = 0;
+            cBuf = ((buf[0] & 0xff) << 8);
+            cBuf |= ((buf[0] & 0xff00) >> 8);
+            k_write(myFile, &cBuf, n);
+        }
+
+        k_close(myFile);
+    }
+}
+void get_contents(DIR *d) {
+    struct dirent *entry;
+    int i = 0;
+    while ((entry = readdir(d)) != NULL) {
+        display_contents(entry->d_name);
+    }
+}
+
+int main(int argc, char **argv) {
+    if (argc != 4) {
         printf("Usage: make_rootfs image_file image_size root_dir\n");
         return 0;
     }
     int sz = atoi(argv[2]);
 
-    hdd_image = (unsigned int *)(malloc(sz*sizeof(unsigned int)));
+    hdd_image = (uint16_t *)(malloc(sz * sizeof(uint16_t)));
 
-    memset(hdd_image, 0, sz);
+    memset(hdd_image, 0, sz * sizeof(uint16_t));
+
+    block_init();
+    fs_init();
+
+    fs_cwd = fs_root;
 
     printf("Format\n");
     fs_mkfs();
     printf("Create\n");
-    MY_FILE * myFile = k_open("/testf",FS_MODE_WRITE);
-    k_write(myFile, "this is a test string", 22);
-    k_close(myFile);
 
     block_sync();
 
-    FILE * fd = fopen(argv[1],"w");
-    fwrite(hdd_image, sizeof(unsigned int), sz, fd);
+    {
+        DIR *d;
+        int i = 3;
+        struct stat s;
+        char buf[255];
+        lstat(argv[i], &s);
+        if (S_ISDIR(s.st_mode)) {
+            getwd(buf);
+            chdir(argv[i]);
+            printf("%s\n", argv[i]);
+            d = opendir(".");
+            get_contents(d);
+            chdir(buf);
+        }
+    }
+
+    block_sync();
+
+    FILE *fd = fopen(argv[1], "w");
+    fwrite(hdd_image, sizeof(uint16_t), sz, fd);
     fclose(fd);
     return 0;
 }

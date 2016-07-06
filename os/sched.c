@@ -59,14 +59,16 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         procs[i].sp = 0xC000;
         procs[i].pc = 0x8000;
         procs[i].state = PROC_STATE_NEW;
-        memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&fs_root), sizeof(struct fs_node));
+        memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&fs_root),
+               sizeof(struct fs_node));
     } else {
         procs[i].ap = p->ap;
         procs[i].bp = p->bp;
         procs[i].sp = p->sp;
         procs[i].pc = p->pc;
         procs[i].state = p->state;
-        memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&p->cwd), sizeof(struct fs_node));
+        memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&p->cwd),
+               sizeof(struct fs_node));
     }
 
     // printf("Proc pid %d entry %d added\n", pid, i);
