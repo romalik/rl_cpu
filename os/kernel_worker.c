@@ -133,6 +133,48 @@ void do_kernel_task_execve(int i) {
     }
 }
 
+
+
+void do_kernel_task_waitpid(int i) {
+    struct Process *p;
+    printf("Kernel worker: waitpid!\n");
+    if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+        struct waitpidSyscall *sStruct;
+        struct Process *childProcess;
+        int retval = 0;
+        sStruct = (struct waitpidSyscall *)(*((
+            size_t *)(p->ap))); // syscall struct pointer sits
+                                // in first arg in arg space
+        di();
+        BANK_SEL = p->memBank; 
+        retval = findProcByPid(sStruct->pid, &childProcess);
+        ei();
+
+
+        if(!retval) {
+            printf("process not found %d\n", sStruct->pid);
+            return;
+        }
+
+        if(childProcess->state != PROC_STATE_ZOMBIE) {
+            printf("process not dead\n");
+           return;
+        }
+        
+
+        di();
+        mm_freeSegment(childProcess->memBank);
+        childProcess->state = PROC_STATE_NONE;
+        p->state = PROC_STATE_RUN;
+        sStruct->pid = childProcess->retval;
+        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+        ei();
+
+    } else {
+        // hmmm...
+    }
+}
+
 void do_kernel_task_exit(int i) {
     struct Process *p;
     printf("Kernel worker: exit!\n");
@@ -159,6 +201,8 @@ void kernel_worker() {
                     do_kernel_task_execve(i);
                 } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXIT) {
                     do_kernel_task_exit(i);
+                } else if (kernelTaskQueue[i].type == KERNEL_TASK_WAITPID) {
+                    do_kernel_task_waitpid(i);
                 }
             }
         }

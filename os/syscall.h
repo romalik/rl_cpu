@@ -87,4 +87,10 @@ struct exitSyscall {
     unsigned int id;
     unsigned int code;
 };
+
+
+struct waitpidSyscall {
+    unsigned int id;
+    unsigned int pid;
+};
 #endif

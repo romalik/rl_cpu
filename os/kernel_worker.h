@@ -7,6 +7,7 @@
 #define KERNEL_TASK_FORK 1
 #define KERNEL_TASK_EXECVE 2
 #define KERNEL_TASK_EXIT 3
+#define KERNEL_TASK_WAITPID 4
 
 struct KernelTask {
     unsigned int type;
