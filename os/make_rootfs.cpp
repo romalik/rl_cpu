@@ -54,7 +54,14 @@ void put_file(char *name) {
 #define FS_PIPE 5
 #define FS_LINK 6
         image[nodeAddr] = FS_FILE;
-
+        {
+          int usedBlock = nodeAddr >> 8;
+          int cBitmap = usedBlock >> 12;
+          int cSect = usedBlock & 0xfff;
+          int idx = cSect >> 4;
+          int pos = usedBlock & 0x0f;
+          image[(cBitmap+1)*256 + idx] |= (1<<pos);
+        }
         int cBlockOff = 3;
         int fileSize = 0;
 

@@ -19,8 +19,8 @@ void catFile(char *name) {
 int main(int argc, char **argv) {
     printf("Cat!\n");
     //    while (i < argc) {
-    //        catFile(argv[i]);
-    //    catFile("/testf");
+    //       catFile(argv[i]);
+        catFile("/testf");
     //    }
 
     return 0;
