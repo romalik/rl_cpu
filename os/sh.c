@@ -106,6 +106,8 @@ int main() {
                     unsigned int childPid = fork();
                     if(!childPid) {
                         execve((unsigned int *)nArgv[0], 0, 0);
+                        printf("Failed exec'ing %s\n", nArgv[0]);
+                        return 1;
                     } else {
                         int r = -1;
                         printf("I am a parent, i am waiting for child pid#%d death\n", childPid);

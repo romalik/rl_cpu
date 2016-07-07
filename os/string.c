@@ -78,6 +78,16 @@ int strcpy(unsigned int *dest, unsigned int *src) {
     return 0;
 }
 
+int memset(unsigned int *dest, unsigned int val, int n) {
+    int k = n;
+    while (k--) {
+        *dest = val;
+        dest++;
+        
+    }
+    return n;
+}
+
 int memcpy(unsigned int *dest, unsigned int *src, int n) {
     int k = n;
     while (k--) {

@@ -4,6 +4,9 @@
 #include <memmap.h>
 #include <rlfs3.h>
 
+#define MAXPROC 15
+#define MAX_FILES_PER_PROC 15
+
 #define PROC_STATE_NONE 0
 #define PROC_STATE_RUN 1
 #define PROC_STATE_WAIT 2
@@ -26,6 +29,8 @@ struct Process {
     struct Process *parent;
 
     int retval;
+
+    FILE * openFiles[MAX_FILES_PER_PROC];
 };
 
 extern struct Process *cProc;
@@ -41,6 +46,8 @@ unsigned int findProcByPid(unsigned int pid, struct Process **p);
 struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
                                struct Process *p);
 unsigned int sched_genPid();
-#define MAXPROC 15
+
+void resched_now();
+
 
 #endif

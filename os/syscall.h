@@ -83,6 +83,12 @@ struct execSyscall {
     void *envp;
 };
 
+struct openSyscall {
+    unsigned int id;
+    void *filename;
+    int mode;
+};
+
 struct exitSyscall {
     unsigned int id;
     unsigned int code;

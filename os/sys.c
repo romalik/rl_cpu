@@ -42,6 +42,7 @@ void system_interrupt(void *p, struct IntFrame *fr) {
 
         cProc->state = PROC_STATE_KWORKER;
         ei();
+        resched_now();
         while (1) {
         } // wait for context switch
     } else if (scall_id == __NR_execve) {
@@ -53,11 +54,10 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->pc = fr->pc;
         cProc->state = PROC_STATE_KWORKER;
         ei();
+        resched_now();
         while (1) {
         } // wait for context switch
     } else if (scall_id == __NR_waitpid) {
-
-        printf("sys.c : waitpid!\n");
         di();
         addKernelTask(KERNEL_TASK_WAITPID, cProc->pid, p);
         cProc->ap = fr->ap;
@@ -66,6 +66,7 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->pc = fr->pc;
         cProc->state = PROC_STATE_KWORKER;
         ei();
+        resched_now();
         while (1) {
         } // wait for context switch
     } else if (scall_id == __NR_exit) {
@@ -77,6 +78,7 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->pc = fr->pc;
         cProc->state = PROC_STATE_KWORKER;
         ei();
+        resched_now();
         while (1) {
         } // wait for context switch
     } else {
