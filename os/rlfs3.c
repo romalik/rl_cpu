@@ -115,39 +115,41 @@ int fs_get_free_fd() {
 blk_t fs_findFreeSector() {
     int i;
     int j;
-    int cBitmap = 0;
+    unsigned int cBitmap = 0;
     struct Block *b;
-    // for (cBitmap = 0; cBitmap < 32; cBitmap++) {
-    b = bread(0, cBitmap + 1);
-    for (i = 0; i < 256; i++) {
-        if (b->data[i] != 0xffff) {
-            for (j = 0; j < 16; j++) {
-                if ((b->data[i] & (1 << j)) == 0) {
-                    bfree(b);
-                    /*
-                                        printf("Found free sector %d mask %04X i
-                       %d j %d\n",
-                                               (i << 4) + j, b->data[i], i, j);
-                                               */
-                    return /*(cBitmap << 12) +*/ (i << 4) + j;
+    for (cBitmap = 0; cBitmap < 32; cBitmap++) {
+        b = bread(0, cBitmap + 1);
+        for (i = 0; i < 256; i++) {
+            if (b->data[i] != 0xffff) {
+                for (j = 0; j < 16; j++) {
+                    if ((b->data[i] & (1 << j)) == 0) {
+                        bfree(b);
+                        /*
+                                            printf("Found free sector %d mask
+                           %04X i
+                           %d j %d\n",
+                                                   (i << 4) + j, b->data[i], i,
+                           j);
+                                                   */
+                        return (cBitmap << 12) + (i << 4) + j;
+                    }
                 }
             }
         }
+        bfree(b);
     }
-    bfree(b);
-    //}
     return 0;
 }
 
 void fs_markSector(blk_t sect, int val) {
     int idx;
     int pos;
-    int cBitmap;
+    unsigned int cBitmap;
     struct Block *b;
 
     //    printf("Mark sector %d %d\n", sect, val);
 
-    cBitmap = 0; // sect >> 12;
+    cBitmap = sect >> 12;
     sect = sect & 0xfff;
     idx = sect >> 4;
     pos = sect & 0x0f;

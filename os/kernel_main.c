@@ -33,6 +33,7 @@ void init_interrupts() {
 int kernel_main() {
     // malloc_init((size_t)&__data_end, (size_t)(0x3000));
     //  printf("Init interrupts..\n");
+
     init_interrupts();
 
     ataInit();
@@ -44,12 +45,15 @@ int kernel_main() {
 
     k_regDevice(0, tty_write, tty_read);
 
+    k_mknod("/tty", 'c', 0, 0);
+
     printf("Press s for builtin shell, any key for init [%s]\n", INIT_PATH);
 
     if (getc() == 's') {
         main_sh();
     } else {
         unsigned int b;
+        int initPid = 0;
         FILE *fd1 = k_open(INIT_PATH, 'r');
         size_t cPos = 0x8000;
 
@@ -61,7 +65,12 @@ int kernel_main() {
         }
         k_close(fd1);
 
-        sched_add_proc(sched_genPid(), b, 0);
+        initPid = sched_genPid();
+        sched_add_proc(initPid, b, 0);
+
+        procs[initPid].openFiles[0] = k_open("/tty", 'r');
+        procs[initPid].openFiles[1] = k_open("/tty", 'w');
+        procs[initPid].openFiles[2] = k_open("/tty", 'w');
 
         printf("Starting scheduler\n");
         sched_start();

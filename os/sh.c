@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <waitpid.h>
+#include <exit.h>
 #include "sh.h"
 char cmdBuf[127];
 int cmdBufSize = 127;
@@ -38,11 +39,17 @@ int echo_main(int argc, char **argv) {
     return 0;
 }
 
+int exit_sh(int argc, char **argv) {
+    exit(0);
+    return 0;
+}
+
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"cls", "cd", "help", "echo", ""};
+char builtinCmds[][15] = {"cls", "cd", "help", "echo", "exit", ""};
 
-int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, echo_main};
+int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, echo_main,
+                                                exit_sh};
 
 int help(int argc, char **argv) {
     int i = 0;
@@ -104,17 +111,19 @@ int main() {
                 }
                 if (builtinCmds[i][0] == 0) {
                     unsigned int childPid = fork();
-                    if(!childPid) {
+                    if (!childPid) {
                         execve((unsigned int *)nArgv[0], 0, 0);
                         printf("Failed exec'ing %s\n", nArgv[0]);
                         return 1;
                     } else {
                         int r = -1;
-                        printf("I am a parent, i am waiting for child pid#%d death\n", childPid);
+                        printf("I am a parent, i am waiting for child pid#%d "
+                               "death\n",
+                               childPid);
                         r = waitpid(childPid);
-                        printf("child pid#%d died with retval %d\n", childPid, r);
+                        printf("child pid#%d died with retval %d\n", childPid,
+                               r);
                     }
-                    
                 }
             }
             printf("# ");

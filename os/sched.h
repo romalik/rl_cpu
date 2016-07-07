@@ -30,10 +30,11 @@ struct Process {
 
     int retval;
 
-    FILE * openFiles[MAX_FILES_PER_PROC];
+    FILE *openFiles[MAX_FILES_PER_PROC];
 };
 
 extern struct Process *cProc;
+extern struct Process procs[MAXPROC];
 
 struct IntFrame {
     unsigned int sp;
@@ -48,6 +49,5 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
 unsigned int sched_genPid();
 
 void resched_now();
-
 
 #endif

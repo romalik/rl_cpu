@@ -62,7 +62,8 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&fs_root),
                sizeof(struct fs_node));
 
-        memset((unsigned int *)(&procs[i].openFiles), 0, sizeof(FILE *) * MAX_FILES_PER_PROC);
+        memset((unsigned int *)(&procs[i].openFiles), 0,
+               sizeof(FILE *) * MAX_FILES_PER_PROC);
     } else {
         procs[i].ap = p->ap;
         procs[i].bp = p->bp;
@@ -71,6 +72,10 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         procs[i].state = p->state;
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&p->cwd),
                sizeof(struct fs_node));
+
+        memcpy((unsigned int *)(&procs[i].openFiles),
+               (unsigned int *)(&p->openFiles),
+               sizeof(FILE *) * MAX_FILES_PER_PROC);
     }
 
     // printf("Proc pid %d entry %d added\n", pid, i);
@@ -87,7 +92,6 @@ void sched_start() {
 void resched_now() {
     ticksToSwitch = 1;
 }
-
 
 void timer_interrupt(struct IntFrame *fr) {
     int nextTask;

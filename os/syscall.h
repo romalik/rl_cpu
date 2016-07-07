@@ -71,6 +71,20 @@ extern void syscall(void *p);
 #define __NR_getpgrp 65
 #define __NR_setsid 66
 
+struct writeSyscall {
+    unsigned int id;
+    int fd;
+    int size;
+    void *buf;
+};
+
+struct readSyscall {
+    unsigned int id;
+    int fd;
+    int size;
+    void *buf;
+};
+
 struct forkSyscall {
     unsigned int id;
     unsigned int pid;
@@ -89,11 +103,15 @@ struct openSyscall {
     int mode;
 };
 
+struct closeSyscall {
+    unsigned int id;
+    int fd;
+};
+
 struct exitSyscall {
     unsigned int id;
     unsigned int code;
 };
-
 
 struct waitpidSyscall {
     unsigned int id;

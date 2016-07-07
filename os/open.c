@@ -1,7 +1,7 @@
 #include <syscall.h>
 #include <open.h>
 
-int open(unsigned int *filename, int mode) {
+int open(void *filename, int mode) {
     struct openSyscall s;
     s.id = __NR_open;
     s.filename = filename;

@@ -48,7 +48,7 @@ extern void ps();
 
 void do_kernel_task_fork(int i) {
     struct Process *p;
-//    printf("Kernel worker: forking!\n");
+    //    printf("Kernel worker: forking!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct forkSyscall *sStruct;
         struct Process *newProcess;
@@ -99,7 +99,7 @@ void do_kernel_task_fork(int i) {
 
 void do_kernel_task_execve(int i) {
     struct Process *p;
-//    printf("Kernel worker: execve!\n");
+    //    printf("Kernel worker: execve!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct execSyscall *sStruct;
         FILE *fd;
@@ -110,16 +110,16 @@ void do_kernel_task_execve(int i) {
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
 
-//        printf("Execve: loading %s\n", sStruct->filename);
+        //        printf("Execve: loading %s\n", sStruct->filename);
         fd = k_open(sStruct->filename, 'r');
 
-        if(fd == NULL) {
+        if (fd == NULL) {
             p->state = PROC_STATE_RUN;
             kernelTaskQueue[i].type = KERNEL_TASK_NONE;
             ei();
             return;
         }
-        
+
         ei();
         while (!k_isEOF(fd)) {
             di();
@@ -141,11 +141,9 @@ void do_kernel_task_execve(int i) {
     }
 }
 
-
-
 void do_kernel_task_waitpid(int i) {
     struct Process *p;
-//    printf("Kernel worker: waitpid!\n");
+    //    printf("Kernel worker: waitpid!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct waitpidSyscall *sStruct;
         struct Process *childProcess;
@@ -154,21 +152,19 @@ void do_kernel_task_waitpid(int i) {
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
         di();
-        BANK_SEL = p->memBank; 
+        BANK_SEL = p->memBank;
         retval = findProcByPid(sStruct->pid, &childProcess);
         ei();
 
-
-        if(!retval) {
-//            printf("process not found %d\n", sStruct->pid);
+        if (!retval) {
+            //            printf("process not found %d\n", sStruct->pid);
             return;
         }
 
-        if(childProcess->state != PROC_STATE_ZOMBIE) {
-//            printf("process not dead\n");
-           return;
+        if (childProcess->state != PROC_STATE_ZOMBIE) {
+            //            printf("process not dead\n");
+            return;
         }
-        
 
         di();
         mm_freeSegment(childProcess->memBank);

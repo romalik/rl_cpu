@@ -3,6 +3,9 @@
 #include <memmap.h>
 #include <syscall.h>
 
+#include <write.h>
+#include <read.h>
+
 void itoa(int n, char s[]);
 
 unsigned int gettime() {
@@ -15,7 +18,7 @@ unsigned int gettime() {
     syscall(&s);
     return s.c;
 }
-
+/*
 int kgetc() {
     int c;
     while ((c = UART) == 0) {
@@ -27,26 +30,15 @@ int kputc(char c) {
     PORT_OUT = c;
     return 0;
 }
-
+*/
 int getc() {
-    struct getSyscall {
-        unsigned int id;
-        unsigned int c;
-    } s;
-    s.id = __NR_read;
-    s.c = 0;
-    syscall(&s);
-    return s.c;
+    int c = 0;
+    read(stdin, (void *)(&c), 1);
+    return c;
 }
 
 int putc(char c) {
-    struct getSyscall {
-        unsigned int id;
-        unsigned int c;
-    } s;
-    s.id = __NR_write;
-    s.c = c;
-    syscall(&s);
+    write(stdout, (void *)(&c), 1);
     return 0;
 }
 

@@ -83,7 +83,6 @@ int memset(unsigned int *dest, unsigned int val, int n) {
     while (k--) {
         *dest = val;
         dest++;
-        
     }
     return n;
 }

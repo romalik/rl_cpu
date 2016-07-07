@@ -54,6 +54,13 @@ int testDev(int argc, char **argv) {
                     (unsigned int *)"Test string to write on a device\n", 33);
             k_close(fileDev);
         }
+        fileDev = k_open(argv[1], 'r');
+        if (fileDev) {
+            unsigned int buf[10];
+            k_read(fileDev, buf, 10);
+            printf("read from device: %s\n", buf);
+            k_close(fileDev);
+        }
     }
     return 0;
 }

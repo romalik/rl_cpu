@@ -66,6 +66,13 @@ void put_file(char *name) {
         uint16_t buf[256];
 
         while (n = fread(buf, sizeof(uint16_t), 256, fd)) {
+          int usedBlock = fileAddr >> 8;
+          int cBitmap = usedBlock >> 12;
+          int cSect = usedBlock & 0xfff;
+          int idx = cSect >> 4;
+          int pos = usedBlock & 0x0f;
+          image[(cBitmap+1)*256 + idx] |= (1<<pos);
+
           image[nodeAddr + cBlockOff] = fileAddr >> 8;
           cBlockOff++;
           for(int i = 0; i<n;i++) {
@@ -98,12 +105,18 @@ int main(int argc, char **argv) {
 
 
     image[34*256] = FS_DIR;
-    image[34*256 + 1] = 255;
     image[34*256 + 3] = 35;
 
 
     image[dirEntryIdx * 32 + 35*256] = '.';
     image[dirEntryIdx * 32 + 35*256 + 1] = 0;
+    image[dirEntryIdx * 32 + 35*256 + 31] = 34;
+
+    dirEntryIdx++;
+
+    image[dirEntryIdx * 32 + 35*256] = '.';
+    image[dirEntryIdx * 32 + 35*256 + 1] = '.';
+    image[dirEntryIdx * 32 + 35*256 + 2] = 0;
     image[dirEntryIdx * 32 + 35*256 + 31] = 34;
 
     dirEntryIdx++;
@@ -123,6 +136,15 @@ int main(int argc, char **argv) {
             chdir(buf);
         }
     }
+
+    int rootEntrySz = dirEntryIdx * 32;
+    image[34*256 + 1] = rootEntrySz;//(rootEntrySz >> 8) | ((rootEntrySz &0xff) << 8);
+
+
+    for(int i = 256; i<259; i++) {
+      image[i] = 0xffff;
+    }
+
 
     FILE *fd = fopen(argv[1], "w");
     fwrite(image.data(), sizeof(uint16_t), sz, fd);
