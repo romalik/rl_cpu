@@ -1,6 +1,5 @@
 #include <stdio.h>
-#include <fork.h>
-#include <exec.h>
+#include <unistd.h>
 int main(int argc, char **argv) {
     int i = 0;
     int pid = 0;

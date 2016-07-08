@@ -5,9 +5,12 @@
 struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
 
 #define FORK_BUFFER_SIZE 64 * 64
+#define ARGV_BUFFER_SIZE 64 * 4
+#define KERNEL_WORKER_STACK_SIZE 64 * 64
 
 unsigned int forkBuffer[FORK_BUFFER_SIZE];
-unsigned int kernel_worker_stack[64 * 64];
+unsigned int kernel_worker_stack[KERNEL_WORKER_STACK_SIZE];
+unsigned int argvBuffer[ARGV_BUFFER_SIZE];
 
 void copyBanks(unsigned int dest, unsigned int src) {
     unsigned int copied = 0;
@@ -97,12 +100,34 @@ void do_kernel_task_fork(int i) {
 
 #define EXECVE_READ_CHUNK_SIZE 0x1000
 
+void parseArgs(unsigned int **nArgv, unsigned int *buf, size_t off) {
+    unsigned int *argc;
+    unsigned int *argv;
+    unsigned int *p;
+    argc = buf;
+    argv = buf + 2;
+    p = buf + 0x12;
+
+    (*argc) = 0;
+    *(buf + 1) = off + 2;
+    while (*nArgv) {
+        (*argc)++;
+        strcpy(p, *nArgv);
+        *argv = p - buf + off;
+        argv++;
+        p += strlen(*nArgv) + 1;
+        nArgv++;
+    }
+    *argv = 0;
+}
+
 void do_kernel_task_execve(int i) {
     struct Process *p;
     //    printf("Kernel worker: execve!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct execSyscall *sStruct;
         FILE *fd;
+
         size_t cPos = 0x8000;
         di();
         BANK_SEL = p->memBank;
@@ -111,6 +136,8 @@ void do_kernel_task_execve(int i) {
                                 // in first arg in arg space
 
         //        printf("Execve: loading %s\n", sStruct->filename);
+
+        parseArgs(sStruct->argv, argvBuffer, 0xC000);
         fd = k_open(sStruct->filename, 'r');
 
         if (fd == NULL) {
@@ -121,6 +148,7 @@ void do_kernel_task_execve(int i) {
         }
 
         ei();
+
         while (!k_isEOF(fd)) {
             di();
             BANK_SEL = p->memBank;
@@ -128,9 +156,12 @@ void do_kernel_task_execve(int i) {
             ei();
         }
 
-        di();
+        memcpy((void *)(0xc000), argvBuffer, ARGV_BUFFER_SIZE);
+
         p->pc = 0x8000;
-        p->sp = p->bp = p->ap = 0xC000;
+        p->sp = 0xC000 + ARGV_BUFFER_SIZE;
+        p->bp = p->ap = 0xC000;
+
         p->state = PROC_STATE_RUN;
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
@@ -181,7 +212,7 @@ void do_kernel_task_waitpid(int i) {
 
 void do_kernel_task_exit(int i) {
     struct Process *p;
-    printf("Kernel worker: exit!\n");
+    //  printf("Kernel worker: exit!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct exitSyscall *sStruct;
         di();
@@ -189,7 +220,7 @@ void do_kernel_task_exit(int i) {
         sStruct = (struct exitSyscall *)(*((size_t *)(p->ap)));
         p->retval = sStruct->code;
         p->state = PROC_STATE_ZOMBIE;
-        printf("Exit code: %d\n", p->retval);
+        // printf("Exit code: %d\n", p->retval);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         ei();
     }

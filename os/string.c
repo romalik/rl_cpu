@@ -69,12 +69,15 @@ void itoa(int n, char s[]) {
     reverse(s);
 }
 
-int strcpy(unsigned int *dest, unsigned int *src) {
-    do {
+int strcpy(void *dest_, void *src_) {
+    unsigned int *dest = (unsigned int *)dest_;
+    unsigned int *src = (unsigned int *)src_;
+    while (*src) {
         *dest = *src;
         dest++;
         src++;
-    } while (*src);
+    };
+    *dest = *src;
     return 0;
 }
 

@@ -1,13 +1,11 @@
 #include <stdio.h>
-#include <open.h>
-#include <close.h>
+#include <unistd.h>
 
 unsigned int buf[1];
 
 void catFile(char *name) {
     int n = 0;
     int fd = open(name, 'r');
-    printf("file %s opened as fd %d\n", name, fd);
 
     while (n = read(fd, buf, 1)) {
         write(stdout, buf, 1);
@@ -17,11 +15,11 @@ void catFile(char *name) {
 }
 
 int main(int argc, char **argv) {
-    printf("Cat!\n");
-    //    while (i < argc) {
-    //       catFile(argv[i]);
-        catFile("/testf");
-    //    }
+    int i = 1;
+    while (i < argc) {
+        catFile(argv[i]);
+        i++;
+    }
 
     return 0;
 }

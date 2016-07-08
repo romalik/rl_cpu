@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include <waitpid.h>
-#include <exit.h>
-#include "sh.h"
+#include <unistd.h>
+
 char cmdBuf[127];
 int cmdBufSize = 127;
 int cmdBufPos = 0;
@@ -29,16 +28,6 @@ int cd(int argc, char **argv) {
     return 0;
 }
 
-int echo_main(int argc, char **argv) {
-    int i = 0;
-
-    for (i = 0; i < argc; i++) {
-        printf("%d: %s\n", i, argv[i]);
-    }
-
-    return 0;
-}
-
 int exit_sh(int argc, char **argv) {
     exit(0);
     return 0;
@@ -46,10 +35,9 @@ int exit_sh(int argc, char **argv) {
 
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"cls", "cd", "help", "echo", "exit", ""};
+char builtinCmds[][15] = {"cls", "cd", "help", "exit", ""};
 
-int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, echo_main,
-                                                exit_sh};
+int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, exit_sh};
 
 int help(int argc, char **argv) {
     int i = 0;
@@ -88,6 +76,7 @@ int sh_getArgs(char *cmd, char **_argv) {
         }
         s++;
     }
+    _argv[argc] = 0;
     return argc;
 }
 
@@ -104,7 +93,6 @@ int main() {
                 while (builtinCmds[i][0] != 0) {
                     if (!strcmp(nArgv[0], builtinCmds[i])) {
                         int retval = builtinFuncs[i](nArgc, nArgv);
-                        printf("retval : %d\n", retval);
                         break;
                     }
                     i++;
@@ -112,17 +100,12 @@ int main() {
                 if (builtinCmds[i][0] == 0) {
                     unsigned int childPid = fork();
                     if (!childPid) {
-                        execve((unsigned int *)nArgv[0], 0, 0);
-                        printf("Failed exec'ing %s\n", nArgv[0]);
+                        execve((void *)nArgv[0], (void *)nArgv, 0);
+                        printf("Failed execing %s\n", nArgv[0]);
                         return 1;
                     } else {
                         int r = -1;
-                        printf("I am a parent, i am waiting for child pid#%d "
-                               "death\n",
-                               childPid);
                         r = waitpid(childPid);
-                        printf("child pid#%d died with retval %d\n", childPid,
-                               r);
                     }
                 }
             }

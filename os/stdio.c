@@ -2,9 +2,7 @@
 #include "stdio.h"
 #include <memmap.h>
 #include <syscall.h>
-
-#include <write.h>
-#include <read.h>
+#include <unistd.h>
 
 void itoa(int n, char s[]);
 

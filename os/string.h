@@ -7,7 +7,7 @@ void itoa(int n, char s[]);
 int memset(unsigned int *dest, unsigned int val, int n);
 int memcpy(unsigned int *dest, unsigned int *src, int n);
 int memcpy_r(unsigned int *dest, unsigned int *src, int n);
-int strcpy(char *dest, char *src);
+int strcpy(void *dest, void *src);
 int strcmp(void *s1, void *s2);
 int atoi(const char *s);
 
