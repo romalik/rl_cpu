@@ -14,17 +14,12 @@ int cls(int argc, char **argv) {
 }
 
 int cd(int argc, char **argv) {
-    /*
     if (argc > 1) {
-        stat_t s;
-        s = k_stat(argv[1]);
-        if (s.flags == FS_DIR) {
-            cProc->cwd = s.node;
-        } else {
-            printf("bad file");
+        int r = chdir(argv[1]);
+        if (r) {
+            printf("bad dir!\n");
         }
     }
-    */
     return 0;
 }
 

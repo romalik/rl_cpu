@@ -17,8 +17,9 @@ lcc -I./ ./syscall.o ./unistd.c ./stdio.c ./string.c ./malloc.c ./cat.c -o cat  
 lcc -I./ ./syscall.o ./unistd.c ./stdio.c ./string.c ./malloc.c ./echo.c -o echo  -Wl"-text" -Wl"0x8000" -Wl"-data" -Wl"0x8000"
 
 lcc -I./ ./syscall.o ./dirent.c ./unistd.c ./stdio.c ./string.c ./malloc.c ./ls.c -o ls  -Wl"-text" -Wl"0x8000" -Wl"-data" -Wl"0x8000"
+lcc -I./ ./syscall.o ./dirent.c ./unistd.c ./stdio.c ./string.c ./malloc.c ./mkdir.c -o mkdir  -Wl"-text" -Wl"0x8000" -Wl"-data" -Wl"0x8000"
 
-cp ./cat ./hello ./task1 ./sh ./echo ./ls ./root
+cp ./cat ./sh ./echo ./ls ./mkdir ./root
 
 g++ -o make_rootfs ./make_rootfs.cpp && ./make_rootfs hdd 10000000 root 
 

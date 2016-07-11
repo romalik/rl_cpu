@@ -85,6 +85,21 @@ struct readSyscall {
     void *buf;
 };
 
+struct chdirSyscall {
+    unsigned int id;
+    void *path;
+    int res;
+};
+
+
+struct mkdirSyscall {
+    unsigned int id;
+    void *path;
+    int res;
+};
+
+
+
 struct forkSyscall {
     unsigned int id;
     unsigned int pid;

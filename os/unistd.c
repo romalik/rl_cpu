@@ -43,6 +43,24 @@ int open(void *filename, int mode) {
     return s.mode;
 }
 
+int chdir(void *path) {
+    struct chdirSyscall s;
+    s.id = __NR_chdir;
+    s.path = path;
+    
+    syscall(&s);
+    return s.res;
+}
+
+int mkdir(void *path) {
+    struct mkdirSyscall s;
+    s.id = __NR_mkdir;
+    s.path = path;
+    
+    syscall(&s);
+    return s.res;
+}
+
 int read(int fd, void *buf, int count) {
     struct readSyscall s;
     s.id = __NR_read;

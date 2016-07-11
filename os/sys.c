@@ -39,6 +39,23 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         return;
     } else if (scall_id == __NR_time) {
         *((unsigned int *)(p) + 1) = ticks;
+    } else if (scall_id == __NR_mkdir) {
+        struct mkdirSyscall *s = (struct mkdirSyscall *)p;
+        
+        s->res = k_mkdir(s->path);
+        
+        return;
+    } else if (scall_id == __NR_chdir) {
+        struct chdirSyscall *s = (struct chdirSyscall *)p;
+        stat_t st;
+        st = k_stat(s->path);
+        if (st.flags == FS_DIR) {
+            cProc->cwd = st.node;
+            s->res = 0;
+        } else {
+            s->res = -1;
+        }
+        return;
     } else if (scall_id == __NR_open) {
         int fd;
         struct openSyscall *s = (struct openSyscall *)p;
