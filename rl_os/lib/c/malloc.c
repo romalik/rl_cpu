@@ -1,4 +1,4 @@
-#include "kstdio.h"
+#include "stdio.h"
 #include "types.h"
 #include "malloc.h"
 
