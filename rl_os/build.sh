@@ -1,7 +1,7 @@
 #!/bin/sh
-mkdir rootfs
-mkdir rootfs/bin
-mkdir rootfs/lib
+mkdir -p rootfs
+mkdir -p rootfs/bin
+mkdir -p rootfs/lib
 
 make -C kernel
 make -C lib
