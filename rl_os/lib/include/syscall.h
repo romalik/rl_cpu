@@ -132,4 +132,12 @@ struct waitpidSyscall {
     unsigned int id;
     unsigned int pid;
 };
+
+
+struct statSyscall {
+    unsigned int id;
+    void * filename;
+    void * buf;
+};
+
 #endif

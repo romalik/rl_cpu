@@ -46,14 +46,32 @@ void put_file(char *name) {
 
         image[dirEntryIdx * 32 + 35*256 + 31] = nodeAddr >> 8;
 
-#define FS_NONE 0
-#define FS_FILE 1
-#define FS_DIR 2
-#define FS_CHAR_DEV 3
-#define FS_BLOCK_DEV 4
-#define FS_PIPE 5
-#define FS_LINK 6
-        image[nodeAddr] = FS_FILE;
+#define M_S_IFMT      0170000
+#define M_S_IFSOCK    0140000     /* Reserved, not used */
+#define M_S_IFLNK     0120000     /* Reserved, not used */
+#define M_S_IFREG     0100000
+#define M_S_IFBLK     0060000
+#define M_S_IFDIR     0040000
+#define M_S_IFCHR     0020000
+#define M_S_IFIFO     0010000
+
+#define M_S_ISUID     0004000
+#define M_S_ISGID     0002000
+#define M_S_ISVTX     0001000     /* Reserved, not used */
+#define M_S_IRWXU     0000700
+#define M_S_IRUSR     0000400
+#define M_S_IWUSR     0000200
+#define M_S_IXUSR     0000100
+#define M_S_IRWXG     0000070
+#define M_S_IRGRP     0000040
+#define M_S_IWGRP     0000020
+#define M_S_IXGRP     0000010
+#define M_S_IRWXO     0000007
+#define M_S_IROTH     0000004
+#define M_S_IWOTH     0000002
+#define M_S_IXOTH     0000001
+        
+        image[nodeAddr] = M_S_IFREG;
         {
           int usedBlock = nodeAddr >> 8;
           int cBitmap = usedBlock >> 12;
@@ -111,7 +129,7 @@ int main(int argc, char **argv) {
     image.resize(sz, 0);
 
 
-    image[34*256] = FS_DIR;
+    image[34*256] = M_S_IFDIR;
     image[34*256 + 3] = 35;
 
 

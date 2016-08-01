@@ -68,7 +68,7 @@ int fs_test(int argc, char **argv) {
     FILE *fd;
     unsigned int teststring[] = "This is a test string";
     unsigned int test2[40];
-    stat_t s;
+    struct stat s;
 
     printf("Write file\n");
     fs_init();
@@ -78,11 +78,11 @@ int fs_test(int argc, char **argv) {
 
     printf("Stat file\n");
     s = k_stat("/test");
-    printf("Size %d\n", s.size);
+    printf("Size %d\n", s.st_size);
 
     printf("Read file\n");
     fd = k_open("/test", 'r');
-    k_read(fd, test2, s.size);
+    k_read(fd, test2, s.st_size);
     k_close(fd);
 
     printf("File : %s\n", test2);
@@ -124,10 +124,11 @@ int ls(int argc, char **argv) {
 
 int cd(int argc, char **argv) {
     if (argc > 1) {
-        stat_t s;
+        struct stat s;
         s = k_stat(argv[1]);
-        if (s.flags == FS_DIR) {
-            cProc->cwd = s.node;
+        if (S_ISDIR(s.st_mode)) {
+
+            cProc->cwd.idx = s.st_ino;
         } else {
             printf("bad file");
         }

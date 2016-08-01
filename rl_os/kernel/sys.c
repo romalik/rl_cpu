@@ -46,10 +46,10 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         return;
     } else if (scall_id == __NR_chdir) {
         struct chdirSyscall *s = (struct chdirSyscall *)p;
-        stat_t st;
+        struct stat st;
         st = k_stat(s->path);
-        if (st.flags == FS_DIR) {
-            cProc->cwd = st.node;
+        if (S_ISDIR(st.st_mode)) {
+            cProc->cwd.idx = st.st_ino;
             s->res = 0;
         } else {
             s->res = -1;

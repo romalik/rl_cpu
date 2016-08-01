@@ -75,7 +75,7 @@ void fs_mkfs() {
     bfree(b);
 
     b = bread(0, 34);
-    b->data[0] = FS_DIR;
+    b->data[0] = S_IFDIR;
     b->data[1] = 0x0000;
     b->data[2] = 0x0000;
     for (n = 3; n < 256; n++) {
@@ -173,17 +173,27 @@ blk_t fs_allocBlock() {
 
 #define fs_freeBlock(b) fs_markSector((b), 0)
 
-int fs_stat(fs_node_t *node, stat_t *res) {
+int fs_stat(fs_node_t *node, struct stat *res) {
     struct Block *b;
 
     b = bread(0, node->idx);
-    res->flags = b->data[0];
-    res->size = b->data[1];
-    if (res->flags == FS_CHAR_DEV) {
-        res->size = 1;
+
+    res->st_dev = 0;
+    res->st_ino = node->idx;
+    res->st_mode = b->data[0];
+    res->st_nlink = 0;
+    res->st_uid = 0;
+    res->st_gid = 0;
+    res->st_rdev = 0;
+    res->st_size = b->data[1];
+    res->st_atime = 0;
+    res->st_mtime = 0;
+    res->st_ctime = 0;
+    
+    if (S_ISCHR(res->st_mode)) {
+        res->st_size = 1;
     }
 
-    res->node = *node;
     // s.size |= (b->data[2]<<16);
     bfree(b);
 
@@ -195,12 +205,12 @@ int fs_stat(fs_node_t *node, stat_t *res) {
 
 int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
               fs_node_t *res) {
-    stat_t s;
+    struct stat s;
     int rv;
     fs_stat(where, &s);
     // printf("FS create at node %d stat %04x name %s\n", where->idx, s.flags,
     //       name);
-    if ((s.flags & 0xff) == FS_DIR) {
+    if (S_ISDIR(s.st_mode)) {
         // printf("Dir ok! check file\n");
         rv = fs_finddir(where, name, res);
         // printf("fs_finddir(%s) = %d\n", name, rv);
@@ -213,8 +223,8 @@ int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
 
             // printf("Dirent: at inode %d off %d write block %d\n", where->idx,
             //       s.size, newBlock);
-            fs_write(where, s.size, 31, name);
-            fs_write(where, s.size + 31, 1, &newBlock);
+            fs_write(where, s.st_size, 31, name);
+            fs_write(where, s.st_size + 31, 1, &newBlock);
             b = bread(0, newBlock);
             b->data[0] = flags;
             for (i = 1; i < 256; i++) {
@@ -233,12 +243,12 @@ int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
 
 int fs_finddir(fs_node_t *where, unsigned int *what, fs_node_t *res) {
     off_t i;
-    stat_t s;
+    struct stat s;
 
     // printf("Finding dirent %s at node %d\n", what, where->idx);
 
     fs_stat(where, &s);
-    for (i = 0; i < s.size; i += 32) {
+    for (i = 0; i < s.st_size; i += 32) {
         dirent_t dEnt;
         fs_read(where, i, 32, (unsigned int *)&dEnt);
         if (!strcmp(dEnt.name, what)) {
@@ -261,7 +271,7 @@ int fs_readdir(fs_node_t *dir, off_t n, dirent_t *res) {
 
 unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
                      unsigned int *buf) {
-    stat_t s;
+    struct stat s;
     unsigned int offsetInBlock;
     blk_t cBlockIdx;
     blk_t cBlock;
@@ -271,15 +281,15 @@ unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
 
     nodeBlock = bread(0, node->idx);
 
-    s.flags = nodeBlock->data[0];
-    s.size = nodeBlock->data[1];
+    s.st_mode = nodeBlock->data[0];
+    s.st_size = nodeBlock->data[1];
 
-    if (offset > s.size) {
+    if (offset > s.st_size) {
         return 0;
     }
 
-    if (offset + size > s.size) {
-        size = s.size - offset;
+    if (offset + size > s.st_size) {
+        size = s.st_size - offset;
     }
 
     alreadyRead = 0;
@@ -311,7 +321,7 @@ unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
 
 unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
                       unsigned int *buf) {
-    stat_t s;
+    struct stat s;
     unsigned int offsetInBlock;
     blk_t cBlockIdx;
     blk_t cBlock;
@@ -324,10 +334,10 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
 
     nodeBlock = bread(0, node->idx);
 
-    s.flags = nodeBlock->data[0];
-    s.size = nodeBlock->data[1];
+    s.st_mode = nodeBlock->data[0];
+    s.st_size = nodeBlock->data[1];
 
-    if (offset > s.size) {
+    if (offset > s.st_size) {
         return 0;
     }
 
@@ -365,7 +375,7 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
         bfree(currentBlock);
     }
 
-    if (offset > s.size) {
+    if (offset > s.st_size) {
         nodeBlock->data[1] = offset;
         // nodeBlock->data[2] = offset >> 16;
     }
@@ -394,19 +404,18 @@ void fs_reset(fs_node_t *node) {
 
 FILE *fs_open(fs_node_t *node, unsigned int mode) {
     int fd;
-    stat_t s;
+    struct stat s;
     fd = fs_get_free_fd();
     fs_stat(node, &s);
     openFiles[fd].mode = mode;
-    openFiles[fd].size = s.size;
-    openFiles[fd].flags = s.flags;
+    openFiles[fd].size = s.st_size;
+    openFiles[fd].flags = s.st_mode;
     openFiles[fd].pos = 0;
     if (mode == FS_MODE_APPEND) {
-        openFiles[fd].pos = s.size;
+        openFiles[fd].pos = s.st_size;
     }
     openFiles[fd].node = *node;
-    if (mode == FS_MODE_WRITE && s.flags != FS_BLOCK_DEV &&
-        s.flags != FS_CHAR_DEV) {
+    if (mode == FS_MODE_WRITE && !S_ISCHR(s.st_mode) && !S_ISBLK(s.st_mode)) {
         fs_reset(node);
     }
 
@@ -482,9 +491,9 @@ void fs_close(FILE *fd) {
 }
 
 size_t k_write(FILE *fd, unsigned int *buf, size_t size) {
-    if (fd->flags == FS_BLOCK_DEV) {
+    if (S_ISBLK(fd->flags)) {
         return 0;
-    } else if (fd->flags == FS_CHAR_DEV) {
+    } else if (S_ISCHR(fd->flags)) {
         unsigned int major;
         unsigned int minor;
         struct devOpTable *ops;
@@ -505,9 +514,9 @@ size_t k_write(FILE *fd, unsigned int *buf, size_t size) {
 }
 
 size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
-    if (fd->flags == FS_BLOCK_DEV) {
+    if (S_ISBLK(fd->flags)) {
         return 0;
-    } else if (fd->flags == FS_CHAR_DEV) {
+    } else if (S_ISCHR(fd->flags)) {
         unsigned int major;
         unsigned int minor;
         struct devOpTable *ops;
@@ -558,7 +567,7 @@ FILE *k_open(void *__name, unsigned int mode) {
             // printf("Cropped filename %s\n", s);
 
             if (mode == FS_MODE_WRITE || mode == FS_MODE_APPEND) {
-                rv = fs_create(&parent, s, FS_FILE, &file);
+                rv = fs_create(&parent, s, S_IFREG, &file);
                 // printf("fs create rv %d\n", rv);
                 return fs_open(&file, mode);
             } else {
@@ -571,22 +580,22 @@ FILE *k_open(void *__name, unsigned int mode) {
         return NULL;
     }
 }
-stat_t k_stat(void *name) {
+struct stat k_stat(void *name) {
     fs_node_t nd;
-    stat_t res;
+    struct stat res;
     int rv;
     rv = fs_lookup(name, NULL, &nd);
     if (rv == FS_OK) {
         fs_stat(&nd, &res);
         return res;
     } else {
-        res.flags = FS_NONE;
+        res.st_mode = 0;
         return res;
     }
 }
 
 void k_close(FILE *fd) {
-    fd->mode = FS_NONE;
+    fd->mode = FS_MODE_NONE;
 }
 
 void k_seek(FILE *fd, off_t pos) {
@@ -644,7 +653,7 @@ int k_mkdir(void *__path) {
                 s--;
             }
             s++;
-            rv = fs_create(&parent, s, FS_DIR, &dir);
+            rv = fs_create(&parent, s, S_IFDIR, &dir);
             // printf("fs create rv %d\n", rv);
 
             fs_write(&dir, 0, 31, (unsigned int *)("."));
@@ -683,9 +692,9 @@ int k_mknod(void *__path, int type, unsigned int major, unsigned int minor) {
             }
             s++;
             if (type == 'c') {
-                type = FS_CHAR_DEV;
+                type = S_IFCHR;
             } else {
-                type = FS_BLOCK_DEV;
+                type = S_IFBLK;
             }
             rv = fs_create(&parent, s, type, &devNode);
             // printf("fs create rv %d\n", rv);
