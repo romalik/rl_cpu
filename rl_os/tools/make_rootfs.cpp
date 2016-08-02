@@ -13,7 +13,7 @@
 std::vector<uint16_t> image;
 
 int dirEntryIdx = 0;
-int fileAddr = 36*256;
+int fileAddr = 40*256;
 
 void put_file(char *name) {
     struct stat sb;
@@ -131,6 +131,9 @@ int main(int argc, char **argv) {
 
     image[34*256] = M_S_IFDIR;
     image[34*256 + 3] = 35;
+    image[34*256 + 4] = 36;
+    image[34*256 + 5] = 37;
+    image[34*256 + 6] = 38;
 
 
     image[dirEntryIdx * 32 + 35*256] = '.';

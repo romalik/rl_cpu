@@ -85,7 +85,7 @@ void itoa(int n, char s[]) {
     reverse(s);
 }
 
-int strcpy(void *dest_, const void *src_) {
+void* strcpy(void *dest_, const void *src_) {
     unsigned int *dest = (unsigned int *)dest_;
     unsigned int *src = (unsigned int *)src_;
     while (*src) {
@@ -94,7 +94,7 @@ int strcpy(void *dest_, const void *src_) {
         src++;
     };
     *dest = *src;
-    return 0;
+    return dest_;
 }
 
 int memset(void *dest_, unsigned int val, int n) {

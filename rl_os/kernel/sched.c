@@ -29,7 +29,7 @@ unsigned int sched_genPid() {
 void ps() {
     int i;
     printf("Processes:\n");
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < MAXPROC; i++) {
         printf("Entry %d: state %d pid %d bank %d ap 0x%04x bp 0x%04x sp "
                "0x%04x pc 0x%04x\n",
                i, procs[i].state, procs[i].pid, procs[i].memBank, procs[i].ap,

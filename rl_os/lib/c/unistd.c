@@ -83,6 +83,7 @@ int read(int fd, void *buf, int count) {
 
 int waitpid(unsigned int pid) {
     struct waitpidSyscall s;
+    printf("Waitpid called!\n");
     s.id = __NR_waitpid;
     s.pid = pid;
     syscall(&s);
