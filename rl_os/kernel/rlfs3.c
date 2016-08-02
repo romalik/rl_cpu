@@ -189,7 +189,7 @@ int fs_stat(fs_node_t *node, struct stat *res) {
     res->st_atime = 0;
     res->st_mtime = 0;
     res->st_ctime = 0;
-    
+
     if (S_ISCHR(res->st_mode)) {
         res->st_size = 1;
     }
@@ -203,7 +203,7 @@ int fs_stat(fs_node_t *node, struct stat *res) {
     return FS_OK;
 }
 
-int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
+int fs_create(fs_node_t *where, const unsigned int *name, unsigned int flags,
               fs_node_t *res) {
     struct stat s;
     int rv;
@@ -241,7 +241,7 @@ int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
     return FS_OK;
 }
 
-int fs_finddir(fs_node_t *where, unsigned int *what, fs_node_t *res) {
+int fs_finddir(fs_node_t *where, const unsigned int *what, fs_node_t *res) {
     off_t i;
     struct stat s;
 
@@ -320,7 +320,7 @@ unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
 }
 
 unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
-                      unsigned int *buf) {
+                      const unsigned int *buf) {
     struct stat s;
     unsigned int offsetInBlock;
     blk_t cBlockIdx;
@@ -411,18 +411,18 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
     openFiles[fd].size = s.st_size;
     openFiles[fd].flags = s.st_mode;
     openFiles[fd].pos = 0;
-    if (mode == FS_MODE_APPEND) {
+    if (mode & O_APPEND) {
         openFiles[fd].pos = s.st_size;
     }
     openFiles[fd].node = *node;
-    if (mode == FS_MODE_WRITE && !S_ISCHR(s.st_mode) && !S_ISBLK(s.st_mode)) {
+    if (mode == O_WRONLY && !S_ISCHR(s.st_mode) && !S_ISBLK(s.st_mode)) {
         fs_reset(node);
     }
 
     return &openFiles[fd];
 }
 
-int fs_lookup(unsigned int *name, fs_node_t *parent, fs_node_t *res) {
+int fs_lookup(const unsigned int *name, fs_node_t *parent, fs_node_t *res) {
     size_t cStart = 0;
     size_t cEnd = 0;
     size_t cLen = 0;
@@ -490,8 +490,9 @@ void fs_close(FILE *fd) {
     fd->mode = FS_MODE_NONE;
 }
 
-size_t k_write(FILE *fd, unsigned int *buf, size_t size) {
-    if (S_ISBLK(fd->flags)) {
+size_t k_write(FILE *fd, const unsigned int *buf, size_t size) {
+  size_t written = 0;
+  if (S_ISBLK(fd->flags)) {
         return 0;
     } else if (S_ISCHR(fd->flags)) {
         unsigned int major;
@@ -504,16 +505,18 @@ size_t k_write(FILE *fd, unsigned int *buf, size_t size) {
             ops->write(minor, *buf);
             buf++;
             size--;
+            written++;
         }
-        return size;
+        return written;
     } else {
-        fs_write(&(fd->node), fd->pos, size, buf);
-        fd->pos += size;
-        return size;
+        written = fs_write(&(fd->node), fd->pos, size, buf);
+        fd->pos += written;
+        return written;
     }
 }
 
 size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
+  size_t alreadyRead = 0;
     if (S_ISBLK(fd->flags)) {
         return 0;
     } else if (S_ISCHR(fd->flags)) {
@@ -527,15 +530,16 @@ size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
             *buf = ops->read(minor);
             buf++;
             size--;
+            alreadyRead++;
         }
-        return size;
+        return alreadyRead;
     } else {
         if (size + fd->pos > fd->size) {
             size = fd->size - fd->pos;
         }
-        fs_read(&(fd->node), fd->pos, size, buf);
-        fd->pos += size;
-        return size;
+        alreadyRead = fs_read(&(fd->node), fd->pos, size, buf);
+        fd->pos += alreadyRead;
+        return alreadyRead;
     }
 }
 
@@ -543,7 +547,7 @@ int k_isEOF(FILE *fd) {
     return (fd->pos >= fd->size);
 }
 
-FILE *k_open(void *__name, unsigned int mode) {
+FILE *k_open(const void *__name, unsigned int mode) {
     fs_node_t parent;
     fs_node_t file;
     int rv;
@@ -566,7 +570,7 @@ FILE *k_open(void *__name, unsigned int mode) {
             s++;
             // printf("Cropped filename %s\n", s);
 
-            if (mode == FS_MODE_WRITE || mode == FS_MODE_APPEND) {
+            if (mode & O_WRONLY || mode & O_APPEND || mode & O_CREAT) {
                 rv = fs_create(&parent, s, S_IFREG, &file);
                 // printf("fs create rv %d\n", rv);
                 return fs_open(&file, mode);
@@ -580,7 +584,7 @@ FILE *k_open(void *__name, unsigned int mode) {
         return NULL;
     }
 }
-struct stat k_stat(void *name) {
+struct stat k_stat(const void *name) {
     fs_node_t nd;
     struct stat res;
     int rv;
@@ -606,7 +610,7 @@ void k_seek(FILE *fd, off_t pos) {
     }
 }
 
-FILE *k_opendir(void *dirname) {
+FILE *k_opendir(const void *dirname) {
     fs_node_t d_inode;
     int rv;
     rv = fs_lookup(dirname, NULL, &d_inode);
@@ -629,7 +633,7 @@ dirent_t k_readdir(FILE *dir) {
     return res;
 }
 
-int k_mkdir(void *__path) {
+int k_mkdir(const void *__path) {
     fs_node_t dir;
     fs_node_t parent;
     int rv;
@@ -666,7 +670,7 @@ int k_mkdir(void *__path) {
     }
 }
 
-int k_mknod(void *__path, int type, unsigned int major, unsigned int minor) {
+int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor) {
     fs_node_t devNode;
     fs_node_t parent;
     int rv;

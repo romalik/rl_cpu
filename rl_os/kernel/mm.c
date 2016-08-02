@@ -11,7 +11,7 @@ void mm_init() {
     }
 }
 void mm_freeSegment(unsigned int seg) {
-    BankMap[seg] = 1;
+    BankMap[seg] = 0;
 }
 
 unsigned int mm_allocSegment(unsigned int *seg) {

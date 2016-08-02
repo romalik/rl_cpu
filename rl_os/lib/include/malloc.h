@@ -4,7 +4,7 @@
  * kmalloc.h -- Heap memory allocation routines
  * From JamesM's kernel development tutorials.
  */
-#include "types.h"
+#include "sys/types.h"
 
 void malloc_init(size_t begin, size_t end);
 void *malloc(size_t len); /* classic malloc */

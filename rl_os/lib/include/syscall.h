@@ -1,6 +1,8 @@
 #ifndef __SYSCALL_H
 #define __SYSCALL_H
 
+#include <sys/types.h>
+
 extern void syscall(void *p);
 
 #define __NR_setup 0 /* used only by init, to get system going */
@@ -71,11 +73,19 @@ extern void syscall(void *p);
 #define __NR_getpgrp 65
 #define __NR_setsid 66
 
+
+struct creatSyscall {
+    unsigned int id;
+    const char *path;
+    mode_t mode;
+};
+
+
 struct writeSyscall {
     unsigned int id;
     int fd;
     int size;
-    void *buf;
+    const void *buf;
 };
 
 struct readSyscall {
@@ -87,14 +97,14 @@ struct readSyscall {
 
 struct chdirSyscall {
     unsigned int id;
-    void *path;
+    const char *path;
     int res;
 };
 
 
 struct mkdirSyscall {
     unsigned int id;
-    void *path;
+    const char *path;
     int res;
 };
 
@@ -107,14 +117,14 @@ struct forkSyscall {
 
 struct execSyscall {
     unsigned int id;
-    void *filename;
+    const char *filename;
     void *argv;
     void *envp;
 };
 
 struct openSyscall {
     unsigned int id;
-    void *filename;
+    const char *filename;
     int mode;
 };
 
@@ -136,7 +146,7 @@ struct waitpidSyscall {
 
 struct statSyscall {
     unsigned int id;
-    void * filename;
+    const char * filename;
     void * buf;
 };
 

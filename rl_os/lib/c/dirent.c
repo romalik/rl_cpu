@@ -2,7 +2,7 @@
 
 struct dirent tDirent;
 
-int opendir(void *name) {
+int opendir(const char *name) {
     return open(name, 'r');
 }
 

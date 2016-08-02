@@ -1,4 +1,4 @@
-#include <stat.h>
+#include <sys/stat.h>
 
 int stat(void * name, struct stat * buf) {
         struct statSyscall s;
@@ -7,4 +7,9 @@ int stat(void * name, struct stat * buf) {
         s.buf = buf;
         syscall(&s);
         return 0;
+}
+
+
+int chmod(const char *path, mode_t mode) {
+  return 0;
 }

@@ -22,10 +22,60 @@
 #define FS_LINK 6
 */
 
-#define FS_MODE_NONE 0
+
+
+
+
+#define FS_MODE_NONE 0xffff
+
+/*
 #define FS_MODE_READ 'r'
 #define FS_MODE_WRITE 'w'
 #define FS_MODE_APPEND 'a'
+
+*/
+
+
+#define O_RDONLY        0
+#define O_WRONLY        1
+#define O_RDWR          2
+#define O_ACCMODE       3
+
+#define O_APPEND        4
+#define O_SYNC          8
+#define O_NDELAY        16
+#define O_CREAT         256
+#define O_EXCL          512
+#define O_TRUNC         1024
+#define O_NOCTTY        2048
+#define O_CLOEXEC       4096
+#define O_SYMLINK       8192    /* Not supported in kernel yet */
+
+#define FD_CLOEXEC      O_CLOEXEC
+
+#define O_BINARY        0       /* not used in Fuzix */
+
+#define O_NONBLOCK      O_NDELAY
+
+#define F_GETFL         0
+#define F_SETFL         1
+#define F_GETFD         2
+#define F_SETFD         3
+#define F_DUPFD         4
+/* Not current implemented in Fuzix */
+#define F_GETLK         5
+#define F_SETLK         6
+#define F_SETLKW        7
+
+#define FNDELAY         O_NDELAY
+
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+#endif
+
+
 
 #define FS_OK 0
 #define FS_NO_FILE 1
@@ -154,25 +204,25 @@ extern struct devOpTable devList[MAX_DEVS];
 
 void fs_mkfs();
 
-int fs_create(fs_node_t *where, unsigned int *name, unsigned int flags,
+int fs_create(fs_node_t *where, const unsigned int *name, unsigned int flags,
               fs_node_t *res);
 
-int fs_finddir(fs_node_t *where, unsigned int *what, fs_node_t *res);
+int fs_finddir(fs_node_t *where, const unsigned int *what, fs_node_t *res);
 int fs_readdir(fs_node_t *dir, off_t n, dirent_t *res);
 
 unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
                      unsigned int *buf);
 unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
-                      unsigned int *buf);
+                      const unsigned int *buf);
 
 FILE *fs_open(fs_node_t *node, unsigned int mode);
 void fs_close(FILE *fd);
 
-size_t k_write(FILE *fd, unsigned int *buf, size_t size);
+size_t k_write(FILE *fd, const unsigned int *buf, size_t size);
 size_t k_read(FILE *fd, unsigned int *buf, size_t size);
 
-FILE *k_open(void *name, unsigned int mode);
-struct stat k_stat(void *name);
+FILE *k_open(const void *name, unsigned int mode);
+struct stat k_stat(const void *name);
 
 void k_close(FILE *fd);
 void k_seek(FILE *fd, off_t pos);
@@ -181,11 +231,11 @@ int k_isEOF(FILE *fd);
 
 void fs_init();
 
-FILE *k_opendir(void *dirname);
+FILE *k_opendir(const void *dirname);
 dirent_t k_readdir(FILE *dir);
 
-int k_mkdir(void *__path);
-int k_mknod(void *__path, int type, unsigned int major, unsigned int minor);
+int k_mkdir(const void *__path);
+int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor);
 
 int k_regDevice(unsigned int major, void *writeFunc, void *readFunc);
 

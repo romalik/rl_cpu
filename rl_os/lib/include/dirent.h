@@ -8,7 +8,7 @@ struct dirent {
     unsigned int d_ino;
 };
 
-int opendir(void *name);
+int opendir(const char *name);
 int closedir(int fd);
 struct dirent *readdir(int fd);
 

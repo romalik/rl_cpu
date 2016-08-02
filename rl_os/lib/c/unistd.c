@@ -1,5 +1,15 @@
 #include <syscall.h>
 #include <unistd.h>
+#include <sys/types.h>
+
+
+int chown(const char *path, uid_t owner, gid_t group) {
+  return 0;
+}
+
+int chmod(const char *path, mode_t mode) {
+  return 0;
+}
 
 int close(int fd) {
     struct closeSyscall s;
@@ -9,7 +19,7 @@ int close(int fd) {
     return s.fd;
 }
 
-unsigned int execve(void *filename, void *argv[], void *envp[]) {
+unsigned int execve(const char *filename, void *argv[], void *envp[]) {
     struct execSyscall s;
     s.id = __NR_execve;
     s.filename = filename;
@@ -34,7 +44,7 @@ unsigned int fork() {
     return s.pid;
 }
 
-int open(void *filename, int mode) {
+int open(const char *filename, int mode) {
     struct openSyscall s;
     s.id = __NR_open;
     s.filename = filename;
@@ -43,20 +53,20 @@ int open(void *filename, int mode) {
     return s.mode;
 }
 
-int chdir(void *path) {
+int chdir(const char *path) {
     struct chdirSyscall s;
     s.id = __NR_chdir;
     s.path = path;
-    
+
     syscall(&s);
     return s.res;
 }
 
-int mkdir(void *path) {
+int mkdir(const char *path) {
     struct mkdirSyscall s;
     s.id = __NR_mkdir;
     s.path = path;
-    
+
     syscall(&s);
     return s.res;
 }
@@ -79,7 +89,7 @@ int waitpid(unsigned int pid) {
     return s.pid;
 }
 
-int write(int fd, void *buf, int count) {
+int write(int fd, const void *buf, int count) {
     struct writeSyscall s;
     s.id = __NR_write;
     s.fd = fd;

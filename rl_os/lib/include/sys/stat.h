@@ -1,7 +1,7 @@
 #ifndef STAT_H__
 #define STAT_H__
 #include <syscall.h>
-
+#include <sys/types.h>
 
 #define S_IFMT      0170000
 #define S_IFSOCK    0140000     /* Reserved, not used */
@@ -54,6 +54,8 @@ struct stat {
 
 
 int stat(void * name, struct stat * buf);
+int chmod(const char *path, mode_t mode);
+int creat(const char *pathname, mode_t mode);
 
 
 #endif

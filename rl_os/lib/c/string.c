@@ -1,3 +1,19 @@
+#include <string.h>
+#include <sys/types.h>
+
+char *strrchr(const char *s, int c)
+{
+        const char *p = s + strlen(s);
+
+        /* For null it's just like strlen */
+        if (c == '\0')
+                return (char *)p;
+        while (p != s) {
+                        if (*--p == c)
+                                return (char *)p;
+                }
+        return NULL;
+}
 
 int isdigit(char c) {
     return (c >= '0' && c <= '9');
@@ -13,7 +29,7 @@ int atoi(const char *s) {
     return res;
 }
 
-int strcmp(void *s1, void *s2) {
+int strcmp(const void *s1, const void *s2) {
     const unsigned char *c1 = (const unsigned char *)s1;
     const unsigned char *c2 = (const unsigned char *)s2;
     unsigned char ch;
@@ -28,8 +44,8 @@ int strcmp(void *s1, void *s2) {
     return d;
 }
 
-int strlen(void *s) {
-    char *p = (char *)s;
+int strlen(const void *s) {
+    const char *p = (const char *)s;
     int n = 0;
     while (*p) {
         p++;
@@ -69,7 +85,7 @@ void itoa(int n, char s[]) {
     reverse(s);
 }
 
-int strcpy(void *dest_, void *src_) {
+int strcpy(void *dest_, const void *src_) {
     unsigned int *dest = (unsigned int *)dest_;
     unsigned int *src = (unsigned int *)src_;
     while (*src) {
@@ -81,7 +97,8 @@ int strcpy(void *dest_, void *src_) {
     return 0;
 }
 
-int memset(unsigned int *dest, unsigned int val, int n) {
+int memset(void *dest_, unsigned int val, int n) {
+    unsigned int *dest = (unsigned int *)dest_;
     int k = n;
     while (k--) {
         *dest = val;
@@ -90,7 +107,9 @@ int memset(unsigned int *dest, unsigned int val, int n) {
     return n;
 }
 
-int memcpy(unsigned int *dest, unsigned int *src, int n) {
+int memcpy(void *dest_, const void *src_, int n) {
+    unsigned int *dest = (unsigned int *)dest_;
+    unsigned int *src = (unsigned int *)src_;
     int k = n;
     while (k--) {
         *dest = *src;
@@ -100,7 +119,9 @@ int memcpy(unsigned int *dest, unsigned int *src, int n) {
     return n;
 }
 
-int memcpy_r(unsigned int *dest, unsigned int *src, int n) {
+int memcpy_r(void *dest_, const void *src_, int n) {
+    unsigned int *dest = (unsigned int *)dest_;
+    unsigned int *src = (unsigned int *)src_;
     int k = n;
     while (k--) {
         *dest = *src;

@@ -51,20 +51,20 @@ extern void ps();
 
 void do_kernel_task_fork(int i) {
     struct Process *p;
-    //    printf("Kernel worker: forking!\n");
+    printf("Kernel worker: forking!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct forkSyscall *sStruct;
         struct Process *newProcess;
         int currentBank;
         int newBank;
         int newPid;
-        // printf("Kworker: di\n");
+        printf("Kworker: di\n");
         di();
         if (!mm_allocSegment(&newBank)) {
             printf("Kernel Worker: No more banks!!\n");
             // panic here!
         }
-        // printf("KWorker new bank %d\n", newBank);
+        printf("KWorker new bank %d\n", newBank);
         ei();
         currentBank = p->memBank;
         copyBanks(newBank, currentBank);
@@ -123,7 +123,7 @@ void parseArgs(unsigned int **nArgv, unsigned int *buf, size_t off) {
 
 void do_kernel_task_execve(int i) {
     struct Process *p;
-    //    printf("Kernel worker: execve!\n");
+    printf("Kernel worker: execve!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct execSyscall *sStruct;
         FILE *fd;
@@ -135,7 +135,7 @@ void do_kernel_task_execve(int i) {
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
 
-        //        printf("Execve: loading %s\n", sStruct->filename);
+        printf("Execve: loading %s\n", sStruct->filename);
 
         parseArgs(sStruct->argv, argvBuffer, 0xC000);
         fd = k_open(sStruct->filename, 'r');
@@ -174,36 +174,40 @@ void do_kernel_task_execve(int i) {
 
 void do_kernel_task_waitpid(int i) {
     struct Process *p;
-    //    printf("Kernel worker: waitpid!\n");
+    printf("Kernel worker: waitpid!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct waitpidSyscall *sStruct;
         struct Process *childProcess;
+        int pid = 0;
         int retval = 0;
+        printf("Kernel worker: waitpid caller pid %d\n", kernelTaskQueue[i].callerPid);
         sStruct = (struct waitpidSyscall *)(*((
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
         di();
         BANK_SEL = p->memBank;
         retval = findProcByPid(sStruct->pid, &childProcess);
+        pid = sStruct->pid;
         ei();
 
         if (!retval) {
-            //            printf("process not found %d\n", sStruct->pid);
+            printf("process not found %d\n", pid);
             return;
         }
 
         if (childProcess->state != PROC_STATE_ZOMBIE) {
-            //            printf("process not dead\n");
+            printf("process not dead %d\n", pid);
+            resched_now();
             return;
         }
 
         di();
-        mm_freeSegment(childProcess->memBank);
         childProcess->state = PROC_STATE_NONE;
         p->state = PROC_STATE_RUN;
         sStruct->pid = childProcess->retval;
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         ei();
+        printf("Zombie killed %d\n", pid);
 
     } else {
         // hmmm...
@@ -212,7 +216,7 @@ void do_kernel_task_waitpid(int i) {
 
 void do_kernel_task_exit(int i) {
     struct Process *p;
-    //  printf("Kernel worker: exit!\n");
+    printf("Kernel worker: exit!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct exitSyscall *sStruct;
         di();
@@ -220,8 +224,9 @@ void do_kernel_task_exit(int i) {
         sStruct = (struct exitSyscall *)(*((size_t *)(p->ap)));
         p->retval = sStruct->code;
         p->state = PROC_STATE_ZOMBIE;
-        // printf("Exit code: %d\n", p->retval);
+        printf("Exit code: %d\n", p->retval);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+        mm_freeSegment(p->memBank);
         ei();
     }
 }

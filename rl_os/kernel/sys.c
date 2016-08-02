@@ -8,41 +8,37 @@
 #include <memmap.h>
 #include <syscall.h>
 
-/* Syscalls:
- *  1 - put char
- *    [1][c]
- *  2 - get char
- *    [2][&c]
- *  3 - get ticks
- *    [3][&t]
- */
+
+
+
 
 extern unsigned int ticks;
 
 void system_interrupt(void *p, struct IntFrame *fr) {
     int scall_id;
     scall_id = *(unsigned int *)p;
-    //  printf("KERNEL: syscall %d %c\n", scall_id, (*((unsigned int *)(p)+1)));
 
     if (scall_id == __NR_write) {
         int sz_write = 0;
         struct writeSyscall *s = (struct writeSyscall *)p;
         sz_write = k_write(cProc->openFiles[s->fd], s->buf, s->size);
+        //printf("KERNEL: write %d/%d words to %d\n", sz_write, s->size,  s->fd);
         s->size = sz_write;
         return;
     } else if (scall_id == __NR_read) {
         int sz_read = 0;
         struct readSyscall *s = (struct readSyscall *)p;
         sz_read = k_read(cProc->openFiles[s->fd], s->buf, s->size);
+        //printf("KERNEL: read %d/%d words from %d\n", sz_read, s->size, s->fd);
         s->size = sz_read;
         return;
     } else if (scall_id == __NR_time) {
         *((unsigned int *)(p) + 1) = ticks;
     } else if (scall_id == __NR_mkdir) {
         struct mkdirSyscall *s = (struct mkdirSyscall *)p;
-        
+
         s->res = k_mkdir(s->path);
-        
+
         return;
     } else if (scall_id == __NR_chdir) {
         struct chdirSyscall *s = (struct chdirSyscall *)p;
@@ -54,6 +50,11 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         } else {
             s->res = -1;
         }
+        return;
+    } else if (scall_id == __NR_stat) {
+        struct statSyscall *s = (struct statSyscall *)p;
+        (*(struct stat *)(s->buf)) = k_stat(s->filename);
+        //printf("KERNEL: stat %s\n", s->filename);
         return;
     } else if (scall_id == __NR_open) {
         int fd;
@@ -67,8 +68,11 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         if (fd != MAX_FILES_PER_PROC) {
             cProc->openFiles[fd] = k_open(s->filename, s->mode);
             s->mode = fd;
+            //printf("KERNEL: open %s as %d\n", s->filename, s->mode);
             return;
         }
+
+        //printf("KERNEL: open failed %s\n", s->filename);
         s->mode = -1;
         return;
     } else if (scall_id == __NR_close) {
@@ -79,9 +83,11 @@ void system_interrupt(void *p, struct IntFrame *fr) {
                 k_close(cProc->openFiles[s->fd]);
                 cProc->openFiles[s->fd] = 0;
                 s->fd = 0;
+                //printf("KERNEL: close %d\n", s->fd);
                 return;
             }
         }
+                //printf("KERNEL: close failed %d\n", s->fd);
         s->fd = -1;
         return;
 
