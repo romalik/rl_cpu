@@ -11,9 +11,8 @@
 #include <errno.h>
 #include <fcntl.h>
 
-static char * __error = "error";
+static char *__error = "error";
 
-char *strerror(int err)
-{
-  return __error;
+char *strerror(int err) {
+    return __error;
 }

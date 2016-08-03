@@ -53,7 +53,7 @@ struct stat {
 };
 
 
-int stat(void * name, struct stat * buf);
+int stat(const char * name, struct stat * buf);
 int chmod(const char *path, mode_t mode);
 int creat(const char *pathname, mode_t mode);
 

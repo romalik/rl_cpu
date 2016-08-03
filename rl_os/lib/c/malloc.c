@@ -28,7 +28,6 @@ void malloc_init_auto() {
     malloc_init((size_t)(&__data_end), 0xC000);
 }
 
-
 void dumpList() {
     Marker_t *iter = malloc_head;
     while (iter) {

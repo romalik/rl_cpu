@@ -9,7 +9,7 @@ void catFile(char *name) {
     int fd = open(name, 'r');
 
     while (n = read(fd, buf, 1)) {
-        write(stdout, buf, 1);
+        write(1, buf, 1);
     }
 
     close(fd);
