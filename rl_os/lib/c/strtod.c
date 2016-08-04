@@ -1,7 +1,7 @@
 /*
  * strtod.c - This file is part of the libc-8086 package for ELKS,
  * Copyright (C) 1995, 1996 Nat Friedman <ndf@linux.mit.edu>.
- * 
+ *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
  *  License as published by the Free Software Foundation; either
@@ -22,6 +22,10 @@
 
 double strtod(const char *nptr, char ** endptr)
 {
+
+  puts("strtod stub!");
+  return 0;
+#if 0
   unsigned short negative;
   double number;
   double fp_part;
@@ -96,4 +100,5 @@ double strtod(const char *nptr, char ** endptr)
     }
   *endptr = (char *)nptr;
   return (negative ? -number:number);
+#endif
 }

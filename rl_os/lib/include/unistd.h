@@ -52,6 +52,106 @@ extern long fpathconf(int __fd, int __name);
 extern long pathconf(const char *__path, int __name);
 extern long _pathconf(int __name);
 
+
+
+extern int open(const char *path, int flags, ...);
+extern int close(int fd);
+extern int creat(const char *path, mode_t mode);
+extern int mknod(const char *path, mode_t mode, dev_t dev);
+extern int link(const char *path, const char *path2);
+extern int unlink(const char *path);
+extern ssize_t read(int fd, void *buf, int len);
+extern ssize_t write(int fd, const void *buf, int len);
+extern int chdir(const char *path);
+extern int sync(void);
+extern int access(const char *path, int way);
+extern int chmod(const char *path, mode_t mode);
+extern int chown(const char *path, uid_t owner, gid_t group);
+extern int dup(int fd);
+extern pid_t getpid(void);
+extern pid_t getppid(void);
+extern uid_t getuid(void);
+extern mode_t umask(mode_t);
+extern int execve(const char *path, char * const argv[], char *const envp[]);
+extern pid_t wait(int *status);
+extern int setuid(uid_t uid);
+extern int setgid(gid_t gid);
+extern int ioctl(int fd, int request,...);
+extern int brk(void *addr);
+extern void *sbrk(size_t increment);
+extern pid_t _fork(uint16_t flags, void *addr);
+extern int mount(const char *dev, const char *path, int flags);
+extern int umount(const char *dev);
+extern sighandler_t signal(int signum, sighandler_t sighandler);
+extern int dup2(int oldfd, int newfd);
+extern int _pause(unsigned int dsecs);
+extern int kill(pid_t pid, int sig);
+extern int pipe(int *pipefds);
+extern gid_t getgid(void);
+extern uid_t geteuid(void);
+extern gid_t getegid(void);
+extern int chroot(const char *path);
+extern int fcntl(int fd, int cmd, ...);
+extern int fchdir(int fd);
+extern int fchmod(int fd, mode_t mode);
+extern int fchown(int fd, uid_t owner, gid_t group);
+extern int mkdir(const char *path, mode_t mode);
+extern int rmdir(const char *path);
+extern pid_t setpgrp(void);
+extern pid_t waitpid(pid_t pid, int *status, int options);
+extern int uadmin(int cmd, int ctrl, void *ptr);
+extern int nice(int prio);
+extern int rename(const char *path, const char *newpath);
+extern int flock(int fd, int op);
+extern pid_t getpgrp(void);
+extern int sched_yield(void);
+extern int acct(const char *filename);
+extern int setgroups(size_t size, const gid_t *groups);
+extern int getgroups(int size, gid_t *groups);
+extern int getrlimit(int resource, struct rlimit *rlim);
+extern int setrlimit(int resource, const struct rlimit *rlim);
+extern int setpgid(pid_t pid, pid_t pgrp);
+extern pid_t setsid(void);
+extern pid_t getsid(pid_t pid);
+extern int socket(int af, int type, int pf);
+extern int listen(int fd, int len);
+extern int bind(int fd, const struct sockaddr *s, int len);
+extern int connect(int fd, const struct sockaddr *s, int len);
+extern int shutdown(int fd, int how);
+
+/* asm syscall hooks with C wrappers */
+extern int _getdirent(int fd, void *buf, int len);
+extern int _stat(const char *path, struct _uzistat *s);
+extern int _fstat(int fd, struct _uzistat *s);
+extern int _getfsys(uint16_t dev, struct _uzifilesys *fs);
+extern int _time(__ktime_t *t, uint16_t clock);
+extern int _stime(const __ktime_t *t, uint16_t clock);
+extern int _times(struct tms *t);
+extern int _utime(const char *file, __ktime_t *buf);
+extern int _uname(struct _uzisysinfoblk *uzib, int len);
+extern int _profil(void *samples, uint16_t offset, uint16_t size, int16_t scale);
+extern int _lseek(int fd, off_t *offset, int mode);
+extern int _select(int nfd, uint16_t *base);
+extern int _accept(int fd);
+extern int _getsockaddrs(int fd, int type, struct sockaddr_in *addr);
+extern int _sendto(int fd, const char *buf, size_t len, struct _sockio *uaddr);
+extern int _recvfrom(int fd, char *buf, size_t len, struct _sockio *uaddr);
+
+/* C library provided syscall emulation */
+extern int stat(const char *path, struct stat *s);
+extern int fstat(int fd, struct stat *s);
+extern int alarm(uint16_t seconds);
+extern time_t time(time_t *t);
+extern int stime(const time_t *t);
+extern int times(struct tms *tms);
+extern int utime(const char *filename, const struct utimbuf *utim);
+extern int uname(struct utsname *buf);
+extern int profil(unsigned short *bufbase, size_t bufsize, unsigned long offset,
+                                    unsigned int scale);
+
+
+
+
 #define _SC_ARG_MAX		1
 #define _SC_CHILD_MAX		2
 #define _SC_HOST_NAME_MAX	3

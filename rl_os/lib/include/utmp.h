@@ -39,7 +39,7 @@ extern struct utmp *	getutid(const struct utmp *__ut);
 extern struct utmp *	getutline(const struct utmp *__ut);
 extern struct utmp *	pututline(const struct utmp *__ut);
 extern void		endutent(void);
-
+/*
 struct utmp *		__getutent(int);
-
+*/
 #endif /* __UTMP_H */

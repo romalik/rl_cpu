@@ -154,8 +154,8 @@ extern int tcgetattr(int __fildes, struct termios *__termios_p);
 extern int tcdrain(int __fildes);
 extern int tcflow(int __fildes, int __action);
 extern int tcflush(int __fildes, int __queue_selector);
-extern int tcsendbreak(int __fildes, int __duration);
-extern int tcgetpgrp(int __fildes);
-extern int tcsetpgrp(int __fildes, int __pgrp_id);
+//extern int tcsendbreak(int __fildes, int __duration);
+//extern int tcgetpgrp(int __fildes);
+//extern int tcsetpgrp(int __fildes, int __pgrp_id);
 
 #endif

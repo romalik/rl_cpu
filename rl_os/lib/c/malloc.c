@@ -108,3 +108,29 @@ void free(void *ptr) {
     //  printf("After\n");
     //  dumpList();
 }
+
+void *realloc(void *ptr, size_t size) {
+  void * newPtr;
+  struct Marker * header;
+  size_t copySize;
+
+  if (size == 0) {
+      free(ptr);
+      return NULL;
+  }
+
+  if (ptr == NULL)
+      return malloc(size);
+
+
+  header = (struct Marker *)((size_t)ptr - (size_t)sizeof(struct Marker));
+  size = header->size;
+  newPtr = malloc(size);
+
+  copySize = (header->size > size) ? size : header->size;
+
+  memcpy(newPtr, ptr, copySize);
+  free(ptr);
+  return newPtr;
+}
+

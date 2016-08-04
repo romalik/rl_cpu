@@ -13,7 +13,7 @@ struct group {
 	int	gr_gid; 	/* Group ID.	*/
 	char	**gr_mem;	/* Member list. */
 };
-/*
+
 extern void setgrent(void);
 extern void endgrent(void);
 extern struct group *getgrent(void);
@@ -27,6 +27,6 @@ extern int initgroups(const char *__user, gid_t __gid);
 
 extern struct group * __getgrent(int __grp_fd);
 
-extern char *_path_group;
-*/
+//extern char *_path_group;
+
 #endif /* _GRP_H */
