@@ -7,6 +7,5 @@ struct utimbuf {
     time_t modtime; /* modification time */
 };
 
-extern int utime(const char *__filename, const struct utimbuf *__utimebuf);
 
 #endif

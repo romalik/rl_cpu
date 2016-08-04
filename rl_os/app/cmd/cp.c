@@ -17,7 +17,7 @@ typedef unsigned char BOOL;
 #define FALSE 0
 #define TRUE 1
 
-#define PATHLEN 64 * 8
+//#define PATHLEN 64 * 8
 
 BOOL intflag = 0;
 

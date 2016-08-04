@@ -1,10 +1,13 @@
 #ifndef __UNISTD_H
 #define __UNISTD_H
-#ifndef __TYPES_H
 #include <types.h>
-#endif
 #include <syscall.h>
 #include <sys/stat.h>
+#include <signal.h>
+#include <sys/utsname.h>
+#include <utime.h> 
+
+
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #define SEEK_CUR 1
@@ -14,6 +17,23 @@
 #define STDIN_FILENO	0
 #define STDOUT_FILENO	1
 #define STDERR_FILENO	2
+
+
+struct rlimit {
+    void * p;
+};
+struct sockaddr {
+    void * p;
+};
+struct sockaddr_in {
+    void * p;
+};
+struct _sockio {
+    void * p;
+};
+
+
+
 
 extern off_t lseek(int __fd, off_t __offset, int __whence);
 
@@ -78,8 +98,7 @@ extern int setuid(uid_t uid);
 extern int setgid(gid_t gid);
 extern int ioctl(int fd, int request,...);
 extern int brk(void *addr);
-extern void *sbrk(size_t increment);
-extern pid_t _fork(uint16_t flags, void *addr);
+extern void *sbrk(intptr_t increment);
 extern int mount(const char *dev, const char *path, int flags);
 extern int umount(const char *dev);
 extern sighandler_t signal(int signum, sighandler_t sighandler);
@@ -120,22 +139,13 @@ extern int connect(int fd, const struct sockaddr *s, int len);
 extern int shutdown(int fd, int how);
 
 /* asm syscall hooks with C wrappers */
-extern int _getdirent(int fd, void *buf, int len);
-extern int _stat(const char *path, struct _uzistat *s);
-extern int _fstat(int fd, struct _uzistat *s);
-extern int _getfsys(uint16_t dev, struct _uzifilesys *fs);
-extern int _time(__ktime_t *t, uint16_t clock);
-extern int _stime(const __ktime_t *t, uint16_t clock);
-extern int _times(struct tms *t);
-extern int _utime(const char *file, __ktime_t *buf);
-extern int _uname(struct _uzisysinfoblk *uzib, int len);
-extern int _profil(void *samples, uint16_t offset, uint16_t size, int16_t scale);
-extern int _lseek(int fd, off_t *offset, int mode);
-extern int _select(int nfd, uint16_t *base);
-extern int _accept(int fd);
-extern int _getsockaddrs(int fd, int type, struct sockaddr_in *addr);
-extern int _sendto(int fd, const char *buf, size_t len, struct _sockio *uaddr);
-extern int _recvfrom(int fd, char *buf, size_t len, struct _sockio *uaddr);
+extern int getdirent(int fd, void *buf, int len);
+extern int getfsys(uint16_t dev, void *fs);
+extern int select(int nfd, uint16_t *base);
+extern int accept(int fd);
+extern int getsockaddrs(int fd, int type, struct sockaddr_in *addr);
+extern int sendto(int fd, const char *buf, size_t len, struct _sockio *uaddr);
+extern int recvfrom(int fd, char *buf, size_t len, struct _sockio *uaddr);
 
 /* C library provided syscall emulation */
 extern int stat(const char *path, struct stat *s);
@@ -143,7 +153,6 @@ extern int fstat(int fd, struct stat *s);
 extern int alarm(uint16_t seconds);
 extern time_t time(time_t *t);
 extern int stime(const time_t *t);
-extern int times(struct tms *tms);
 extern int utime(const char *filename, const struct utimbuf *utim);
 extern int uname(struct utsname *buf);
 extern int profil(unsigned short *bufbase, size_t bufsize, unsigned long offset,

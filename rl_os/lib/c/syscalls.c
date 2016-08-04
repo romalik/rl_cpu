@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-int access(const char * filename, mode_t mode) {
+int access(const char * filename, int mode) {
   puts("access stub!");
   return 1;
 }
@@ -108,7 +108,7 @@ int kill(pid_t pid, int sig) {
   puts("kill stub!");
   return 0;
 }
-int mkdir(const char *path) {
+int mkdir(const char *path, mode_t mode) {
     struct mkdirSyscall s;
     s.id = __NR_mkdir;
     s.path = path;
@@ -124,7 +124,7 @@ int open(const char *filename, int flags, ...) {
     syscall(&s);
     return s.mode;
 }
-int _pause(int t) {
+int _pause(unsigned int t) {
   puts("_pause stub!");
   return 0;
 
@@ -280,108 +280,57 @@ int write(int fd, const void *buf, int count) {
  int mknod(const char *path, mode_t mode, dev_t dev) { return 0; }
  int link(const char *path, const char *path2){ return 0; }
  int unlink(const char *path){ return 0; }
-;
  int sync(void){ return 0; }
-;
  int chmod(const char *path, mode_t mode){ return 0; }
-;
  int chown(const char *path, uid_t owner, gid_t group){ return 0; }
-;
  pid_t getppid(void){ return 0; }
-;
- mode_t umask(mode_t){ return 0; }
-;
+ mode_t umask(mode_t mode){ return 0; }
  int setuid(uid_t uid){ return 0; }
-;
  int setgid(gid_t gid){ return 0; }
-;
  int brk(void *addr){ return 0; }
-;
- void *sbrk(size_t increment){ return 0; }
-;
+ void *sbrk(intptr_t increment){ return 0; }
  int mount(const char *dev, const char *path, int flags){ return 0; }
-;
  int umount(const char *dev){ return 0; }
-;
  gid_t getgid(void){ return 0; }
-;
  uid_t geteuid(void){ return 0; }
-;
  gid_t getegid(void){ return 0; }
-;
  int chroot(const char *path){ return 0; }
-;
  int fcntl(int fd, int cmd, ...){ return 0; }
-
  int fchdir(int fd){ return 0; }
-;;
  int fchown(int fd, uid_t owner, gid_t group){ return 0; }
-;
  int rmdir(const char *path){ return 0; }
-;
  pid_t setpgrp(void){ return 0; }
-;
  int nice(int prio){ return 0; }
-;
  int flock(int fd, int op){ return 0; }
-;
  pid_t getpgrp(void){ return 0; }
-;
  int sched_yield(void){ return 0; }
-;
  int acct(const char *filename){ return 0; }
-;
  int setgroups(size_t size, const gid_t *groups){ return 0; }
-;
  int getgroups(int size, gid_t *groups){ return 0; }
-;
  int getrlimit(int resource, struct rlimit *rlim){ return 0; }
-;
  int setrlimit(int resource, const struct rlimit *rlim){ return 0; }
-;
  int setpgid(pid_t pid, pid_t pgrp){ return 0; }
-;
  pid_t setsid(void){ return 0; }
-;
  pid_t getsid(pid_t pid){ return 0; }
-;
  int socket(int af, int type, int pf){ return 0; }
-;
  int listen(int fd, int len){ return 0; }
-;
  int bind(int fd, const struct sockaddr *s, int len){ return 0; }
-;
  int connect(int fd, const struct sockaddr *s, int len){ return 0; }
-;
  int shutdown(int fd, int how){ return 0; }
-;
 
-/* asm syscall hooks with C wrappers */
+ int uadmin(int cmd, int ctrl, void *ptr) {return 0;}
  int getdirent(int fd, void *buf, int len){ return 0; }
-;
- int getfsys(uint16_t dev, struct _uzifilesys *fs){ return 0; }
-;
- int lseek(int fd, off_t *offset, int mode){ return 0; }
-;
+ int getfsys(uint16_t dev, void *fs){ return 0; }
+ off_t lseek(int fd, off_t offset, int mode){ return 0; }
  int select(int nfd, uint16_t *base){ return 0; }
-;
  int accept(int fd){ return 0; }
-;
  int getsockaddrs(int fd, int type, struct sockaddr_in *addr){ return 0; }
-;
  int sendto(int fd, const char *buf, size_t len, struct _sockio *uaddr){ return 0; }
-;
  int recvfrom(int fd, char *buf, size_t len, struct _sockio *uaddr){ return 0; }
-;
 
-/* C library provided syscall emulation */
  int alarm(uint16_t seconds){ return 0; }
-;
  int utime(const char *filename, const struct utimbuf *utim){ return 0; }
-;
  int uname(struct utsname *buf){ return 0; }
-;
  int profil(unsigned short *bufbase, size_t bufsize, unsigned long offset,
                                     unsigned int scale){ return 0; }
-;
 

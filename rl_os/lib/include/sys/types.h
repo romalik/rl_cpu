@@ -11,6 +11,11 @@ typedef char int8_t;
 typedef unsigned int size_t;
 typedef int ssize_t;
 
+typedef int16_t intptr_t;
+typedef uint16_t uintptr_t;
+
+
+
 typedef unsigned int off_t;
 typedef unsigned int blk_t;
 typedef uint16_t mode_t;
