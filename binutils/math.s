@@ -181,6 +181,22 @@ rstore
 ret
 
 
+.code
+.export __builtin_DIVU2
+.export __builtin_DIVI2
+.label __builtin_DIVU2
+.label __builtin_DIVI2
+
+ret
+
+.code
+.export __builtin_MODU2
+.export __builtin_MODI2
+.label __builtin_MODU2
+.label __builtin_MODI2
+
+ret
+
 ;;unsigned comparison
 
 .export __builtin_cmp_GEU2
