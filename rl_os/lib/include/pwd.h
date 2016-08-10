@@ -13,7 +13,7 @@ struct passwd {
 	char	*pw_dir;	/* Home directory */
 	char	*pw_shell;	/* Shell program */
 };
-
+/*
 extern void setpwent(void);
 extern void endpwent(void);
 extern struct passwd *getpwent(void);
@@ -28,7 +28,6 @@ extern struct passwd *getpwnam(const char *__name);
 
 extern struct passwd * __getpwent(int __passwd_fd);
 
-//WTF?
-//extern char *_path_passwd;
-
+extern char *_path_passwd;
+*/
 #endif /* pwd.h  */

@@ -18,4 +18,4 @@ size_t strlcat(char *dst, const char *src, size_t dstsize)
   return strlcpy(dst + len, src, dstsize - len);
 }
 
-  
+

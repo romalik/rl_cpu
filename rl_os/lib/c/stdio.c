@@ -30,12 +30,12 @@ int kputc(char c) {
 */
 int getc() {
     int c = 0;
-    read(0, (void *)(&c), 1);
+    read(stdin, (void *)(&c), 1);
     return c;
 }
 
 int putc(char c) {
-    write(1, (void *)(&c), 1);
+    write(stdout, (void *)(&c), 1);
     return 0;
 }
 

@@ -191,9 +191,9 @@ struct stat {
             unsigned int   st_gid;     /* owner group */
             unsigned int   st_rdev;    /* */
             unsigned int   st_size;    /* file size */
-            unsigned long   st_atime;   /* last access time */
-            unsigned long   st_mtime;   /* last modification time */
-            unsigned long   st_ctime;   /* file creation time */
+            unsigned int   st_atime;   /* last access time */
+            unsigned int   st_mtime;   /* last modification time */
+            unsigned int   st_ctime;   /* file creation time */
 };
 
 
@@ -222,7 +222,7 @@ size_t k_write(FILE *fd, const unsigned int *buf, size_t size);
 size_t k_read(FILE *fd, unsigned int *buf, size_t size);
 
 FILE *k_open(const void *name, unsigned int mode);
-struct stat k_stat(const void *name);
+int k_stat(const void *name, struct stat * st);
 
 void k_close(FILE *fd);
 void k_seek(FILE *fd, off_t pos);

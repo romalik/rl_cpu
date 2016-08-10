@@ -77,7 +77,7 @@ int fs_test(int argc, char **argv) {
     k_close(fd);
 
     printf("Stat file\n");
-    s = k_stat("/test");
+    k_stat("/test", &s);
     printf("Size %d\n", s.st_size);
 
     printf("Read file\n");
@@ -125,7 +125,7 @@ int ls(int argc, char **argv) {
 int cd(int argc, char **argv) {
     if (argc > 1) {
         struct stat s;
-        s = k_stat(argv[1]);
+        k_stat(argv[1], &s);
         if (S_ISDIR(s.st_mode)) {
 
             cProc->cwd.idx = s.st_ino;

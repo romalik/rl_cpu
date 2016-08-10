@@ -47,13 +47,13 @@ struct stat {
         unsigned int   st_gid;     /* owner group */
         unsigned int   st_rdev;    /* */
         unsigned int   st_size;    /* file size */
-        unsigned long   st_atime;   /* last access time */
-        unsigned long   st_mtime;   /* last modification time */
-        unsigned long   st_ctime;   /* file creation time */
+        unsigned int   st_atime;   /* last access time */
+        unsigned int   st_mtime;   /* last modification time */
+        unsigned int   st_ctime;   /* file creation time */
 };
 
 
-int stat(const char * name, struct stat * buf);
+int stat(void * name, struct stat * buf);
 int chmod(const char *path, mode_t mode);
 int creat(const char *pathname, mode_t mode);
 

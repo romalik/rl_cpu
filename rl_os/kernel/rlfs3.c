@@ -584,17 +584,16 @@ FILE *k_open(const void *__name, unsigned int mode) {
         return NULL;
     }
 }
-struct stat k_stat(const void *name) {
+int k_stat(const void *name, struct stat * res) {
     fs_node_t nd;
-    struct stat res;
     int rv;
     rv = fs_lookup(name, NULL, &nd);
     if (rv == FS_OK) {
-        fs_stat(&nd, &res);
-        return res;
+        fs_stat(&nd, res);
+        return 0;
     } else {
-        res.st_mode = 0;
-        return res;
+        res->st_mode = 0;
+        return -1;
     }
 }
 
