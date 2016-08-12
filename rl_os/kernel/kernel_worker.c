@@ -123,7 +123,7 @@ void parseArgs(unsigned int **nArgv, unsigned int *buf, size_t off) {
 
 void do_kernel_task_execve(int i) {
     struct Process *p;
-    //printf("Kernel worker: execve!\n");
+    printf("Kernel worker: execve!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct execSyscall *sStruct;
         FILE *fd;
@@ -135,9 +135,9 @@ void do_kernel_task_execve(int i) {
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
 
-        //printf("Execve: loading %s\n", sStruct->filename);
+        printf("Execve: loading %s\n", sStruct->filename);
 
-        parseArgs(sStruct->argv, argvBuffer, 0xC000);
+        parseArgs(sStruct->argv, argvBuffer, 0xF000);
         fd = k_open(sStruct->filename, 'r');
 
         if (fd == NULL) {
@@ -156,11 +156,11 @@ void do_kernel_task_execve(int i) {
             ei();
         }
 
-        memcpy((void *)(0xc000), argvBuffer, ARGV_BUFFER_SIZE);
+        memcpy((void *)(0xF000), argvBuffer, ARGV_BUFFER_SIZE);
 
         p->pc = 0x8000;
-        p->sp = 0xC000 + ARGV_BUFFER_SIZE;
-        p->bp = p->ap = 0xC000;
+        p->sp = 0xF000 + ARGV_BUFFER_SIZE;
+        p->bp = p->ap = 0xF000;
 
         p->state = PROC_STATE_RUN;
 
@@ -191,7 +191,7 @@ void do_kernel_task_waitpid(int i) {
         ei();
 
         if (!retval) {
-            printf("process not found %d\n", pid);
+            //printf("process not found %d\n", pid);
             resched_now();
             return;
         }

@@ -7,7 +7,7 @@ unsigned int buf[1];
 
 
 int main(int argc, char **argv) {
-    int fd;
+    DIR * fd;
     struct stat st;
     struct dirent *res;
     int do_stat = 0;

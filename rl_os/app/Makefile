@@ -1,7 +1,7 @@
 # Declaration of variables
 CC = lcc
 LD = link
-CC_FLAGS = "-I../lib/include"
+CC_FLAGS = "-I../rootfs/lib/include"
 AS = asm
 
 

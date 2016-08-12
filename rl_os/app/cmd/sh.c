@@ -79,8 +79,8 @@ int main() {
     int i = 0;
     printf("User mode shell\n# ");
     while (1) {
-        char c = getc();
-        putc(c);
+        char c = getchar();
+        putchar(c);
         if (addChar(c)) {
             if (cmdBuf[0]) {
                 nArgc = sh_getArgs(cmdBuf, nArgv);
@@ -100,7 +100,8 @@ int main() {
                         return 1;
                     } else {
                         int r = -1;
-                        r = waitpid(childPid);
+			int status;
+                        r = waitpid(childPid, &status, 0);
                     }
                 }
             }

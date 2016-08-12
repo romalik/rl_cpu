@@ -11,6 +11,8 @@
 #include <mach/mach.h>
 #endif
 
+void onSignal(int signal);
+
 long long gettime_ms() {
     struct timeval te;
     gettimeofday(&te, NULL);
@@ -577,6 +579,8 @@ void Cpu::execute() {
   } else {
       printf("op not implemented! %d\n", op);
       printf("op not implemented! %s\n", oplist[op]);
+      onSignal(SIGINT);
+      
       exit(1);
   }
 

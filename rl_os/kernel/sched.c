@@ -54,9 +54,9 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
     procs[i].pid = pid;
     procs[i].memBank = bank;
     if (!p) {
-        procs[i].ap = 0xC000;
-        procs[i].bp = 0xC000;
-        procs[i].sp = 0xC000;
+        procs[i].ap = 0xF000;
+        procs[i].bp = 0xF000;
+        procs[i].sp = 0xF000;
         procs[i].pc = 0x8000;
         procs[i].state = PROC_STATE_NEW;
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&fs_root),
