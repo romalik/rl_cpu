@@ -197,9 +197,11 @@ int intexpr(int tok, int n) {
 	Tree p = constexpr(tok);
 
 	needconst++;
-	if (p->op == CNST+I || p->op == CNST+U)
+	if (p->op == CNST+I || p->op == CNST+U) {
 		n = cast(p, inttype)->u.v.i;
-	else
+                warning("   ---------->>>>> N = %d\n", n);
+        }
+        else
 		error("integer expression must be constant\n");
 	needconst--;
 	return n;
