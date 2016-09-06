@@ -1,7 +1,9 @@
 #include <kernel_worker.h>
 #include <sched.h>
 #include <syscall.h>
+#include <lock.h>
 
+unsigned int kernelTaskQueueLock;
 struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
 
 #define FORK_BUFFER_SIZE 64 * 64
@@ -34,6 +36,9 @@ void kernel_worker_entry() {
 void kernel_worker_init() {
     int i = 0;
     struct Process p;
+
+    //spinlock_init(&kernelTaskQueueLock);
+
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
     }
@@ -191,7 +196,7 @@ void do_kernel_task_waitpid(int i) {
         ei();
 
         if (!retval) {
-            //printf("process not found %d\n", pid);
+            printf("process not found %d\n", pid);
             resched_now();
             return;
         }
@@ -235,6 +240,7 @@ void kernel_worker() {
     while (1) {
         int i = 0;
         for (i = 0; i < MAX_QUEUE_SIZE; i++) {
+            //spinlock_lock(&kernelTaskQueueLock);
             if (kernelTaskQueue[i].type != KERNEL_TASK_NONE) {
                 if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
                     do_kernel_task_fork(i);
@@ -246,22 +252,29 @@ void kernel_worker() {
                     do_kernel_task_waitpid(i);
                 }
             }
+            //spinlock_unlock(&kernelTaskQueueLock);
         }
     }
 }
 
 void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
     int i = 0;
+
+    //spinlock_lock(&kernelTaskQueueLock);
+
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
         if (kernelTaskQueue[i].type == KERNEL_TASK_NONE) {
             break;
         }
     }
 
-    if (i == MAX_QUEUE_SIZE)
+    if (i == MAX_QUEUE_SIZE) {
+        //spinlock_unlock(&kernelTaskQueueLock);
         return;
+    }
 
     kernelTaskQueue[i].type = task;
     kernelTaskQueue[i].callerPid = callerPid;
     kernelTaskQueue[i].args = args;
+    //spinlock_unlock(&kernelTaskQueueLock);
 }

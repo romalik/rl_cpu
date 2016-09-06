@@ -576,6 +576,22 @@ void Cpu::execute() {
     PC = pop();
     SP = pop();
 
+  } else if(op == swp_b) {
+    // sp--
+    // sp->ml
+    // mr->ra //address
+    // ra->ml
+    // mr->rb //old value
+    // irhigh->mw //write new value
+    // sp->ml
+    // rb->mw
+    // sp++
+
+    RA = pop(); //address
+    RB = this->memRead(RA);
+    this->memWrite(RA, IRHigh()); 
+    push(RB);
+
   } else {
       printf("op not implemented! %d\n", op);
       printf("op not implemented! %s\n", oplist[op]);
