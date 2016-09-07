@@ -6,11 +6,11 @@ unsigned sched_active = 0;
 unsigned int ticks = 0;
 struct Process *cProc;
 unsigned int nextPid = 0;
-
+unsigned int nr_ready = 1;
 unsigned int ticksToSwitch = 0;
 
 struct Process procs[MAXPROC];
-unsigned int currentTask = MAXPROC;
+unsigned int currentTask = -1;
 
 extern unsigned int kernel_worker_stack[];
 extern void kernel_worker_entry();
@@ -19,6 +19,7 @@ void sched_init() {
     int i = 0;
     for (i = 0; i < MAXPROC; i++) {
         procs[i].state = PROC_STATE_NONE;
+        procs[i].signalsPending = 0;
     }
 }
 
@@ -61,6 +62,10 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         procs[i].state = PROC_STATE_NEW;
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&fs_root),
                sizeof(struct fs_node));
+        
+        memset((unsigned int *)(&procs[i].sigActions), SIG_DFL, SIGNUM);
+
+        procs[i].signalsPending = 0;
 
         memset((unsigned int *)(&procs[i].openFiles), 0,
                sizeof(FILE *) * MAX_FILES_PER_PROC);
@@ -73,6 +78,9 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&p->cwd),
                sizeof(struct fs_node));
 
+        memcpy((unsigned int *)(&procs[i].sigActions), (unsigned int *)(&p->sigActions), sizeof(sighandler_t) * SIGNUM);
+
+        procs[i].signalsPending = p->signalsPending;
         memcpy((unsigned int *)(&procs[i].openFiles),
                (unsigned int *)(&p->openFiles),
                sizeof(FILE *) * MAX_FILES_PER_PROC);
@@ -93,7 +101,107 @@ void resched_now() {
     ticksToSwitch = 1;
 }
 
-void timer_interrupt(struct IntFrame *fr) {
+unsigned int getSignalFromMask(unsigned int mask) {
+    unsigned int i;
+    for(i = 0; i<SIGNUM; i++) {
+        if(mask & (1 << i)) {
+            break;
+        }
+    }
+    return i;
+}
+
+unsigned int sendSig(unsigned int pid, unsigned int sig) {
+    int r;
+    struct Process * pt;
+    r = findProcByPid(pid, &pt);
+    if(r) {
+        pt->signalsPending |= (1 << sig);
+    }
+    return 0;
+}
+
+
+void resched(struct IntFrame * fr) {
+    int nextTask;
+    
+    // check if we have any pending tasks
+    //if(nr_ready < 2) { //nowhere to switch
+    //    return;
+    //}
+    
+    // now save current task state to its ptab
+    // if current task is valid
+    if (currentTask < MAXPROC) {
+        if (procs[currentTask].state == PROC_STATE_RUN) {
+            procs[currentTask].ap = fr->ap;
+            procs[currentTask].bp = fr->bp;
+            procs[currentTask].sp = fr->sp;
+            procs[currentTask].pc = fr->pc;
+        }
+    }
+
+    // now select next task
+    //
+    // either ready, or with pending signals
+    //
+
+    nextTask = currentTask + 1;
+
+    while(nextTask != currentTask) {
+        if(nextTask > MAXPROC) {
+            nextTask = 0;
+        }
+
+        if (procs[nextTask].state == PROC_STATE_RUN)
+            break;
+
+        if (procs[nextTask].state == PROC_STATE_NEW)
+            break;
+        
+        if (procs[nextTask].state == PROC_STATE_WAIT && procs[nextTask].signalsPending)
+            break;
+
+        nextTask++;
+    }
+
+    if(nextTask == currentTask) {
+        // hmmm.. if we asserted nr_ready > 1 we should never get here
+        return;
+    }
+
+    // check for signals
+    
+    if(procs[nextTask].signalsPending) {
+        int sig = getSignalFromMask(procs[nextTask].signalsPending);
+        printf("Found signal %d while waking process %d. Mask = 0x%04x\n", sig, procs[nextTask].pid, procs[nextTask].signalsPending);        
+    }
+
+    // if new process - mark it as ready
+    
+    
+    if (procs[nextTask].state == PROC_STATE_NEW) {
+        procs[nextTask].state = PROC_STATE_RUN;
+    }
+
+    
+    // restore process
+    fr->ap = procs[nextTask].ap;
+    fr->bp = procs[nextTask].bp;
+    fr->sp = procs[nextTask].sp;
+    fr->pc = procs[nextTask].pc;
+    BANK_SEL = procs[nextTask].memBank;
+    // printf("Sched switch %d -> %d\n", currentTask, nextTask);
+    // printf("Switch to PC 0x%04x\n", fr->pc);
+    currentTask = nextTask;
+    cProc = &(procs[nextTask]);
+    ticksToSwitch = 10;
+
+
+}
+
+
+void _resched(struct IntFrame *fr) {
     int nextTask;
     // printf("Switch from PC 0x%04x\n", fr->pc);
     nextTask = currentTask + 1;

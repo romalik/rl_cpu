@@ -3,6 +3,8 @@
 #include <types.h>
 #include <memmap.h>
 #include <rlfs3.h>
+#include <signal.h>
+
 
 #define MAXPROC 15
 #define MAX_FILES_PER_PROC 15
@@ -31,6 +33,9 @@ struct Process {
     int retval;
 
     FILE *openFiles[MAX_FILES_PER_PROC];
+
+    int signalsPending;
+    sighandler_t sigActions[SIGNUM];
 };
 
 extern struct Process *cProc;
@@ -42,6 +47,8 @@ struct IntFrame {
     unsigned int bp;
     unsigned int ap;
 };
+
+unsigned int sendSig(unsigned int pid, unsigned int sig);
 
 unsigned int findProcByPid(unsigned int pid, struct Process **p);
 struct Process *sched_add_proc(unsigned int pid, unsigned int bank,

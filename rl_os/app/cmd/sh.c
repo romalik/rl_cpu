@@ -95,13 +95,25 @@ int main() {
                 if (builtinCmds[i][0] == 0) {
                     unsigned int childPid = fork();
                     if (!childPid) {
-                        execve((void *)nArgv[0], (void *)nArgv, 0);
-                        printf("Failed execing %s\n", nArgv[0]);
-                        return 1;
+                        if(nArgv[0][0] == '&') {
+                            printf("execing in bg!\n");
+                            execve((void *)nArgv[1], (void *)(&nArgv[1]), 0);
+                            printf("Failed execing %s\n", nArgv[0]);
+                            return 1;
+                        } else {
+                            execve((void *)nArgv[0], (void *)nArgv, 0);
+                            printf("Failed execing %s\n", nArgv[0]);
+                            return 1;
+                        }
                     } else {
                         int r = -1;
 			int status;
-                        r = waitpid(childPid, &status, 0);
+                        printf("Child pid : %d\n", childPid);
+                        if(nArgv[0][0] == '&') {
+                            printf("\nChild in bg!\n");
+                        } else {
+                            r = waitpid(childPid, &status, 0);
+                        }
                     }
                 }
             }

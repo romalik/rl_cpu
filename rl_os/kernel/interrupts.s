@@ -10,7 +10,7 @@ di
 ret
 
 .export __timer_interrupt_vector
-.import timer_interrupt
+.import resched
 .import sched_stack
 .label __timer_interrupt_vector
 di
@@ -28,7 +28,7 @@ reti
 ; if ticksToSwitch
 ; ticksToSwitch--
 ; if(ticksToSwitch == 0) 
-;    call0_w timer_interrupt;
+;    call0_w resched;
 
 cnst_w ticks
 icnst_w ticks
@@ -61,7 +61,7 @@ cnst_w sched_stack+4
 popbp
 
 addrl_b -4 ;SP PC BP AP
-call0_w timer_interrupt
+call0_w resched 
 discard_b 1
 ei
 reti

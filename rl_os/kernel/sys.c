@@ -32,8 +32,10 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         //printf("KERNEL: read %d/%d words from %d\n", sz_read, s->size, s->fd);
         s->size = sz_read;
         return;
-    } else if (scall_id == __NR_time) {
-        *((unsigned int *)(p) + 1) = ticks;
+    } else if (scall_id == __NR_kill) {
+        struct killSyscall *s = (struct killSyscall *)p;
+        sendSig(s->pid, s->sig);
+        return;
     } else if (scall_id == __NR_mkdir) {
         struct mkdirSyscall *s = (struct mkdirSyscall *)p;
 

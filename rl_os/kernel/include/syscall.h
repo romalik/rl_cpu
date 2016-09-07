@@ -77,6 +77,12 @@ struct creatSyscall {
     unsigned int mode;
 };
 
+struct killSyscall {
+    unsigned int id;
+    int pid;
+    int sig;
+};
+
 
 struct writeSyscall {
     unsigned int id;

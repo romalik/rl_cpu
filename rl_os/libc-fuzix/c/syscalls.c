@@ -105,8 +105,13 @@ int ioctl(int d, int request, ...) {
 }
 
 int kill(pid_t pid, int sig) {
-  puts("kill stub!");
-  return 0;
+    struct killSyscall s;
+    s.id = __NR_kill;
+    s.pid = pid;
+    s.sig = sig;
+  
+    syscall(&s);
+    return 0;
 }
 int mkdir(const char *path, mode_t mode) {
     struct mkdirSyscall s;

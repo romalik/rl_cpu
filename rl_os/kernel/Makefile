@@ -24,5 +24,5 @@ $(IMAGE): $(OBJECTS) $(ASM_OBJECTS)
 
 # To remove generated files
 clean:
-	rm -f $(EXEC) $(OBJECTS)
+	rm -f $(EXEC) $(OBJECTS) $(ASM_OBJECTS)
 
