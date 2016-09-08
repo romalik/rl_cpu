@@ -1,5 +1,7 @@
 #include <sched.h>
 #include <memmap.h>
+#include <kernel_worker.h>
+
 
 unsigned int sched_stack[8 * 64];
 unsigned sched_active = 0;
@@ -59,10 +61,11 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         procs[i].bp = 0xF000;
         procs[i].sp = 0xF000;
         procs[i].pc = 0x8000;
+        procs[i].argv = "[?]";
         procs[i].state = PROC_STATE_NEW;
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&fs_root),
                sizeof(struct fs_node));
-        
+
         memset((unsigned int *)(&procs[i].sigActions), SIG_DFL, SIGNUM);
 
         procs[i].signalsPending = 0;
@@ -74,6 +77,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         procs[i].bp = p->bp;
         procs[i].sp = p->sp;
         procs[i].pc = p->pc;
+        procs[i].argv = p->argv;
         procs[i].state = p->state;
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&p->cwd),
                sizeof(struct fs_node));
@@ -124,12 +128,12 @@ unsigned int sendSig(unsigned int pid, unsigned int sig) {
 
 void resched(struct IntFrame * fr) {
     int nextTask;
-    
+
     // check if we have any pending tasks
     //if(nr_ready < 2) { //nowhere to switch
     //    return;
     //}
-    
+
     // now save current task state to its ptab
     // if current task is valid
     if (currentTask < MAXPROC) {
@@ -148,6 +152,7 @@ void resched(struct IntFrame * fr) {
 
     nextTask = currentTask + 1;
 
+rescanTable:
     while(nextTask != currentTask) {
         if(nextTask > MAXPROC) {
             nextTask = 0;
@@ -158,7 +163,7 @@ void resched(struct IntFrame * fr) {
 
         if (procs[nextTask].state == PROC_STATE_NEW)
             break;
-        
+
         if (procs[nextTask].state == PROC_STATE_WAIT && procs[nextTask].signalsPending)
             break;
 
@@ -171,20 +176,27 @@ void resched(struct IntFrame * fr) {
     }
 
     // check for signals
-    
+
     if(procs[nextTask].signalsPending) {
         int sig = getSignalFromMask(procs[nextTask].signalsPending);
-        printf("Found signal %d while waking process %d. Mask = 0x%04x\n", sig, procs[nextTask].pid, procs[nextTask].signalsPending);        
+        printf("Found signal %d while waking process %d. Mask = 0x%04x\n", sig, procs[nextTask].pid, procs[nextTask].signalsPending);
+        if(sig == SIGKILL) {
+          printf("SIGKILL! killing pid %d\n", procs[nextTask].pid);
+          addKernelTask(KERNEL_TASK_EXIT, procs[nextTask].pid, NULL);
+          procs[nextTask].state = PROC_STATE_KWORKER;
+          nextTask++;
+          goto rescanTable;
+        }
     }
 
     // if new process - mark it as ready
-    
-    
+
+
     if (procs[nextTask].state == PROC_STATE_NEW) {
         procs[nextTask].state = PROC_STATE_RUN;
     }
 
-    
+
     // restore process
     fr->ap = procs[nextTask].ap;
     fr->bp = procs[nextTask].bp;
@@ -254,4 +266,25 @@ unsigned int findProcByPid(unsigned int pid, struct Process **p) {
         }
     }
     return 0;
+}
+
+
+
+unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n) {
+  int i;
+//  char * b = (char *)buf;
+  for(i = 0; i<MAXPROC; i++) {
+      printf("%d %d %d\n",i, procs[i].pid, procs[i].state);
+
+    if(procs[i].state != PROC_STATE_NONE) {
+      //b += sprintf(b, "%d %d %s\n", procs[i].pid, procs[i].state, procs[i].argv);
+    }
+  }
+
+  return 0;//(unsigned int)b - (unsigned int)buf + 1;
+}
+
+
+unsigned int proc_file_write(unsigned int minor, const unsigned int * buf, size_t n) {
+  return 0;
 }

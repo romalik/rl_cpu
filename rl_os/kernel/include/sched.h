@@ -34,6 +34,8 @@ struct Process {
 
     FILE *openFiles[MAX_FILES_PER_PROC];
 
+    char  * argv;
+
     int signalsPending;
     sighandler_t sigActions[SIGNUM];
 };
@@ -56,5 +58,10 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
 unsigned int sched_genPid();
 
 void resched_now();
+
+
+
+unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n);
+unsigned int proc_file_write(unsigned int minor, const unsigned int * buf, size_t n);
 
 #endif

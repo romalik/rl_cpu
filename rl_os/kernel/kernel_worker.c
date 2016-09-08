@@ -47,6 +47,7 @@ void kernel_worker_init() {
     p.state = PROC_STATE_NEW;
     p.ap = p.bp = p.sp = (unsigned int)kernel_worker_stack;
     p.pc = (unsigned int)kernel_worker_entry;
+    p.argv = "[kernel_worker]";
     p.memBank = 0;
     p.cwd = fs_root;
     sched_add_proc(0, 0, &p);
@@ -166,7 +167,7 @@ void do_kernel_task_execve(int i) {
         p->pc = 0x8000;
         p->sp = 0xF000 + ARGV_BUFFER_SIZE;
         p->bp = p->ap = 0xF000;
-
+        p->argv = (char *)0xF000;
         p->state = PROC_STATE_RUN;
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;

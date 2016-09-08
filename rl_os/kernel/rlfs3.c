@@ -191,6 +191,7 @@ int fs_stat(fs_node_t *node, struct stat *res) {
     res->st_ctime = 0;
 
     if (S_ISCHR(res->st_mode)) {
+        res->st_rdev = res->st_size;
         res->st_size = 1;
     }
 
@@ -410,6 +411,7 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
     openFiles[fd].mode = mode;
     openFiles[fd].size = s.st_size;
     openFiles[fd].flags = s.st_mode;
+    openFiles[fd].device = s.st_rdev;
     openFiles[fd].pos = 0;
     if (mode & O_APPEND) {
         openFiles[fd].pos = s.st_size;
@@ -501,12 +503,7 @@ size_t k_write(FILE *fd, const unsigned int *buf, size_t size) {
         major = (fd->device >> 8);
         minor = (fd->device & 0xff);
         ops = &devList[major];
-        while (size) {
-            ops->write(minor, *buf);
-            buf++;
-            size--;
-            written++;
-        }
+        written = ops->write(minor, buf, size);
         return written;
     } else {
         written = fs_write(&(fd->node), fd->pos, size, buf);
@@ -526,12 +523,7 @@ size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
         major = (fd->device >> 8);
         minor = (fd->device & 0xff);
         ops = &devList[major];
-        while (size) {
-            *buf = ops->read(minor);
-            buf++;
-            size--;
-            alreadyRead++;
-        }
+        alreadyRead = ops->read(minor, buf, size);
         return alreadyRead;
     } else {
         if (size + fd->pos > fd->size) {
@@ -703,6 +695,8 @@ int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor
             // printf("fs create rv %d\n", rv);
             b = bread(0, devNode.idx);
             b->data[1] = ((major << 8) | (minor & 0xff));
+
+            printf("mknod: create dev maj %d min %d mask %d\n", major, minor, b->data[1]);
             b->flags = BLOCK_MODIFIED;
             bfree(b);
 

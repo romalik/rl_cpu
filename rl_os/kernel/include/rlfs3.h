@@ -123,8 +123,8 @@
 typedef struct fs_node { blk_t idx; } fs_node_t;
 
 struct devOpTable {
-    unsigned int (*write)(unsigned int minor, unsigned int val);
-    unsigned int (*read)(unsigned int minor);
+    unsigned int (*write)(unsigned int minor, const unsigned int * buf, size_t n);
+    unsigned int (*read)(unsigned int minor, unsigned int * buf, size_t n);
 };
 
 typedef struct dirent {

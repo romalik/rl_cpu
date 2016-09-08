@@ -43,14 +43,17 @@ int kernel_main() {
     kernel_worker_init();
 
     k_regDevice(0, tty_write, tty_read);
+    k_regDevice(1, proc_file_write, proc_file_read);
 
     k_mknod("/tty", 'c', 0, 0);
+    k_mknod("/proc", 'c', 1, 0);
 
     printf("Press s for builtin shell, any key for init [%s]\n", INIT_PATH);
 
     if (getc() == 's') {
         main_sh();
     } else {
+        struct Process * initP;
         unsigned int b;
         int initPid = 0;
         FILE *fd1 = k_open(INIT_PATH, 'r');
@@ -65,8 +68,8 @@ int kernel_main() {
         k_close(fd1);
 
         initPid = sched_genPid();
-        sched_add_proc(initPid, b, 0);
-
+        initP = sched_add_proc(initPid, b, 0);
+        initP->argv = INIT_PATH;
         procs[initPid].openFiles[0] = k_open("/tty", 'r');
         procs[initPid].openFiles[1] = k_open("/tty", 'w');
         procs[initPid].openFiles[2] = k_open("/tty", 'w');
