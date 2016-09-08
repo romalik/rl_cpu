@@ -36,18 +36,19 @@ void kernel_worker_entry() {
 void kernel_worker_init() {
     int i = 0;
     struct Process p;
-
+    size_t off;
     //spinlock_init(&kernelTaskQueueLock);
 
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
     }
 
+    strcpy(p.cmd, "[kernel_worker]");
+
     p.pid = 0;
     p.state = PROC_STATE_NEW;
-    p.ap = p.bp = p.sp = (unsigned int)kernel_worker_stack;
+    p.ap = p.bp = p.sp = (unsigned int)(kernel_worker_stack);
     p.pc = (unsigned int)kernel_worker_entry;
-    p.argv = "[kernel_worker]";
     p.memBank = 0;
     p.cwd = fs_root;
     sched_add_proc(0, 0, &p);
@@ -106,7 +107,7 @@ void do_kernel_task_fork(int i) {
 
 #define EXECVE_READ_CHUNK_SIZE 0x1000
 
-void parseArgs(unsigned int **nArgv, unsigned int *buf, size_t off) {
+size_t parseArgs(char **nArgv, unsigned int *buf, size_t off) {
     unsigned int *argc;
     unsigned int *argv;
     unsigned int *p;
@@ -125,6 +126,7 @@ void parseArgs(unsigned int **nArgv, unsigned int *buf, size_t off) {
         nArgv++;
     }
     *argv = 0;
+    return (size_t)p - (size_t)buf;
 }
 
 void do_kernel_task_execve(int i) {
@@ -133,7 +135,7 @@ void do_kernel_task_execve(int i) {
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct execSyscall *sStruct;
         FILE *fd;
-
+        size_t off;
         size_t cPos = 0x8000;
         di();
         BANK_SEL = p->memBank;
@@ -143,7 +145,8 @@ void do_kernel_task_execve(int i) {
 
         printf("Execve: loading %s\n", sStruct->filename);
 
-        parseArgs(sStruct->argv, argvBuffer, 0xF000);
+        memcpy((unsigned int *)p->cmd, *(unsigned int **)(sStruct->argv), 32);
+        off = parseArgs(sStruct->argv, argvBuffer, 0xF000);
         fd = k_open(sStruct->filename, 'r');
 
         if (fd == NULL) {
@@ -162,12 +165,12 @@ void do_kernel_task_execve(int i) {
             ei();
         }
 
-        memcpy((void *)(0xF000), argvBuffer, ARGV_BUFFER_SIZE);
+        di();
+        memcpy((void *)(0xF000), argvBuffer, off);
 
         p->pc = 0x8000;
-        p->sp = 0xF000 + ARGV_BUFFER_SIZE;
+        p->sp = 0xF000 + off;
         p->bp = p->ap = 0xF000;
-        p->argv = (char *)0xF000;
         p->state = PROC_STATE_RUN;
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;

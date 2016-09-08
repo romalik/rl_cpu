@@ -61,7 +61,6 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         procs[i].bp = 0xF000;
         procs[i].sp = 0xF000;
         procs[i].pc = 0x8000;
-        procs[i].argv = "[?]";
         procs[i].state = PROC_STATE_NEW;
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&fs_root),
                sizeof(struct fs_node));
@@ -72,12 +71,14 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
 
         memset((unsigned int *)(&procs[i].openFiles), 0,
                sizeof(FILE *) * MAX_FILES_PER_PROC);
+        
+        memset((unsigned int *)(&procs[i].cmd), 0,
+               32);
     } else {
         procs[i].ap = p->ap;
         procs[i].bp = p->bp;
         procs[i].sp = p->sp;
         procs[i].pc = p->pc;
-        procs[i].argv = p->argv;
         procs[i].state = p->state;
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&p->cwd),
                sizeof(struct fs_node));
@@ -88,6 +89,10 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         memcpy((unsigned int *)(&procs[i].openFiles),
                (unsigned int *)(&p->openFiles),
                sizeof(FILE *) * MAX_FILES_PER_PROC);
+
+        memcpy((unsigned int *)(&procs[i].cmd),
+               (unsigned int *)(&p->cmd),
+               32);
     }
 
     // printf("Proc pid %d entry %d added\n", pid, i);
@@ -272,16 +277,21 @@ unsigned int findProcByPid(unsigned int pid, struct Process **p) {
 
 unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n) {
   int i;
-//  char * b = (char *)buf;
+  unsigned int * b = buf;
   for(i = 0; i<MAXPROC; i++) {
-      printf("%d %d %d\n",i, procs[i].pid, procs[i].state);
-
     if(procs[i].state != PROC_STATE_NONE) {
-      //b += sprintf(b, "%d %d %s\n", procs[i].pid, procs[i].state, procs[i].argv);
+
+        *b = procs[i].pid;
+        b++;
+        *b = procs[i].state;
+        b++;
+        memcpy((unsigned int *)b, (unsigned int *)procs[i].cmd, 32);
+        b += 32;
     }
   }
+  *b = 0;
 
-  return 0;//(unsigned int)b - (unsigned int)buf + 1;
+  return (unsigned int)b - (unsigned int)buf + 1;
 }
 
 

@@ -58,7 +58,6 @@ int kernel_main() {
         int initPid = 0;
         FILE *fd1 = k_open(INIT_PATH, 'r');
         size_t cPos = 0x8000;
-
         mm_allocSegment(&b);
         BANK_SEL = b;
         printf("Loading init\n");
@@ -69,7 +68,11 @@ int kernel_main() {
 
         initPid = sched_genPid();
         initP = sched_add_proc(initPid, b, 0);
-        initP->argv = INIT_PATH;
+
+        initP->sp = 0xF000;
+        initP->ap = initP->bp = 0xF000;
+
+        strcpy(initP->cmd, INIT_PATH);
         procs[initPid].openFiles[0] = k_open("/tty", 'r');
         procs[initPid].openFiles[1] = k_open("/tty", 'w');
         procs[initPid].openFiles[2] = k_open("/tty", 'w');

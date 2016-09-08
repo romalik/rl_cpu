@@ -35,7 +35,7 @@ struct Process {
     FILE *openFiles[MAX_FILES_PER_PROC];
 
     char  * argv;
-
+    char cmd[32];
     int signalsPending;
     sighandler_t sigActions[SIGNUM];
 };
