@@ -545,10 +545,13 @@ FILE *k_open(const void *__name, unsigned int mode) {
     int rv;
     unsigned int *name = (unsigned int *)__name;
 
+    printf("k_open: %s\n", __name);
+
     rv = fs_lookup(name, &parent, &file);
     // printf("File lookup result %d\n", rv);
     if (rv != FS_NO_DIR) {
         if (rv == FS_OK) {
+            printf("k_open: ok\n");
             return fs_open(&file, mode);
         } else {
             /* get filename */
@@ -590,7 +593,8 @@ int k_stat(const void *name, struct stat * res) {
 }
 
 void k_close(FILE *fd) {
-    fd->mode = FS_MODE_NONE;
+  printf("k_close\n");
+  fd->mode = FS_MODE_NONE;
 }
 
 void k_seek(FILE *fd, off_t pos) {

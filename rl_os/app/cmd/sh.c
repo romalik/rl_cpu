@@ -108,7 +108,6 @@ int main() {
                     } else {
                         int r = -1;
 			int status;
-                        printf("Child pid : %d\n", childPid);
                         if(nArgv[0][0] == '&') {
                             printf("\nChild in bg!\n");
                         } else {

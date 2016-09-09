@@ -109,7 +109,7 @@ int kill(pid_t pid, int sig) {
     s.id = __NR_kill;
     s.pid = pid;
     s.sig = sig;
-  
+
     syscall(&s);
     return 0;
 }
@@ -263,7 +263,6 @@ pid_t wait(int *status) {
 
 pid_t waitpid(pid_t pid, int *status, int options) {
     struct waitpidSyscall s;
-    printf("Waitpid called!\n");
     s.id = __NR_waitpid;
     s.pid = pid;
     syscall(&s);

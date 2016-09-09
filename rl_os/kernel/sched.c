@@ -71,7 +71,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
 
         memset((unsigned int *)(&procs[i].openFiles), 0,
                sizeof(FILE *) * MAX_FILES_PER_PROC);
-        
+
         memset((unsigned int *)(&procs[i].cmd), 0,
                32);
     } else {
@@ -265,7 +265,7 @@ void _resched(struct IntFrame *fr) {
 unsigned int findProcByPid(unsigned int pid, struct Process **p) {
     int i;
     for (i = 0; i < MAXPROC; i++) {
-        if (procs[i].pid == pid) {
+        if (procs[i].pid == pid && (procs[i].state != PROC_STATE_NONE)) {
             *p = &procs[i];
             return 1;
         }
@@ -278,6 +278,7 @@ unsigned int findProcByPid(unsigned int pid, struct Process **p) {
 unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n) {
   int i;
   unsigned int * b = buf;
+  printf("procfs read\n");
   for(i = 0; i<MAXPROC; i++) {
     if(procs[i].state != PROC_STATE_NONE) {
 

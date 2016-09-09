@@ -131,7 +131,6 @@ size_t parseArgs(char **nArgv, unsigned int *buf, size_t off) {
 
 void do_kernel_task_execve(int i) {
     struct Process *p;
-    printf("Kernel worker: execve!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct execSyscall *sStruct;
         FILE *fd;
@@ -143,7 +142,6 @@ void do_kernel_task_execve(int i) {
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
 
-        printf("Execve: loading %s\n", sStruct->filename);
 
         memcpy((unsigned int *)p->cmd, *(unsigned int **)(sStruct->argv), 32);
         off = parseArgs(sStruct->argv, argvBuffer, 0xF000);
@@ -164,6 +162,9 @@ void do_kernel_task_execve(int i) {
             cPos += k_read(fd, (unsigned int *)cPos, EXECVE_READ_CHUNK_SIZE);
             ei();
         }
+
+
+        k_close(fd);
 
         di();
         memcpy((void *)(0xF000), argvBuffer, off);
@@ -190,17 +191,17 @@ void do_kernel_task_waitpid(int i) {
         int pid = 0;
         int retval = 0;
         //printf("Kernel worker: waitpid caller pid %d\n", kernelTaskQueue[i].callerPid);
+        di();
+        BANK_SEL = p->memBank;
         sStruct = (struct waitpidSyscall *)(*((
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
-        di();
-        BANK_SEL = p->memBank;
         retval = findProcByPid(sStruct->pid, &childProcess);
         pid = sStruct->pid;
         ei();
 
         if (!retval) {
-            printf("process not found %d\n", pid);
+            printf("process not found %d. Caller pid %d\n", pid,p->pid);
             resched_now();
             return;
         }
@@ -217,7 +218,6 @@ void do_kernel_task_waitpid(int i) {
         sStruct->pid = childProcess->retval;
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         ei();
-        //printf("Zombie killed %d\n", pid);
 
     } else {
         // hmmm...
