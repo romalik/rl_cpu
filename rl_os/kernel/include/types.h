@@ -13,6 +13,8 @@ typedef unsigned int size_t;
 typedef unsigned int off_t;
 typedef unsigned int blk_t;
 
+typedef int16_t pid_t;
+
 #define NULL 0
 
 #endif /* ndef TYPES_H */

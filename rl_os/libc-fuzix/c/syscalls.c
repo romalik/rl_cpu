@@ -248,25 +248,18 @@ int usleep(useconds_t us)
 //	return _pause(us/100000UL);
 }
 
-pid_t wait(int *status) {
-  puts("wait stub!");
-  return 0;
-  /*
-    struct waitpidSyscall s;
-    printf("Waitpid called!\n");
-    s.id = __NR_waitpid;
-    s.pid = pid;
-    syscall(&s);
-    return s.pid;
-    */
-}
-
 pid_t waitpid(pid_t pid, int *status, int options) {
     struct waitpidSyscall s;
     s.id = __NR_waitpid;
     s.pid = pid;
+    s.status = status;
+    s.options = options;
     syscall(&s);
     return s.pid;
+}
+
+pid_t wait(int * status) {
+  return waitpid(-1,status,0);
 }
 
 int write(int fd, const void *buf, int count) {

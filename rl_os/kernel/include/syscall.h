@@ -1,6 +1,6 @@
 #ifndef __SYSCALL_H
 #define __SYSCALL_H
-
+#include <types.h>
 
 #define __NR_setup 0 /* used only by init, to get system going */
 #define __NR_exit 1
@@ -143,8 +143,13 @@ struct exitSyscall {
 
 struct waitpidSyscall {
     unsigned int id;
-    unsigned int pid;
+    pid_t pid;
+    int * status;
+    int options;
+
 };
+
+
 
 
 struct statSyscall {

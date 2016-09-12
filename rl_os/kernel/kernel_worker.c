@@ -2,7 +2,7 @@
 #include <sched.h>
 #include <syscall.h>
 #include <lock.h>
-
+#include <wait.h>
 unsigned int kernelTaskQueueLock;
 struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
 
@@ -89,6 +89,7 @@ void do_kernel_task_fork(int i) {
                                          // first arg in arg
                                          // space
         sStruct->pid = 0;
+        newProcess->parent = p;
 
         // set child pid as retval for parent
         BANK_SEL = currentBank;
@@ -196,7 +197,12 @@ void do_kernel_task_waitpid(int i) {
         sStruct = (struct waitpidSyscall *)(*((
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
-        retval = findProcByPid(sStruct->pid, &childProcess);
+
+        if(sStruct->pid > 0) {
+          retval = findProcByPid(sStruct->pid, &childProcess);
+        } else {
+          retval = findProcByParent(p, &childProcess);
+        }
         pid = sStruct->pid;
         ei();
 
@@ -208,6 +214,12 @@ void do_kernel_task_waitpid(int i) {
 
         if (childProcess->state != PROC_STATE_ZOMBIE) {
             //printf("process not dead %d\n", pid);
+
+            if(sStruct->options == WNOHANG) {
+              p->state = PROC_STATE_RUN;
+              kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+              sStruct->pid = 0;
+            }
             resched_now();
             return;
         }
@@ -215,7 +227,8 @@ void do_kernel_task_waitpid(int i) {
         di();
         childProcess->state = PROC_STATE_NONE;
         p->state = PROC_STATE_RUN;
-        sStruct->pid = childProcess->retval;
+        sStruct->pid = childProcess->pid;
+        *(sStruct->status) = childProcess->retval;
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         ei();
 

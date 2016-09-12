@@ -1,12 +1,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
+
 
 char cmdBuf[127];
 int cmdBufSize = 127;
 int cmdBufPos = 0;
 char *nArgv[10];
 int nArgc;
+int bgChildren = 0;
+
 
 int cls(int argc, char **argv) {
     printf("%c[1J%c[HThis should clear screen!\n", 0x1b, 0x1b);
@@ -107,15 +111,29 @@ int main() {
                         }
                     } else {
                         int r = -1;
-			int status;
+			                  int status;
                         if(nArgv[0][0] == '&') {
                             printf("\nChild in bg!\n");
+                            bgChildren++;
                         } else {
                             r = waitpid(childPid, &status, 0);
                         }
                     }
                 }
             }
+
+            while(bgChildren) {
+              int status;
+              int rval;
+              rval = waitpid(-1, &status, WNOHANG);
+              if(rval) {
+                bgChildren--;
+                printf("Child pid %d exited with code %d\n", rval, status);
+              } else {
+                break;
+              }
+            }
+
             printf("# ");
         }
     }

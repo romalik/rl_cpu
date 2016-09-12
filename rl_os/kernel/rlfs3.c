@@ -545,13 +545,13 @@ FILE *k_open(const void *__name, unsigned int mode) {
     int rv;
     unsigned int *name = (unsigned int *)__name;
 
-    printf("k_open: %s\n", __name);
+    // printf("k_open: %s\n", __name);
 
     rv = fs_lookup(name, &parent, &file);
     // printf("File lookup result %d\n", rv);
     if (rv != FS_NO_DIR) {
         if (rv == FS_OK) {
-            printf("k_open: ok\n");
+             //printf("k_open: ok\n");
             return fs_open(&file, mode);
         } else {
             /* get filename */
@@ -593,7 +593,7 @@ int k_stat(const void *name, struct stat * res) {
 }
 
 void k_close(FILE *fd) {
-  printf("k_close\n");
+  // printf("k_close\n");
   fd->mode = FS_MODE_NONE;
 }
 
@@ -700,7 +700,7 @@ int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor
             b = bread(0, devNode.idx);
             b->data[1] = ((major << 8) | (minor & 0xff));
 
-            printf("mknod: create dev maj %d min %d mask %d\n", major, minor, b->data[1]);
+             //printf("mknod: create dev maj %d min %d mask %d\n", major, minor, b->data[1]);
             b->flags = BLOCK_MODIFIED;
             bfree(b);
 

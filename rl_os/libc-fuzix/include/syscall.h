@@ -146,7 +146,10 @@ struct exitSyscall {
 
 struct waitpidSyscall {
     unsigned int id;
-    unsigned int pid;
+    pid_t pid;
+    int * status;
+    int options;
+
 };
 
 

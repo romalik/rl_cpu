@@ -272,6 +272,17 @@ unsigned int findProcByPid(unsigned int pid, struct Process **p) {
     }
     return 0;
 }
+unsigned int findProcByParent(struct Process * pid, struct Process **p) {
+    int i;
+    for (i = 0; i < MAXPROC; i++) {
+        if (procs[i].parent == pid && (procs[i].state != PROC_STATE_NONE)) {
+            *p = &procs[i];
+            return 1;
+        }
+    }
+    return 0;
+}
+
 
 
 
