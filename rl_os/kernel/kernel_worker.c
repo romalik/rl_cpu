@@ -207,7 +207,12 @@ void do_kernel_task_waitpid(int i) {
         ei();
 
         if (!retval) {
-            printf("process not found %d. Caller pid %d\n", pid,p->pid);
+//            printf("process not found %d. Caller pid %d\n", pid,p->pid);
+            if(sStruct->options == WNOHANG) {
+              p->state = PROC_STATE_RUN;
+              kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+              sStruct->pid = 0;
+            }
             resched_now();
             return;
         }
