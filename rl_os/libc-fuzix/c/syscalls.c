@@ -28,13 +28,20 @@ int close(int fd) {
 }
 
 int dup(int oldfd) {
-  puts("dup stub!");
-  return 0;
+  struct dupSyscall s;
+  s.id = __NR_dup;
+  s.oldfd = oldfd;
+  syscall(&s);
+  return s.retval;
 }
 
 int dup2(int oldfd, int newfd) {
-  puts("dup2 stub!");
-  return 0;
+  struct dup2Syscall s;
+  s.id = __NR_dup2;
+  s.oldfd = oldfd;
+  s.newfd = newfd;
+  syscall(&s);
+  return s.retval;
 }
 
 int execve(const char * filename, char * const argv[], char * const envp[]) {

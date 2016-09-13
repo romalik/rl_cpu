@@ -44,7 +44,7 @@ void ps() {
 struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
                                struct Process *p) {
     int i = 0;
-
+    int j;
     for (i = 0; i < MAXPROC; i++) {
         if (procs[i].state == PROC_STATE_NONE) {
             break;
@@ -89,6 +89,11 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
         memcpy((unsigned int *)(&procs[i].openFiles),
                (unsigned int *)(&p->openFiles),
                sizeof(FILE *) * MAX_FILES_PER_PROC);
+
+        for(j = 0; j<MAX_FILES_PER_PROC; j++) {
+          procs[i].openFiles[j]->refcnt++;
+        }
+
 
         memcpy((unsigned int *)(&procs[i].cmd),
                (unsigned int *)(&p->cmd),

@@ -413,6 +413,7 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
     openFiles[fd].flags = s.st_mode;
     openFiles[fd].device = s.st_rdev;
     openFiles[fd].pos = 0;
+    openFiles[fd].refcnt = 1;
     if (mode & O_APPEND) {
         openFiles[fd].pos = s.st_size;
     }
@@ -488,10 +489,6 @@ int fs_lookup(const unsigned int *name, fs_node_t *parent, fs_node_t *res) {
     return FS_OK; // should never get here o_O
 }
 
-void fs_close(FILE *fd) {
-    fd->mode = FS_MODE_NONE;
-}
-
 size_t k_write(FILE *fd, const unsigned int *buf, size_t size) {
   size_t written = 0;
   if (S_ISBLK(fd->flags)) {
@@ -545,7 +542,7 @@ FILE *k_open(const void *__name, unsigned int mode) {
     int rv;
     unsigned int *name = (unsigned int *)__name;
 
-    // printf("k_open: %s\n", __name);
+    //printf("k_open: %s\n", __name);
 
     rv = fs_lookup(name, &parent, &file);
     // printf("File lookup result %d\n", rv);
@@ -593,8 +590,11 @@ int k_stat(const void *name, struct stat * res) {
 }
 
 void k_close(FILE *fd) {
-  // printf("k_close\n");
-  fd->mode = FS_MODE_NONE;
+  //printf("k_close ref %d\n", fd->refcnt);
+  fd->refcnt--;
+  if(!fd->refcnt) {
+    fd->mode = FS_MODE_NONE;
+  }
 }
 
 void k_seek(FILE *fd, off_t pos) {

@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
+#include <fcntl.h>
 
 char cmdBuf[127];
 int cmdBufSize = 127;
@@ -13,7 +13,7 @@ int bgChildren = 0;
 
 
 int cls(int argc, char **argv) {
-    printf("%c[1J%c[HThis should clear screen!\n", 0x1b, 0x1b);
+    printf("%c[1J%c[H", 0x1b, 0x1b);
     return 0;
 }
 
@@ -27,6 +27,18 @@ int cd(int argc, char **argv) {
     return 0;
 }
 
+void do_pwd() {
+  char path[64*4];
+  getcwd(path, 64*4);
+  printf("%s", path);
+}
+
+int pwd(int argc, char ** argv) {
+  do_pwd();
+  printf("\n");
+  return 0;
+}
+
 int exit_sh(int argc, char **argv) {
     exit(0);
     return 0;
@@ -34,9 +46,9 @@ int exit_sh(int argc, char **argv) {
 
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"cls", "cd", "help", "exit", ""};
+char builtinCmds[][15] = {"cls", "cd", "help", "exit", "pwd", ""};
 
-int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, exit_sh};
+int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, exit_sh, pwd};
 
 int help(int argc, char **argv) {
     int i = 0;
@@ -62,7 +74,20 @@ int addChar(char c) {
     return 0;
 }
 
-int sh_getArgs(char *cmd, char **_argv) {
+char * getToken(char * s, char ** tok) {
+  int hasMore = 1;
+  while(isspace(*s)) s++;
+  *tok = s;
+  while(!isspace(*s) && *s) s++;
+  if(!*s) hasMore = 0;
+
+  *s = 0;
+  s += hasMore;
+  return s;
+}
+
+/*
+int sh_getArgs(char *cmd, char **_argv, int * redirIN, int * redirOUT, int * redirERR) {
     int argc = 0;
     char *s = cmd;
     _argv[argc] = s;
@@ -78,17 +103,73 @@ int sh_getArgs(char *cmd, char **_argv) {
     _argv[argc] = 0;
     return argc;
 }
+*/
+
+int sh_getArgs(char *cmd, char **_argv, int * redirIN, int * redirOUT, int * redirERR) {
+    int argc = 0;
+    char *s = cmd;
+
+    while(1) {
+      s = getToken(s, &(_argv[argc]));
+
+      if(*_argv[argc] == '>') {
+        int append = 0;
+        if(*(_argv[argc]+1) == '>') {
+          append = 1;
+        }
+
+        if(!*s) {
+          printf("err\n");
+          return 0;
+        }
+        s = getToken(s, &(_argv[argc]));
+        if(append) {
+          *redirOUT = open(_argv[argc], O_WRONLY|O_APPEND);
+        } else {
+          *redirOUT = open(_argv[argc], O_WRONLY|O_CREAT);
+        }
+      } else if(*_argv[argc] == '<') {
+        if(!*s) {
+          printf("err\n");
+          return 0;
+        }
+        s = getToken(s, &(_argv[argc]));
+        *redirIN = open(_argv[argc], O_RDONLY);
+
+      } else {
+        argc++;
+      }
+
+      if(!*s) break;
+    }
+    _argv[argc] = 0;
+    return argc;
+}
+
 
 int main() {
     int i = 0;
-    printf("User mode shell\n# ");
+    printf("\n");
+    do_pwd();
+    printf("# ");
     while (1) {
         char c = getchar();
         putchar(c);
         if (addChar(c)) {
             if (cmdBuf[0]) {
-                nArgc = sh_getArgs(cmdBuf, nArgv);
+                int redirIN = -2;
+                int redirOUT = -2;
+                int redirERR = -2;
+                nArgc = sh_getArgs(cmdBuf, nArgv, &redirIN, &redirOUT, &redirERR);
                 i = 0;
+
+                if(redirIN == -1) goto err;
+                if(redirOUT == -1) goto err;
+                if(redirERR == -1) goto err;
+
+
+
+
                 while (builtinCmds[i][0] != 0) {
                     if (!strcmp(nArgv[0], builtinCmds[i])) {
                         int retval = builtinFuncs[i](nArgc, nArgv);
@@ -99,8 +180,24 @@ int main() {
                 if (builtinCmds[i][0] == 0) {
                     unsigned int childPid = fork();
                     if (!childPid) {
+
+                        if(redirIN > 0) {
+                          close(STDIN_FILENO);
+                          dup(redirIN);
+                          close(redirIN);
+                        }
+                        if(redirOUT > 0) {
+                          close(STDOUT_FILENO);
+                          dup(redirOUT);
+                          close(redirOUT);
+                        }
+                        if(redirERR > 0) {
+                          close(STDERR_FILENO);
+                          dup(redirERR);
+                          close(redirERR);
+                        }
+
                         if(nArgv[0][0] == '&') {
-                            printf("execing in bg!\n");
                             execve((void *)nArgv[1], (void *)(&nArgv[1]), 0);
                             printf("Failed execing %s\n", nArgv[0]);
                             return 1;
@@ -113,13 +210,16 @@ int main() {
                         int r = -1;
 			                  int status;
                         if(nArgv[0][0] == '&') {
-                            printf("\nChild in bg!\n");
                             bgChildren++;
                         } else {
                             r = waitpid(childPid, &status, 0);
                         }
                     }
                 }
+err:
+                if(redirIN > 0) close(redirIN);
+                if(redirOUT > 0) close(redirOUT);
+                if(redirERR > 0) close(redirERR);
             }
 
             while(bgChildren) {
@@ -128,12 +228,12 @@ int main() {
               rval = waitpid(-1, &status, WNOHANG);
               if(rval) {
                 bgChildren--;
-                printf("Child pid %d exited with code %d\n", rval, status);
+                printf("[%d] done\n", rval, status);
               } else {
                 break;
               }
             }
-
+            do_pwd();
             printf("# ");
         }
     }

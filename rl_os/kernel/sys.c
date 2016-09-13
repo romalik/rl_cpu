@@ -92,6 +92,55 @@ void system_interrupt(void *p, struct IntFrame *fr) {
                 //printf("KERNEL: close failed %d\n", s->fd);
         s->fd = -1;
         return;
+    } else if (scall_id == __NR_dup) {
+        int fd;
+        struct dupSyscall *s = (struct dupSyscall *)p;
+
+        if(!cProc->openFiles[s->oldfd]) {
+          s->retval = -1;
+            //printf("dup(%d) -> %d\n", s->oldfd, s->retval);
+          return;
+        }
+
+        for (fd = 0; fd < MAX_FILES_PER_PROC; fd++) {
+            if (!cProc->openFiles[fd]) {
+                break;
+            }
+        }
+        if (fd != MAX_FILES_PER_PROC) {
+            cProc->openFiles[fd] = cProc->openFiles[s->oldfd];
+            cProc->openFiles[fd]->refcnt++;
+            s->retval = fd;
+            //printf("dup(%d) -> %d\n", s->oldfd, s->retval);
+            return;
+        }
+        s->retval = -1;
+        return;
+    } else if (scall_id == __NR_dup2) {
+        int fd;
+        struct dup2Syscall *s = (struct dup2Syscall *)p;
+
+        if(!cProc->openFiles[s->oldfd] || s->newfd<0 || s->newfd>MAX_FILES_PER_PROC ) {
+          s->retval = -1;
+            //printf("dup2(%d, %d) -> %d\n", s->oldfd, s->newfd, s->retval);
+          return;
+        }
+
+        if(s->oldfd == s->newfd) {
+          s->retval = s->newfd;
+            //printf("dup2(%d, %d) -> %d\n", s->oldfd, s->newfd, s->retval);
+          return;
+        }
+
+        if(cProc->openFiles[s->newfd]) {
+          k_close(cProc->openFiles[s->newfd]);
+        }
+
+        cProc->openFiles[s->oldfd] = cProc->openFiles[s->oldfd];
+        cProc->openFiles[s->oldfd]->refcnt++;
+        s->retval = fd;
+            //printf("dup2(%d, %d) -> %d\n", s->oldfd, s->newfd, s->retval);
+        return;
 
     } else if (scall_id == __NR_fork) {
         di();

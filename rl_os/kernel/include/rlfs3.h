@@ -139,6 +139,7 @@ typedef struct __FILE {
     off_t pos;
     unsigned int device; // for dev files
     unsigned int flags;
+    int refcnt;
 } FILE;
 /*
 typedef struct __stat {
@@ -216,7 +217,6 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
                       const unsigned int *buf);
 
 FILE *fs_open(fs_node_t *node, unsigned int mode);
-void fs_close(FILE *fd);
 
 size_t k_write(FILE *fd, const unsigned int *buf, size_t size);
 size_t k_read(FILE *fd, unsigned int *buf, size_t size);

@@ -96,7 +96,7 @@ class Linker {
                 }
 
                 //labelName = std::string(labelName, 0, found);
-                printf("Found complex label! Name: [%s] shift: [%s] eval: [%d]\n", labelName.c_str(), shiftStr.c_str(), shRes);
+                //printf("Found complex label! Name: [%s] shift: [%s] eval: [%d]\n", labelName.c_str(), shiftStr.c_str(), shRes);
                 labelShift = shRes;
             }
 
@@ -267,10 +267,11 @@ public:
 
         sections.push_back(tVec);
         labelsPerObj.push_back(cLabels);
+        printf("%s:\ntext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
 /*
         printf("OK\n");
-        printf("Object props:\n  textSize: %d words\n  dataSize: %d words\n  labelLength: %d\n", textSize, dataSize, labelFullLen);
 
+        printf("Object props:\n  textSize: %d words\n  dataSize: %d words\n  labelLength: %d\n", textSize, dataSize, labelFullLen);
         printf("Labels:\n");
         for(std::map<std::string, LabelEntry>::iterator it = cLabels.begin(); it!= cLabels.end(); it++) {
             std::string labelName = it->first;
@@ -332,7 +333,7 @@ public:
         char image[0xffff*2];
         memset(image, 0, 0xffff*2);
         char *p = image;
-
+        char *d = image;
         size_t binarySize = 0;
 
         if(mode == 0) { //small mode
@@ -346,6 +347,9 @@ public:
                         *p = l; p++;
                     }
                 }
+                printf("%s [%s]: %lu words\n", filename.c_str(), (sect?"data":"text"), (p - d)/2);
+                d = p;
+
             }
             printf("%s: %lu words\n", filename.c_str(), (p - image)/2);
             binarySize = p-image;
