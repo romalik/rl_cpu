@@ -8,7 +8,7 @@ struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
 
 #define FORK_BUFFER_SIZE 64 * 64
 #define ARGV_BUFFER_SIZE 64 * 4
-#define KERNEL_WORKER_STACK_SIZE 64 * 64
+#define KERNEL_WORKER_STACK_SIZE 64 * 4
 
 unsigned int forkBuffer[FORK_BUFFER_SIZE];
 unsigned int kernel_worker_stack[KERNEL_WORKER_STACK_SIZE];
