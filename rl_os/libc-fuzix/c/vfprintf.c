@@ -68,12 +68,13 @@ static int prtfld(FILE *op, size_t maxlen, size_t ct, unsigned char *buf,
     return (cnt);
 }
 
+
+static char tmp[64];
 int _vfnprintf(FILE *op, size_t maxlen, const char *fmt, va_list ap) {
     register int i, ljustf, lval, preci, dpoint, width, radix, cnt = 0;
     char pad, sign, hash;
     register char *ptmp, *add;
     unsigned long val;
-    char tmp[64];
     int buffer_mode;
 
     /* This speeds things up a bit for unbuffered */

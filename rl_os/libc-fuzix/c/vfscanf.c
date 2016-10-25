@@ -106,12 +106,12 @@ double fp_scan(int neg, int eneg, int n, int frac, int expo, int fraclen) {
 
 #endif
 
+static unsigned char delim[64*2], digits[17], *q;
 int vfscanf(FILE *fp, const char *fmt, va_list ap) {
     long n;
     int c, width, lval, cnt = 0;
     int store, neg, base, wide1, endnull, rngflag, c2;
     unsigned char *p;
-    unsigned char delim[64*2], digits[17], *q;
 #ifdef BUILD_LIBM
     long frac, expo;
     int eneg, fraclen, fstate, trans;
