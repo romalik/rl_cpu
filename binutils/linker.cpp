@@ -10,7 +10,11 @@
 
 #include "oplist.h"
 
+enum {
+    O_FORMAT_PLAIN_BINARY = 0,
+    O_FORMAT_REXE
 
+};
 
 
 typedef struct LabelEntry_t {
@@ -267,7 +271,7 @@ public:
 
         sections.push_back(tVec);
         labelsPerObj.push_back(cLabels);
-        printf("%s:\ntext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
+        printf("%s:\ttext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
 /*
         printf("OK\n");
 
@@ -326,7 +330,7 @@ public:
         }
     }
 
-    void writeBin(std::string filename) {
+    void writeBin(std::string filename, int fmt) {
         std::ofstream file;
         file.open(filename.c_str(), std::ios::out | std::ios::binary);
 

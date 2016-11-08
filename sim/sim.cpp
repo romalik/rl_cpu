@@ -21,13 +21,18 @@ long long gettime_ms() {
 }
 
 
+enum {
+    C_SEG_CODE = 0,
+    C_SEG_DATA
+};
+
+
 Cpu myCpu;
 struct termios old_tio, new_tio;
 int oldf;
 
 
 Cpu::Cpu() {
-//test config, full ram memory, last 2 words - in/output
 
     flDebug = 0;
 
@@ -83,19 +88,19 @@ void Cpu::terminate() {
   printf("Average ips %d\n", ipsActual);
 
 }
-void Cpu::memWrite(w addr, w val) {
+void Cpu::memWrite(w addr, w val, int seg) {
     for(int i = 0; i<this->devices.size(); i++) {
       if(this->devices[i]->canOperate(addr)) {
-        this->devices[i]->write(addr,val);
+        this->devices[i]->write(addr,val,seg);
         if(flDebug) printf("memWrite [0x%04x] : 0x%04x\n", addr, val);
       }
     }
 }
 
-w Cpu::memRead(w addr) {
+w Cpu::memRead(w addr, int seg) {
     for(int i = 0; i<this->devices.size(); i++) {
       if(this->devices[i]->canOperate(addr)) {
-          w res = this->devices[i]->read(addr);
+          w res = this->devices[i]->read(addr,seg);
           //if(flDebug) printf("memRead [0x%04x] : 0x%04x\n", addr, res);
           return res;
       }
@@ -113,17 +118,13 @@ void Cpu::tick() {
 }
 
 void Cpu::push(w val) {
-    tick();
-    memWrite(SP, val);
+    memWrite(SP, val, C_SEG_DATA);
     SP++;
-    tick();
 }
 
 w Cpu::pop() {
-    tick();
     SP--;
-    w res = memRead(SP);
-    tick();
+    w res = memRead(SP, C_SEG_DATA);
     return res;
 }
 
@@ -152,19 +153,18 @@ void Cpu::execute() {
   }
 
 
-  this->IR = this->memRead(PC);
+  this->IR = this->memRead(PC, C_SEG_CODE);
   if(flDebug /* || (IR&0xff) == ret2|| (IR&0xff) == le_w|| (IR&0xff) == lt_w */) {
 
       printf("PC: 0x%04X, IR: 0x%04X ('%s')\n", PC, IR, oplist[IR&0xff]);
       printf("Stack: ");
       for(int i = 0; i<10; i++) {
-          w val =  memRead(SP + i - 10);
+          w val =  memRead(SP + i - 10, C_SEG_DATA);
          printf("0x%04X(%c) ", val, (val > 32 && val < 127)?(char)val:'-');
       }
       printf("\n");
   }
 
-  tick();
   this->PC++;
 
   unsigned char op = this->IR & 0xff;
@@ -174,68 +174,68 @@ void Cpu::execute() {
   } else if(op == addrf_b) {
     this->push(this->AP + IRHigh());
   } else if(op == addrf_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
       this->push(this->AP + tmp);
   } else if(op == iaddrf_b) {
-    this->push(memRead(this->AP + IRHigh()));
+    this->push(memRead(this->AP + IRHigh(), C_SEG_DATA));
   } else if(op == iaddrf_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
-      this->push(memRead(this->AP + tmp));
+      this->push(memRead(this->AP + tmp, C_SEG_DATA));
 
 
   } else if(op == addrl_b) {
     this->push(this->BP + IRHigh());
   } else if(op == addrl_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC,C_SEG_CODE);
       this->PC++;
       this->push(this->BP + tmp);
   } else if(op == iaddrl_b) {
-    this->push(memRead(this->BP + IRHigh()));
+    this->push(memRead(this->BP + IRHigh(), C_SEG_DATA));
   } else if(op == iaddrl_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
-      this->push(memRead(this->BP + tmp));
+      this->push(memRead(this->BP + tmp, C_SEG_DATA));
 
 
   } else if(op == cnst_b) {
     this->push(IRHigh());
   } else if(op == cnst_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
       this->push(tmp);
   } else if(op == icnst_b) {
-    this->push(memRead(IRHigh()));
+    this->push(memRead(IRHigh(), C_SEG_DATA));
   } else if(op == icnst_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
-      this->push(memRead(tmp));
+      this->push(memRead(tmp, C_SEG_DATA));
 
 
   } else if(op == addrs_b) {
     this->push(this->SP + IRHigh());
   } else if(op == addrs_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
       this->push(this->SP + tmp);
   } else if(op == iaddrs_b) {
-    this->push(memRead(this->SP + IRHigh()));
+    this->push(memRead(this->SP + IRHigh(), C_SEG_DATA));
   } else if(op == iaddrs_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
-      this->push(memRead(this->SP + tmp));
+      this->push(memRead(this->SP + tmp, C_SEG_DATA));
 
 
   } else if(op == indir) {
-    this->push(memRead(this->pop()));
+    this->push(memRead(this->pop(), C_SEG_DATA));
 
   } else if(op == indir2) {
 
 
       w tmp = this->pop();
-      this->push(memRead(tmp));
-      this->push(memRead(tmp+1));
+      this->push(memRead(tmp, C_SEG_DATA));
+      this->push(memRead(tmp+1, C_SEG_DATA));
 
 
   } else if(op == add) {
@@ -243,7 +243,7 @@ void Cpu::execute() {
   } else if(op == add_b) {
     push(pop()+IRHigh());
   } else if(op == add_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
     push(pop()+tmp);
   } else if(op == add2) {
@@ -261,7 +261,7 @@ void Cpu::execute() {
   } else if(op == band_b) {
     push(pop()&IRHigh());
   } else if(op == band_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
     push(pop()&tmp);
   } else if(op == band2) {
@@ -279,7 +279,7 @@ void Cpu::execute() {
   } else if(op == bor_b) {
     push(pop()|IRHigh());
   } else if(op == bor_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
     push(pop()|tmp);
   } else if(op == bor2) {
@@ -297,7 +297,7 @@ void Cpu::execute() {
   } else if(op == bxor_b) {
     push(pop()^IRHigh());
   } else if(op == bxor_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
     push(pop()^tmp);
   } else if(op == bxor2) {
@@ -324,7 +324,7 @@ void Cpu::execute() {
   } else if(op == sub_b) {
     push(pop()-IRHigh());
   } else if(op == sub_w) {
-      w tmp = this->memRead(PC);
+      w tmp = this->memRead(PC, C_SEG_CODE);
       this->PC++;
     push(pop()-tmp);
   } else if(op == sub2) {
@@ -338,7 +338,7 @@ void Cpu::execute() {
   } else if(op == eq_w) {
     int v2 = (ws)pop();
     int v1 = (ws)pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 == v2) {
         PC = addr;
@@ -347,7 +347,7 @@ void Cpu::execute() {
   } else if(op == ge_w) {
     int v2 = (ws)pop();
     int v1 = (ws)pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 >= v2) {
         PC = addr;
@@ -356,7 +356,7 @@ void Cpu::execute() {
   } else if(op == gt_w) {
     int v2 = (ws)pop();
     int v1 = (ws)pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 > v2) {
         PC = addr;
@@ -365,7 +365,7 @@ void Cpu::execute() {
   } else if(op == le_w) {
     int v2 = (ws)pop();
     int v1 = (ws)pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 <= v2) {
         PC = addr;
@@ -374,7 +374,7 @@ void Cpu::execute() {
   } else if(op == lt_w) {
     int v2 = (ws)pop();
     int v1 = (ws)pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 < v2) {
         PC = addr;
@@ -383,7 +383,7 @@ void Cpu::execute() {
   } else if(op == ne_w) {
     int v2 = (ws)pop();
     int v1 = (ws)pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 != v2) {
         PC = addr;
@@ -392,7 +392,7 @@ void Cpu::execute() {
   } else if(op == uge_w) {
       w v2 = pop();
       w v1 = pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 >= v2) {
         PC = addr;
@@ -401,7 +401,7 @@ void Cpu::execute() {
   } else if(op == ugt_w) {
       w v2 = pop();
       w v1 = pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 > v2) {
         PC = addr;
@@ -410,7 +410,7 @@ void Cpu::execute() {
   } else if(op == ule_w) {
       w v2 = pop();
       w v1 = pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 <= v2) {
         PC = addr;
@@ -419,7 +419,7 @@ void Cpu::execute() {
   } else if(op == ult_w) {
       w v2 = pop();
       w v1 = pop();
-    w addr = this->memRead(PC);
+    w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 < v2) {
         PC = addr;
@@ -435,7 +435,7 @@ void Cpu::execute() {
     PC = target;
 
   } else if(op == call0_w) {
-    w target = memRead(PC);
+    w target = memRead(PC, C_SEG_CODE);
     PC++;
     push(PC);
     push(AP);
@@ -455,7 +455,7 @@ void Cpu::execute() {
     PC = target;
 
   } else if(op == call1_w) {
-    w target = memRead(PC);
+    w target = memRead(PC, C_SEG_CODE);
     PC++;
     SP++;
     push(PC);
@@ -477,7 +477,7 @@ void Cpu::execute() {
     PC = target;
 
   } else if(op == call2_w) {
-    w target = memRead(PC);
+    w target = memRead(PC, C_SEG_CODE);
     PC++;
     SP++;
     SP++;
@@ -494,7 +494,7 @@ void Cpu::execute() {
     AP = pop();
     PC = pop();
   } else if(op == jump_w) {
-      w target = memRead(PC);
+      w target = memRead(PC, C_SEG_CODE);
       PC = target;
   } else if(op == jump) {
       w target = pop();
@@ -502,35 +502,35 @@ void Cpu::execute() {
   } else if(op == discard_b) {
       SP -= IRHigh();
   } else if(op == discard_w) {
-      w discardAmount = memRead(PC);
+      w discardAmount = memRead(PC, C_SEG_CODE);
       PC++;
       SP -= discardAmount;
   } else if(op == alloc_b) {
       SP += IRHigh();
   } else if(op == alloc_w) {
-      w allocAmount = memRead(PC);
+      w allocAmount = memRead(PC, C_SEG_CODE);
       PC++;
       SP += allocAmount;
   } else if(op == store) {
       w val = pop();
       w target = pop();
-      memWrite(target, val);
+      memWrite(target, val, C_SEG_DATA);
   } else if(op == store2) {
       w valh = pop();
       w vall = pop();
       w target = pop();
-      memWrite(target, vall);
-      memWrite(target+1, valh);
+      memWrite(target, vall, C_SEG_DATA);
+      memWrite(target+1, valh, C_SEG_DATA);
   } else if(op == rstore) {
       w target = pop();
       w val = pop();
-      memWrite(target, val);
+      memWrite(target, val, C_SEG_DATA);
   } else if(op == rstore2) {
       w target = pop();
       w valh = pop();
       w vall = pop();
-      memWrite(target, vall);
-      memWrite(target + 1, valh);
+      memWrite(target, vall, C_SEG_DATA);
+      memWrite(target + 1, valh, C_SEG_DATA);
   } else if(op == dup_op) {
       RA = pop();
       push(RA);
@@ -555,18 +555,18 @@ void Cpu::execute() {
     BP = pop();
 
   } else if(op == loadsp_w) {
-    SP = this->memRead(PC);
+    SP = this->memRead(PC, C_SEG_CODE);
     PC++;
 
   } else if(op == iloadsp_w) {
-    RA = this->memRead(PC);
+    RA = this->memRead(PC, C_SEG_CODE);
     PC++;
-    SP = this->memRead(RA);
+    SP = this->memRead(RA, C_SEG_DATA);
 
   } else if(op == storesp_w) {
-    RA = this->memRead(PC);
+    RA = this->memRead(PC, C_SEG_CODE);
     PC++;
-    this->memWrite(RA, SP);
+    this->memWrite(RA, SP, C_SEG_DATA);
   } else if(op == syscall_op) {
     intCtl->request(0);
 
@@ -588,8 +588,8 @@ void Cpu::execute() {
     // sp++
 
     RA = pop(); //address
-    RB = this->memRead(RA);
-    this->memWrite(RA, IRHigh()); 
+    RB = this->memRead(RA, C_SEG_DATA);
+    this->memWrite(RA, IRHigh(), C_SEG_DATA); 
     push(RB);
 
   } else {
@@ -608,7 +608,7 @@ void Cpu::execute() {
 
 
 void Cpu::writeSeq(w val) {
-    memWrite(seqWriterPos, val);
+    memWrite(seqWriterPos, val, C_SEG_DATA);
     seqWriterPos++;
 }
 
@@ -621,40 +621,6 @@ void Cpu::loadBin(w addr, std::string filename) {
     for(int i = 0; i<=0xffff; i+=2) {
         writeSeq(((w)((uint8_t)image[i]) << 8) | (uint8_t)image[i + 1] );
     }
-}
-
-int test() {
-    Cpu myCpu;
-    myCpu.memWrite(0x2010, 0x40);
-    w val = myCpu.memRead(0x2010);
-    printf("read 0x2010 val (should be 0x40): 0x%04X\n", val);
-
-    printf("now write H to 0xffff: ");
-
-    myCpu.memWrite(0xffff, 'H');
-
-    printf("\nCool, it works!\n");
-    printf("Writing test program...\n");
-    myCpu.setSeqWriterPos(0);
-
-    myCpu.writeSeq(cnst_w);
-    myCpu.writeSeq(0xffff);
-    myCpu.writeSeq(cnst_w);
-    myCpu.writeSeq('A');
-    myCpu.writeSeq(store);
-
-    printf("Writing done\n");
-
-    myCpu.setPC(0);
-    myCpu.setSP(0x1000);
-
-    printf("Running program, should write 'A'\n");
-    myCpu.execute();
-    myCpu.execute();
-    myCpu.execute();
-    printf("\n");
-    return 0;
-
 }
 
 void onSignal(int signal) {
@@ -673,126 +639,105 @@ int main(int argc, char ** argv) {
     if(argc < 2)
         return 0;
 
-    if(!strcmp(argv[1], "-test")) {
-        test();
-    } else {
-        int debug = 0;
-        int ips = 0;
-        if(argc > 2) {
-            if(!strcmp(argv[2], "-d")) {
-                //debug = 1;
-                ips = atol(argv[3]);
-            }
+    int debug = 0;
+    int ips = 0;
+    if(argc > 2) {
+        if(!strcmp(argv[2], "-d")) {
+            //debug = 1;
+            ips = atol(argv[3]);
         }
+    }
 
-        printf("Loading binary %s...\n", argv[1]);
-        myCpu.setDebug(debug);
-        myCpu.setPC(0);
-        myCpu.loadBin(0,std::string(argv[1]));
-        printf("\nLoading done. Starting..\n");
+    printf("Loading binary %s...\n", argv[1]);
+    myCpu.setDebug(debug);
+    myCpu.setPC(0);
+    myCpu.loadBin(0,std::string(argv[1]));
+    printf("\nLoading done. Starting..\n");
 
-        unsigned char c;
-        /* get the terminal settings for stdin */
-        tcgetattr(STDIN_FILENO,&old_tio);
+    unsigned char c;
+    /* get the terminal settings for stdin */
+    tcgetattr(STDIN_FILENO,&old_tio);
 
-        /* we want to keep the old setting to restore them a the end */
-        new_tio=old_tio;
+    /* we want to keep the old setting to restore them a the end */
+    new_tio=old_tio;
 
-        /* disable canonical mode (buffered i/o) and local echo */
-        new_tio.c_lflag &=(~ICANON & ~ECHO);
+    /* disable canonical mode (buffered i/o) and local echo */
+    new_tio.c_lflag &=(~ICANON & ~ECHO);
 
-        /* set the new settings immediately */
-        tcsetattr(STDIN_FILENO,TCSANOW,&new_tio);
+    /* set the new settings immediately */
+    tcsetattr(STDIN_FILENO,TCSANOW,&new_tio);
 
-        oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-//        fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
 
-/*
-        int cnt = 0;
-        long long prevTime = gettime_ms();
-        while(1) {
-            cnt++;
-            if(cnt > 1000) {
+    SP_min = myCpu.getSP();
+    SP_max = myCpu.getSP();
 
-                prevTime = cTime;
-                cnt = 0;
-            }
-            myCpu.execute();
-            //if(debug)
-            //    usleep(500*1000);
-        }
-        return 0;
-*/
+    long long nsPerInstr = 0;
+    if(ips) {
+      nsPerInstr = 1000000000LL / ips;
+    }
 
-        SP_min = myCpu.getSP();
-        SP_max = myCpu.getSP();
+    printf("IPS: %d = %d ns/instr\n", ips, nsPerInstr);
 
-        long long nsPerInstr = 0;
+    startTime = gettime_ms();
+    totalInstr = 0;
+    while(1) {
+        struct timespec tsStart;
         if(ips) {
-          nsPerInstr = 1000000000LL / ips;
+
+#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+            clock_serv_t cclock;
+            mach_timespec_t mts;
+            host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+            clock_get_time(cclock, &mts);
+            mach_port_deallocate(mach_task_self(), cclock);
+            tsStart.tv_sec = mts.tv_sec;
+            tsStart.tv_nsec = mts.tv_nsec;
+#else
+            clock_gettime(CLOCK_REALTIME, &tsStart);
+#endif
+        }
+        myCpu.execute();
+
+        totalInstr++;
+
+        if(myCpu.getSP() > SP_max) {
+            SP_max = myCpu.getSP();
         }
 
-        printf("IPS: %d = %d ns/instr\n", ips, nsPerInstr);
-
-        startTime = gettime_ms();
-        totalInstr = 0;
-        while(1) {
-            struct timespec tsStart;
-            if(ips) {
-
-#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
-                clock_serv_t cclock;
-                mach_timespec_t mts;
-                host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-                clock_get_time(cclock, &mts);
-                mach_port_deallocate(mach_task_self(), cclock);
-                tsStart.tv_sec = mts.tv_sec;
-                tsStart.tv_nsec = mts.tv_nsec;
-#else
-                clock_gettime(CLOCK_REALTIME, &tsStart);
-#endif
-            }
-            myCpu.execute();
-
-            totalInstr++;
-
-            if(myCpu.getSP() > SP_max) {
-                SP_max = myCpu.getSP();
-            }
-
-            if(myCpu.getSP() < SP_min) {
-                SP_min = myCpu.getSP();
-            }
-            if(ips) {
-              while(1) {
-                struct timespec tsEnd;
-                struct timespec tsDelay;
-                long long nsSpent = 0;
-                long long nsDelay = 0;
+        if(myCpu.getSP() < SP_min) {
+            SP_min = myCpu.getSP();
+        }
+        if(ips) {
+          while(1) {
+            struct timespec tsEnd;
+            struct timespec tsDelay;
+            long long nsSpent = 0;
+            long long nsDelay = 0;
 
 #ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
-                clock_serv_t cclock;
-                mach_timespec_t mts;
-                host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-                clock_get_time(cclock, &mts);
-                mach_port_deallocate(mach_task_self(), cclock);
-                tsEnd.tv_sec = mts.tv_sec;
-                tsEnd.tv_nsec = mts.tv_nsec;
+            clock_serv_t cclock;
+            mach_timespec_t mts;
+            host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+            clock_get_time(cclock, &mts);
+            mach_port_deallocate(mach_task_self(), cclock);
+            tsEnd.tv_sec = mts.tv_sec;
+            tsEnd.tv_nsec = mts.tv_nsec;
 #else
-                clock_gettime(CLOCK_REALTIME, &tsEnd);
+            clock_gettime(CLOCK_REALTIME, &tsEnd);
 #endif
-                nsSpent = (tsEnd.tv_sec * 1000000000LL + tsEnd.tv_nsec) - (tsStart.tv_sec*1000000000LL + tsStart.tv_nsec);
+            nsSpent = (tsEnd.tv_sec * 1000000000LL + tsEnd.tv_nsec) - (tsStart.tv_sec*1000000000LL + tsStart.tv_nsec);
 
-                nsDelay = nsPerInstr - nsSpent;
-                if(nsDelay <= 0) {
-                  break;
-                }
-
-              }
+            nsDelay = nsPerInstr - nsSpent;
+            if(nsDelay <= 0) {
+              break;
             }
 
+          }
         }
 
     }
+
+    
     return 0;
 }

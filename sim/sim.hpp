@@ -27,8 +27,8 @@ public:
   virtual ~VMemDevice() {};
 
   virtual int canOperate(w addr) = 0;
-  virtual void write(w addr, w val, int force = 0) = 0;
-  virtual w read(w addr) = 0;
+  virtual void write(w addr, w val, int seg, int force = 0) = 0;
+  virtual w read(w addr, int seg) = 0;
   virtual void terminate() {};
 };
 
@@ -52,13 +52,13 @@ class InterruptController : public VMemDevice {
     return ((addr >= addrStart)&&(addr < addrStart + nIRQs));
   }
 
-  virtual void write(w addr, w val, int force = 0) {
+  virtual void write(w addr, w val, int seg, int force = 0) {
     if(canOperate(addr)) {
       intVectors[addr - addrStart] = val;
     }
   }
 
-  virtual w read(w addr) {
+  virtual w read(w addr, int seg) {
     if(canOperate(addr)) {
       return intVectors[addr - addrStart];
     } else {
@@ -151,7 +151,7 @@ class HDD : public VMemDevice {
   virtual int canOperate(w addr) {
     return (addr == cmdAddr) || (addr == dataAddr);
   }
-  virtual void write(w addr, w val, int force) {
+  virtual void write(w addr, w val, int seg, int force) {
     if(canOperate(addr)) {
 //      printf("HDD: port 0x%04x val 0x%04x\n", addr, val);
       if(addr == cmdAddr) {
@@ -196,7 +196,7 @@ class HDD : public VMemDevice {
       }
     }
   }
-  w read(w addr) {
+  w read(w addr, int seg) {
     if(canOperate(addr)) {
       if(addr == cmdAddr) {
         return 0;
@@ -290,7 +290,7 @@ public:
   virtual int canOperate(w _addr) {
     return (_addr == addr);
   }
-  virtual void write(w addr, w val, int force) {
+  virtual void write(w addr, w val, int seg, int force) {
     if(canOperate(addr)) {
       if(out) {
         (*out) << (char)((char)val & 0xff);
@@ -298,7 +298,7 @@ public:
       }
     }
   }
-  virtual w read(w addr) {
+  virtual w read(w addr, int seg) {
     if(canOperate(addr)) {
         if(!inBuffer.empty()) {
             w r = inBuffer.front();
@@ -330,7 +330,7 @@ public:
   virtual int canOperate(w _addr) {
     return (_addr == addr);
   }
-  virtual void write(w addr, w val, int force) {
+  virtual void write(w addr, w val, int seg, int force) {
     if(canOperate(addr)) {
       if(out) {
         (*out) << (char)((char)val & 0xff);
@@ -338,7 +338,7 @@ public:
       }
     }
   }
-  virtual w read(w addr) {
+  virtual w read(w addr, int seg) {
     if(canOperate(addr)) {
       int c = 0;
       if(in) {
@@ -380,7 +380,7 @@ public:
   ~RAM() { free(storage); }
 
   virtual int canOperate(w addr) { return ((addr >= begin)&&(addr<end)); }
-  virtual void write(w addr, w val, int force = 0) {
+  virtual void write(w addr, w val, int seg, int force = 0) {
     if(canOperate(addr)) {\
       if(!readonly || force) {
 	     storage[addr - begin] = val;
@@ -388,7 +388,7 @@ public:
     }
   }
 
-  virtual w read(w addr) {
+  virtual w read(w addr, int seg) {
     if(canOperate(addr)) {
       return storage[addr - begin];
     } else {
@@ -430,7 +430,7 @@ public:
   }
 
   virtual int canOperate(w addr) { return (((addr >= begin)&&(addr<end))|| addr == bankSelector); }
-  virtual void write(w addr, w val, int force = 0) {
+  virtual void write(w addr, w val, int seg, int force = 0) {
     if(canOperate(addr)) {
       if(addr == bankSelector) {
         cBank = val;
@@ -441,12 +441,70 @@ public:
     }
   }
 
-  virtual w read(w addr) {
+  virtual w read(w addr, int seg) {
     if(canOperate(addr)) {
       if(addr == bankSelector) {
         return cBank;
       } else {
         return storage[cBank][addr - begin];
+      }
+    }
+  }
+};
+
+
+class ExtSegRAM : public VMemDevice {
+  w begin;
+  w size;
+  w end;
+
+  std::map<w, int> cBanks;
+
+  int nBanks;
+  std::vector<w *> storage;
+
+public:
+  ExtSegRAM(w _begin, w _sz, const std::vector<w> & bankSelectors, int _nBanks) {
+    begin = _begin;
+    end = _begin + _sz;
+    size = _sz;
+    nBanks = _nBanks;
+    
+    for(const auto b : bankSelectors) {
+        cBanks[b] = 0;
+    }
+
+    for(int i = 0; i<nBanks; i++) {
+      storage.push_back((w *)malloc(_sz * sizeof(w)));
+    }
+  }
+  ~ExtSegRAM() {
+    for(int i = 0; i<nBanks; i++) {
+      free(storage[i]);
+    }
+  }
+
+  virtual int canOperate(w addr) { return (((addr >= begin)&&(addr<end))|| 0/* addr == bankSelector */); }
+  virtual void write(w addr, w val, int seg, int force = 0) {
+    if(canOperate(addr)) {
+
+        std::map<w, int>::iterator it = cBanks.find(addr);
+      if(it != cBanks.end()) {
+//          cBanks[addr] = val;
+      } else {
+        //printf("ExtRAM write 0x%04x\n", val);
+//        storage[cBank][addr - begin] = val;
+      }
+    }
+  }
+
+  virtual w read(w addr, int seg) {
+    if(canOperate(addr)) {
+return 0;
+        if(0/*addr == bankSelector*/) {
+//        return cBank;
+      } else {
+//        return storage[cBank][addr - begin];
       }
     }
   }
@@ -492,8 +550,8 @@ class Timer : public VMemDevice {
   }
 
   virtual int canOperate(w addr) {return 0;}
-  virtual void write(w addr, w val, int force = 0) {};
-  virtual w read(w addr) {return 0;}
+  virtual void write(w addr, w val, int seg, int force = 0) {};
+  virtual w read(w addr, int seg) {return 0;}
 
   void tick() {
       intCtl->request(irqLine);
@@ -523,8 +581,8 @@ public:
 
   Cpu();
   ~Cpu();
-  void memWrite(w addr, w val);
-  w memRead(w addr);
+  void memWrite(w addr, w val, int seg);
+  w memRead(w addr, int seg);
   void tick();
   void execute();
   void push(w val);
