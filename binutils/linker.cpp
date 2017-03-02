@@ -442,7 +442,7 @@ int main(int argc, char ** argv) {
     //printf("Linking..\n");
     linker.link();
 //    printf("Writing to %s..\n", outFile.c_str());
-    linker.writeBin(outFile);
+    linker.writeBin(outFile,0);
 //    printf("Done.\n");
 
 //    linker.dumpLabels();

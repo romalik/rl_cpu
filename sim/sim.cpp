@@ -11,6 +11,9 @@
 #include <mach/mach.h>
 #endif
 
+
+std::map<int, int> freqs;
+
 void onSignal(int signal);
 
 long long gettime_ms() {
@@ -86,6 +89,12 @@ void Cpu::terminate() {
 
   printf("SP_min: 0x%04x\nSP_max 0x%04x\n", SP_min, SP_max);
   printf("Average ips %d\n", ipsActual);
+
+  std::map<int,int>::iterator it = freqs.begin();
+  while(it != freqs.end()) {
+    printf("%s : (%f%%) %d\n", oplist[it->first], static_cast<float>(it->second) / static_cast<float>(totalInstr) * 100.0f, it->second);
+    ++it;
+  }
 
 }
 void Cpu::memWrite(w addr, w val, int seg) {
@@ -168,6 +177,8 @@ void Cpu::execute() {
   this->PC++;
 
   unsigned char op = this->IR & 0xff;
+
+    freqs[(int)op]++;
 
   if(op == nop){
       //this is nop, come on
