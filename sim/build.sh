@@ -1,3 +1,3 @@
 #!/bin/sh
-g++ -O3 -o sim ./sim.cpp -lpthread 
+g++ -std=c++11 -O3 -o sim ./sim.cpp -lpthread 
 
