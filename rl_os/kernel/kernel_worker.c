@@ -119,7 +119,7 @@ void do_kernel_task_clone(int i) {
 
         di();
         currentBank = p->memBank;
-        BANK_SEL = currentBank; 
+        BANK_SEL = currentBank;
         sStruct = (struct cloneSyscall *)(*((
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
@@ -129,15 +129,15 @@ void do_kernel_task_clone(int i) {
 
         // set zero pid retval for child
         newProcess->parent = p;
-        newProcess->ap = newProcess->bp = newProcess->sp = (unsigned int)sStruct->stack;
-        newProcess->pc = (unsigned int)(sStruct->fn); 
+        *(unsigned int *)(sStruct->stack) = (unsigned int)sStruct->args;
+        newProcess->ap = (unsigned int)sStruct->stack;
+        newProcess->bp = newProcess->sp = ((unsigned int)sStruct->stack + 1);
+        newProcess->pc = (unsigned int)(sStruct->fn);
         newProcess->isThread = 1;
         newProcess->state = PROC_STATE_NEW;
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-        p->retval = newPid;
+        sStruct->retval = newPid;
         ei();
-        printf("fn : 0x%04x\n", (unsigned int)(sStruct->fn));
-        ps();
     } else {
         printf("Kernel Worker: pid %d not found!\n",
                kernelTaskQueue[i].callerPid);
@@ -231,6 +231,7 @@ void do_kernel_task_waitpid(int i) {
         struct Process *childProcess;
         int pid = 0;
         int retval = 0;
+        int options = 0;
         //printf("Kernel worker: waitpid caller pid %d\n", kernelTaskQueue[i].callerPid);
         di();
         BANK_SEL = p->memBank;
@@ -244,15 +245,16 @@ void do_kernel_task_waitpid(int i) {
           retval = findProcByParent(p, &childProcess);
         }
         pid = sStruct->pid;
-        ei();
+        options = sStruct->options;
 
         if (!retval) {
-//            printf("process not found %d. Caller pid %d\n", pid,p->pid);
-            if(sStruct->options == WNOHANG) {
+            //printf("process not found %d. Caller pid %d\n", pid,p->pid);
+            if(options == WNOHANG) {
               p->state = PROC_STATE_RUN;
               kernelTaskQueue[i].type = KERNEL_TASK_NONE;
               sStruct->pid = 0;
             }
+            ei();
             resched_now();
             return;
         }
@@ -265,11 +267,11 @@ void do_kernel_task_waitpid(int i) {
               kernelTaskQueue[i].type = KERNEL_TASK_NONE;
               sStruct->pid = 0;
             }
+            ei();
             resched_now();
             return;
         }
 
-        di();
         childProcess->state = PROC_STATE_NONE;
         p->state = PROC_STATE_RUN;
         sStruct->pid = childProcess->pid;
