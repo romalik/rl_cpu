@@ -38,6 +38,8 @@ struct Process {
     char cmd[32];
     int signalsPending;
     sighandler_t sigActions[SIGNUM];
+
+    int isThread;
 };
 
 extern struct Process *cProc;

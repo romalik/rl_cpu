@@ -72,6 +72,7 @@ extern void syscall(void *p);
 #define __NR_getppid 64
 #define __NR_getpgrp 65
 #define __NR_setsid 66
+#define __NR_clone 67
 
 
 struct creatSyscall {
@@ -173,7 +174,13 @@ struct dup2Syscall {
   int retval;
 };
 
-
+struct cloneSyscall {
+    unsigned int id;
+    void * fn;
+    void * stack;
+    void * args;
+    int retval;
+};
 
 
 #endif

@@ -156,6 +156,20 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         resched_now();
         while (1) {
         } // wait for context switch
+    } else if (scall_id == __NR_clone) {
+        di();
+        addKernelTask(KERNEL_TASK_CLONE, cProc->pid, 0);
+
+        cProc->ap = fr->ap;
+        cProc->bp = fr->bp;
+        cProc->sp = fr->sp;
+        cProc->pc = fr->pc;
+
+        cProc->state = PROC_STATE_KWORKER;
+        ei();
+        resched_now();
+        while (1) {
+        } // wait for context switch
     } else if (scall_id == __NR_execve) {
         di();
         addKernelTask(KERNEL_TASK_EXECVE, cProc->pid, p);

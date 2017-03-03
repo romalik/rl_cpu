@@ -106,6 +106,46 @@ void do_kernel_task_fork(int i) {
     }
 }
 
+void do_kernel_task_clone(int i) {
+    struct Process *p;
+    if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+        struct cloneSyscall *sStruct;
+        struct Process *newProcess;
+        int currentBank;
+        int newPid;
+
+
+
+
+        di();
+        currentBank = p->memBank;
+        BANK_SEL = currentBank; 
+        sStruct = (struct cloneSyscall *)(*((
+            size_t *)(p->ap))); // syscall struct pointer sits
+                                // in first arg in arg space
+        p->state = PROC_STATE_RUN;
+        newPid = sched_genPid();
+        newProcess = sched_add_proc(newPid, currentBank, p);
+
+        // set zero pid retval for child
+        newProcess->parent = p;
+        newProcess->ap = newProcess->bp = newProcess->sp = (unsigned int)sStruct->stack;
+        newProcess->pc = (unsigned int)(sStruct->fn); 
+        newProcess->isThread = 1;
+        newProcess->state = PROC_STATE_NEW;
+        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+        p->retval = newPid;
+        ei();
+        printf("fn : 0x%04x\n", (unsigned int)(sStruct->fn));
+        ps();
+    } else {
+        printf("Kernel Worker: pid %d not found!\n",
+               kernelTaskQueue[i].callerPid);
+    }
+}
+
+
+
 #define EXECVE_READ_CHUNK_SIZE 0x1000
 
 size_t parseArgs(char **nArgv, unsigned int *buf, size_t off) {
@@ -254,7 +294,9 @@ void do_kernel_task_exit(int i) {
         p->state = PROC_STATE_ZOMBIE;
         //printf("Exit code: %d\n", p->retval);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-        mm_freeSegment(p->memBank);
+        if(!p->isThread) {
+            mm_freeSegment(p->memBank);
+        }
         ei();
     }
 }
@@ -272,6 +314,8 @@ void kernel_worker() {
                     do_kernel_task_exit(i);
                 } else if (kernelTaskQueue[i].type == KERNEL_TASK_WAITPID) {
                     do_kernel_task_waitpid(i);
+                } else if (kernelTaskQueue[i].type == KERNEL_TASK_CLONE) {
+                    do_kernel_task_clone(i);
                 }
             }
             //spinlock_unlock(&kernelTaskQueueLock);

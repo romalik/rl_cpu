@@ -22,6 +22,7 @@ void sched_init() {
     for (i = 0; i < MAXPROC; i++) {
         procs[i].state = PROC_STATE_NONE;
         procs[i].signalsPending = 0;
+        procs[i].isThread = 0;
     }
 }
 
@@ -34,9 +35,9 @@ void ps() {
     printf("Processes:\n");
     for (i = 0; i < MAXPROC; i++) {
         printf("Entry %d: state %d pid %d bank %d ap 0x%04x bp 0x%04x sp "
-               "0x%04x pc 0x%04x\n",
+               "0x%04x pc 0x%04x cmd %s\n",
                i, procs[i].state, procs[i].pid, procs[i].memBank, procs[i].ap,
-               procs[i].bp, procs[i].sp, procs[i].pc);
+               procs[i].bp, procs[i].sp, procs[i].pc, procs[i].cmd);
     }
     printf("\n");
 }
@@ -56,6 +57,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
 
     procs[i].pid = pid;
     procs[i].memBank = bank;
+    procs[i].isThread = 0;
     if (!p) {
         procs[i].ap = 0xF000;
         procs[i].bp = 0xF000;
