@@ -21,6 +21,5 @@ struct KernelTask {
 void kernel_worker_init();
 void kernel_worker();
 void addKernelTask(unsigned int task, unsigned int callerPid, void *args);
-size_t parseArgs(char **nArgv, unsigned int *buf, size_t off); 
 
 #endif

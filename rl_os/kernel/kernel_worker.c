@@ -7,12 +7,10 @@ unsigned int kernelTaskQueueLock;
 struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
 
 #define FORK_BUFFER_SIZE 64 * 64
-#define ARGV_BUFFER_SIZE 64 * 4
 #define KERNEL_WORKER_STACK_SIZE 64 * 4
 
 unsigned int forkBuffer[FORK_BUFFER_SIZE];
 unsigned int kernel_worker_stack[KERNEL_WORKER_STACK_SIZE];
-unsigned int argvBuffer[ARGV_BUFFER_SIZE];
 
 void copyBanks(unsigned int dest, unsigned int src) {
     unsigned int copied = 0;
@@ -49,9 +47,11 @@ void kernel_worker_init() {
     p.state = PROC_STATE_NEW;
     p.ap = p.bp = p.sp = (unsigned int)(kernel_worker_stack);
     p.pc = (unsigned int)kernel_worker_entry;
-    p.memBank = 0;
+    p.codeMemBank = 0;
+    p.dataMemBank = 0;
+    p.mode = 0;
     p.cwd = fs_root;
-    sched_add_proc(0, 0, &p);
+    sched_add_proc(0, 0, 0, &p);
 }
 
 extern void ps();
@@ -62,27 +62,44 @@ void do_kernel_task_fork(int i) {
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct forkSyscall *sStruct;
         struct Process *newProcess;
-        int currentBank;
-        int newBank;
+        int currentCodeBank;
+        int currentDataBank;
+        int newCodeBank;
+        int newDataBank;
         int newPid;
         //printf("Kworker: di\n");
         di();
-        if (!mm_allocSegment(&newBank)) {
+        currentCodeBank = p->codeMemBank;
+        currentDataBank = p->dataMemBank;
+        if (!mm_allocSegment(&newCodeBank)) {
             printf("Kernel Worker: No more banks!!\n");
             // panic here!
         }
+        if(currentCodeBank == currentDataBank) {
+            newDataBank = newCodeBank;
+        } else {
+            if (!mm_allocSegment(&newDataBank)) {
+                printf("Kernel Worker: No more banks!!\n");
+                // panic here!
+            }
+
+        }
+
         //printf("KWorker new bank %d\n", newBank);
         ei();
-        currentBank = p->memBank;
-        copyBanks(newBank, currentBank);
+        copyBanks(newCodeBank, currentCodeBank);
+        if(newDataBank != newCodeBank) {
+            copyBanks(newDataBank, currentDataBank);
+        }
+        
 
         di();
         p->state = PROC_STATE_RUN;
         newPid = sched_genPid();
-        newProcess = sched_add_proc(newPid, newBank, p);
+        newProcess = sched_add_proc(newPid, newCodeBank, newDataBank, p);
 
         // set zero pid retval for child
-        BANK_SEL = newBank;
+        DATA_BANK_SEL = newDataBank;
         sStruct = (struct forkSyscall *)(*((
             size_t *)(newProcess->ap))); // syscall struct
                                          // pointer sits in
@@ -92,7 +109,7 @@ void do_kernel_task_fork(int i) {
         newProcess->parent = p;
 
         // set child pid as retval for parent
-        BANK_SEL = currentBank;
+        DATA_BANK_SEL = currentDataBank;
         sStruct = (struct forkSyscall *)(*((
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
@@ -111,21 +128,23 @@ void do_kernel_task_clone(int i) {
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct cloneSyscall *sStruct;
         struct Process *newProcess;
-        int currentBank;
+        int currentCodeBank;
+        int currentDataBank;
         int newPid;
 
 
 
 
         di();
-        currentBank = p->memBank;
-        BANK_SEL = currentBank;
+        currentCodeBank = p->codeMemBank;
+        currentDataBank = p->dataMemBank;
+        DATA_BANK_SEL = currentDataBank;
         sStruct = (struct cloneSyscall *)(*((
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
         p->state = PROC_STATE_RUN;
         newPid = sched_genPid();
-        newProcess = sched_add_proc(newPid, currentBank, p);
+        newProcess = sched_add_proc(newPid, currentCodeBank, currentDataBank, p);
 
         // set zero pid retval for child
         newProcess->parent = p;
@@ -146,73 +165,19 @@ void do_kernel_task_clone(int i) {
 
 
 
-#define EXECVE_READ_CHUNK_SIZE 0x1000
-
-size_t parseArgs(char **nArgv, unsigned int *buf, size_t off) {
-    unsigned int *argc;
-    unsigned int *argv;
-    unsigned int *p;
-    argc = buf;
-    argv = buf + 2;
-    p = buf + 0x12;
-
-    (*argc) = 0;
-    *(buf + 1) = off + 2;
-    while (*nArgv) {
-        (*argc)++;
-        strcpy(p, *nArgv);
-        *argv = p - buf + off;
-        argv++;
-        p += strlen(*nArgv) + 1;
-        nArgv++;
-    }
-    *argv = 0;
-    return (size_t)p - (size_t)buf;
-}
-
 void do_kernel_task_execve(int i) {
     struct Process *p;
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct execSyscall *sStruct;
-        FILE *fd;
-        size_t off;
-        size_t cPos = 0x8000;
         di();
-        BANK_SEL = p->memBank;
+        DATA_BANK_SEL = p->dataMemBank;
         sStruct = (struct execSyscall *)(*((
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
 
 
-        memcpy((unsigned int *)p->cmd, *(unsigned int **)(sStruct->argv), 32);
-        off = parseArgs(sStruct->argv, argvBuffer, 0xF000);
-        fd = k_open(sStruct->filename, 'r');
+        do_exec(p, sStruct->filename, sStruct->argv, sStruct->envp);
 
-        if (fd == NULL) {
-            p->state = PROC_STATE_RUN;
-            kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-            ei();
-            return;
-        }
-
-        ei();
-
-        while (!k_isEOF(fd)) {
-            di();
-            BANK_SEL = p->memBank;
-            cPos += k_read(fd, (unsigned int *)cPos, EXECVE_READ_CHUNK_SIZE);
-            ei();
-        }
-
-
-        k_close(fd);
-
-        di();
-        memcpy((void *)(0xF000), argvBuffer, off);
-
-        p->pc = 0x8000;
-        p->sp = 0xF000 + off;
-        p->bp = p->ap = 0xF000;
         p->state = PROC_STATE_RUN;
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
@@ -234,7 +199,7 @@ void do_kernel_task_waitpid(int i) {
         int options = 0;
         //printf("Kernel worker: waitpid caller pid %d\n", kernelTaskQueue[i].callerPid);
         di();
-        BANK_SEL = p->memBank;
+        DATA_BANK_SEL = p->dataMemBank;
         sStruct = (struct waitpidSyscall *)(*((
             size_t *)(p->ap))); // syscall struct pointer sits
                                 // in first arg in arg space
@@ -290,14 +255,15 @@ void do_kernel_task_exit(int i) {
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct exitSyscall *sStruct;
         di();
-        BANK_SEL = p->memBank;
+        DATA_BANK_SEL = p->dataMemBank;
         sStruct = (struct exitSyscall *)(*((size_t *)(p->ap)));
         p->retval = sStruct->code;
         p->state = PROC_STATE_ZOMBIE;
         //printf("Exit code: %d\n", p->retval);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         if(!p->isThread) {
-            mm_freeSegment(p->memBank);
+            mm_freeSegment(p->codeMemBank);
+            mm_freeSegment(p->dataMemBank);
         }
         ei();
     }

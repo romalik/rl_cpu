@@ -46,7 +46,7 @@ store
 
 icnst_w ticksToSwitch
 cnst_b 0
-ne_w __tiwrapper_exit
+gt_w __tiwrapper_exit
 
 
 cnst_w sched_stack

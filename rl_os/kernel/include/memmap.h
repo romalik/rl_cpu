@@ -16,6 +16,9 @@
 #define INT6_vec (*(unsigned int *)(0x7ffa))
 #define INT7_vec (*(unsigned int *)(0x7ffb))
 
-#define BANK_SEL (*(unsigned int *)(0x7fdf))
+//#define BANK_SEL (*(unsigned int *)(0x7fdf)) = (*(unsigned int *)(0x7fde))
+#define CODE_BANK_SEL (*(unsigned int *)(0x7fde))
+#define DATA_BANK_SEL (*(unsigned int *)(0x7fdf))
+
 
 #endif

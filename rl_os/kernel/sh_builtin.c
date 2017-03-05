@@ -137,6 +137,7 @@ int cd(int argc, char **argv) {
 }
 
 int loadBin(int argc, char **argv) {
+/*
     FILE *fd;
     size_t cPos;
     int bank;
@@ -155,6 +156,7 @@ int loadBin(int argc, char **argv) {
     k_close(fd);
     printf("Done.\n");
     printf("%d words loaded\n", cPos - 0x8000);
+*/
     return 0;
 }
 
@@ -166,11 +168,13 @@ int uptime(int argc, char **argv) {
 }
 
 int meminfo(int argc, char **argv) {
-/*
+
     unsigned int *p1, *p2, *p3, *p4;
     size_t sz;
-    printf("__data_end 0x%04X\n__code_end 0x%04X\n", &__data_end, &__code_end);
 
+
+    printf("__data_end 0x%04X\n__code_end 0x%04X\n", &__data_end, &__code_end);
+/*
     p1 = (unsigned int *)malloc(0x100);
     p2 = (unsigned int *)malloc(0x200);
     p3 = (unsigned int *)malloc(0x300);
@@ -194,7 +198,8 @@ int meminfo(int argc, char **argv) {
         printf("Free mem: %u words\n", sz);
         free(p1);
     }
-  */
+
+*/
     return 0;
 }
 

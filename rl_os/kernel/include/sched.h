@@ -25,7 +25,12 @@ struct Process {
     unsigned int sp;
     unsigned int pc;
 
-    unsigned int memBank;
+
+    int mode;
+
+    unsigned int codeMemBank;
+    unsigned int dataMemBank;
+
     struct fs_node cwd;
 
     struct Process *parent;
@@ -55,13 +60,13 @@ struct IntFrame {
 unsigned int sendSig(unsigned int pid, unsigned int sig);
 
 unsigned int findProcByPid(unsigned int pid, struct Process **p);
-struct Process *sched_add_proc(unsigned int pid, unsigned int bank,
+struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned int dataBank,
                                struct Process *p);
 unsigned int sched_genPid();
 
 void resched_now();
 
-
+unsigned int do_exec(struct Process * p, const char * filename, const char ** argv, const char ** envp);
 
 unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n);
 unsigned int proc_file_write(unsigned int minor, const unsigned int * buf, size_t n);

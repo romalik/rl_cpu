@@ -13,7 +13,7 @@ OBJECTS = $(SOURCES:.c=.o)
 ASM_OBJECTS = $(ASM_SOURCES:.s=.o)
 # Main target
 $(IMAGE): $(OBJECTS) $(ASM_OBJECTS)
-	$(CC) -Wo"-kernel" $(OBJECTS) $(ASM_OBJECTS) -o $(IMAGE)
+	$(CC) -Wo"-kernel" -Wl"-mode" -Wl"2" $(OBJECTS) $(ASM_OBJECTS) -o $(IMAGE)
 
 # To obtain object files
 %.o: %.c

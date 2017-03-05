@@ -56,23 +56,17 @@ int kernel_main() {
         struct Process * initP;
         unsigned int b;
         int initPid = 0;
-        FILE *fd1 = k_open(INIT_PATH, 'r');
-        size_t cPos = 0x8000;
         mm_allocSegment(&b);
-        BANK_SEL = b;
         printf("Loading init\n");
-        while (!k_isEOF(fd1)) {
-            cPos += k_read(fd1, (unsigned int *)cPos, fd1->size);
-        }
-        k_close(fd1);
 
         initPid = sched_genPid();
-        initP = sched_add_proc(initPid, b, 0);
+        initP = sched_add_proc(initPid, b, b, 0);
 
-        initP->sp = 0xF000;
-        initP->ap = initP->bp = 0xF000;
+        if(do_exec(initP, INIT_PATH, NULL, NULL)) {
+            printf("Failed to exec init!\n");
+            halt();
+        }
 
-        strcpy(initP->cmd, INIT_PATH);
         procs[initPid].openFiles[0] = k_open("/tty", 'r');
         procs[initPid].openFiles[1] = k_open("/tty", 'w');
         procs[initPid].openFiles[2] = k_open("/tty", 'w');

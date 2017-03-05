@@ -11,9 +11,9 @@
 #include "oplist.h"
 
 enum {
-    O_FORMAT_PLAIN_BINARY = 0,
-    O_FORMAT_REXE
-
+    O_MODE_ONESEG = 0,
+    O_MODE_TWOSEG = 1,
+    O_MODE_RAWBIN = 2
 };
 
 
@@ -131,12 +131,13 @@ public:
     int dataOffset;
 
     void computeOffsets() {
-        if(mode == 0) { //small mode
             int cOffset = 0;
             for(int i = 0; i<sections.size(); i++) { //concatenate all text sections
                 sections[i][0].offset = cOffset;
                 cOffset += sections[i][0].code.size();
             }
+
+            if(mode == O_MODE_TWOSEG) cOffset = 0; //reset offset for two-seg mode
 
             for(int i = 0; i<sections.size(); i++) { //concatenate all data sections
                 sections[i][1].offset = cOffset;
@@ -151,7 +152,6 @@ public:
                 }
             }
 
-        }
     }
 
     int findGlobalLabel(std::string _name, LabelEntry & entry) {
@@ -340,24 +340,48 @@ public:
         char *d = image;
         size_t binarySize = 0;
 
-        if(mode == 0) { //small mode
-            for(int sect = 0; sect < 2; sect++) {//write code first
+        if(mode != O_MODE_RAWBIN) {
+            // magic
+            *p = 0;   p++;
+            *p = 'R'; p++;
+            *p = 0;   p++;
+            *p = 'E'; p++;
+            *p = 0;   p++;
+            *p = 'X'; p++;
+            *p = 0;   p++;
+            *p = 'E'; p++;
+
+            //mode
+            *p = 0;   p++;
+            *p = mode; p++;
+        
+            for(int sect = 0; sect < 2; sect++) {//write sizes
+                unsigned int cSize = 0;
                 for(int i = 0; i<sections.size(); i++) {
-                    for(int j = 0; j<sections[i][sect].code.size(); j++) {
-                        uint16_t val = sections[i][sect].code[j];
-                        char h = ((val & 0xff00) >> 8);
-                        char l = (val & 0xff);
-                        *p = h; p++;
-                        *p = l; p++;
-                    }
+                    cSize += sections[i][sect].code.size();
                 }
-                printf("%s [%s]: %lu words\n", filename.c_str(), (sect?"data":"text"), (p - d)/2);
-                d = p;
+                *p = ((cSize & 0xff00) >> 8);   p++;
+                *p = (cSize & 0xff);            p++;
 
             }
-            printf("%s: %lu words\n", filename.c_str(), (p - image)/2);
-            binarySize = p-image;
         }
+        for(int sect = 0; sect < 2; sect++) {//write code first
+            for(int i = 0; i<sections.size(); i++) {
+                for(int j = 0; j<sections[i][sect].code.size(); j++) {
+                    uint16_t val = sections[i][sect].code[j];
+                    char h = ((val & 0xff00) >> 8);
+                    char l = (val & 0xff);
+                    *p = h; p++;
+                    *p = l; p++;
+                }
+            }
+            printf("%s [%s]: %lu words\n", filename.c_str(), (sect?"data":"text"), (p - d)/2);
+            d = p;
+
+        }
+        printf("%s: %lu words\n", filename.c_str(), (p - image)/2);
+        binarySize = p-image;
+    
 
         file.write(image, binarySize);
         file.close();

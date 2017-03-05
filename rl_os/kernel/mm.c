@@ -28,7 +28,7 @@ unsigned int mm_allocSegment(unsigned int *seg) {
 void mm_memcpy(unsigned int *dest, unsigned int *src, unsigned int n,
                unsigned int bank) {
     unsigned int i;
-    BANK_SEL = bank;
+    DATA_BANK_SEL = bank;
 
     //  printf("Copy %d from 0x%04x to 0x%04x bank %d\n", n, src, dest, bank);
     for (i = 0; i < n; i++) {

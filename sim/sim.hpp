@@ -403,22 +403,26 @@ class ExtRAM : public VMemDevice {
   w size;
   w end;
 
-  w bankSelector;
+  w codeBankSelector;
+  w dataBankSelector;
 
   int cBank;
+  int dBank;
   int nBanks;
   std::vector<w *> storage;
 
 
 
 public:
-  ExtRAM(w _begin, w _sz, w _bankSelector, int _nBanks) {
+  ExtRAM(w _begin, w _sz, w _codeBankSelector, w _dataBankSelector, int _nBanks) {
     begin = _begin;
     end = _begin + _sz;
     size = _sz;
-    bankSelector = _bankSelector;
+    codeBankSelector = _codeBankSelector;
+    dataBankSelector = _dataBankSelector;
     nBanks = _nBanks;
     cBank = 0;
+    dBank = 0;
     for(int i = 0; i<nBanks; i++) {
       storage.push_back((w *)malloc(_sz * sizeof(w)));
     }
@@ -429,24 +433,38 @@ public:
     }
   }
 
-  virtual int canOperate(w addr) { return (((addr >= begin)&&(addr<end))|| addr == bankSelector); }
+  virtual int canOperate(w addr) { return (((addr >= begin)&&(addr<end))|| (addr == codeBankSelector) || (addr == dataBankSelector)); }
   virtual void write(w addr, w val, int seg, int force = 0) {
     if(canOperate(addr)) {
-      if(addr == bankSelector) {
+      if(addr == codeBankSelector) {
         cBank = val;
+      } else if(addr == dataBankSelector) {
+        dBank = val;
       } else {
         //printf("ExtRAM write 0x%04x\n", val);
-        storage[cBank][addr - begin] = val;
+            if(seg) {
+                storage[dBank][addr - begin] = val;
+            } else {
+                storage[cBank][addr - begin] = val;
+            }
+
       }
     }
   }
 
   virtual w read(w addr, int seg) {
     if(canOperate(addr)) {
-      if(addr == bankSelector) {
+      if(addr == codeBankSelector) {
         return cBank;
+      } else if(addr == dataBankSelector) {
+        return dBank;
       } else {
-        return storage[cBank][addr - begin];
+          if(seg) {
+            return storage[dBank][addr - begin];
+          } else {
+            return storage[cBank][addr - begin];
+          }
+
       }
     }
   }

@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
     printf("Echo: argc = %d\n", argc);
 
     for (i = 0; i < argc; i++) {
-        printf("%d: %s\n", i, argv[i]);
+        printf("%d: %s atoi %d\n", i, argv[i], atoi(argv[i]));
     }
 
     return 0;
