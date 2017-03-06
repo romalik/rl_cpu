@@ -29,11 +29,13 @@ void init_interrupts() {
     ei();
 }
 
+
 int kernel_main() {
     // malloc_init((size_t)&__data_end, (size_t)(0x3000));
     //  printf("Init interrupts..\n");
 
     init_interrupts();
+
 
     ataInit();
     block_init();

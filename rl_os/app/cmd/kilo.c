@@ -884,8 +884,10 @@ void editorRefreshScreen(void) {
     int cx, j, filerow;
     struct abuf ab = ABUF_INIT;
 
+    printf("L5.1\n");
     abAppend(&ab,"\x1b[?25l",6); /* Hide cursor. */
     abAppend(&ab,"\x1b[H",3); /* Go home. */
+    printf("L5.2\n");
     for (y = 0; y < E.screenrows; y++) {
         int filerow = E.rowoff+y;
 
@@ -895,6 +897,7 @@ void editorRefreshScreen(void) {
                 int welcomelen = snprintf(welcome,sizeof(welcome),
                     "Kilo editor -- verison %s\x1b[0K\r\n", KILO_VERSION);
                 int padding = (E.screencols-welcomelen)/2;
+                printf("L5.3\n");
                 if (padding) {
                     abAppend(&ab,"~",1);
                     padding--;
@@ -906,6 +909,7 @@ void editorRefreshScreen(void) {
             }
             continue;
         }
+        printf("L5.4\n");
 
         r = &E.row[filerow];
 
@@ -948,16 +952,21 @@ void editorRefreshScreen(void) {
         abAppend(&ab,"\x1b[0K",4);
         abAppend(&ab,"\r\n",2);
     }
+    printf("L5.5\n");
 
     /* Create a two rows status. First row: */
     abAppend(&ab,"\x1b[0K",4);
     abAppend(&ab,"\x1b[7m",4);
-    len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
-        E.filename, E.numrows, E.dirty ? "(modified)" : "");
-    rlen = snprintf(rstatus, sizeof(rstatus),
-        "%d/%d",E.rowoff+E.cy+1,E.numrows);
+    printf("After this?..\n");
+    len = 0;//snprintf(status, sizeof(status), "%.20s - %d lines %s",
+        //E.filename, E.numrows, E.dirty ? "(modified)" : "");
+    printf("1");
+    rlen = 0;//snprintf(rstatus, sizeof(rstatus),
+        //"%d/%d",E.rowoff+E.cy+1,E.numrows);
+    printf("2 no\n");
     if (len > E.screencols) len = E.screencols;
     abAppend(&ab,status,len);
+    printf("L5.6\n");
     while(len < E.screencols) {
         if (E.screencols - len == rlen) {
             abAppend(&ab,rstatus,rlen);
@@ -1279,14 +1288,20 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    printf("L1\n");
     initEditor();
+    printf("L2\n");
     //editorSelectSyntaxHighlight(argv[1]);
     editorOpen(argv[1]);
+    printf("L3\n");
     enableRawMode(STDIN_FILENO);
+    printf("L4\n");
     editorSetStatusMessage(
         "HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
     while(1) {
+        printf("L5\n");
         editorRefreshScreen();
+        printf("L6\n");
         editorProcessKeypress(STDIN_FILENO);
     }
     return 0;

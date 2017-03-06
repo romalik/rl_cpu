@@ -5,9 +5,9 @@
 #define EXEC_READ_CHUNK 0x1000
 #define ARGV_BUFFER_SIZE 64 * 4
 
-#define TIMESLICE 5
+#define TIMESLICE 10
 
-#define STACK_PLACEMENT 0xf800
+#define STACK_PLACEMENT 0xf000
 
 unsigned int argvBuffer[ARGV_BUFFER_SIZE];
 unsigned int sched_stack[8 * 64];
@@ -94,6 +94,10 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
         procs[i].bp = p->bp;
         procs[i].sp = p->sp;
         procs[i].pc = p->pc;
+
+        procs[i].s = p->s;
+        procs[i].d = p->d;
+
         procs[i].state = p->state;
         
         procs[i].mode = p->mode;
@@ -171,6 +175,8 @@ void resched(struct IntFrame * fr) {
             procs[currentTask].bp = fr->bp;
             procs[currentTask].sp = fr->sp;
             procs[currentTask].pc = fr->pc;
+            procs[currentTask].s = fr->s;
+            procs[currentTask].d = fr->d;
         }
     }
 
@@ -231,10 +237,13 @@ rescanTable:
     fr->bp = procs[nextTask].bp;
     fr->sp = procs[nextTask].sp;
     fr->pc = procs[nextTask].pc;
+    fr->s = procs[nextTask].s;
+    fr->d = procs[nextTask].d;
+
     CODE_BANK_SEL = procs[nextTask].codeMemBank;
     DATA_BANK_SEL = procs[nextTask].dataMemBank;
-    // printf("Sched switch %d -> %d\n", currentTask, nextTask);
-    // printf("Switch to PC 0x%04x\n", fr->pc);
+//    printf("Sched switch %d -> %d\n", currentTask, nextTask);
+//    printf("Switch to PC 0x%04x\n", fr->pc);
     currentTask = nextTask;
     cProc = &(procs[nextTask]);
     ticksToSwitch = TIMESLICE;
@@ -243,50 +252,6 @@ rescanTable:
 }
 
 
-void _resched(struct IntFrame *fr) {
-    int nextTask;
-    // printf("Switch from PC 0x%04x\n", fr->pc);
-    nextTask = currentTask + 1;
-    while (nextTask != currentTask) {
-        if (nextTask >= MAXPROC)
-            nextTask = 0;
-
-        if (procs[nextTask].state == PROC_STATE_RUN)
-            break;
-
-        if (procs[nextTask].state == PROC_STATE_NEW)
-            break;
-
-        nextTask++;
-    }
-    if ((nextTask == currentTask) &&
-        (procs[currentTask].state == PROC_STATE_RUN)) {
-        return;
-    }
-    if (currentTask < MAXPROC) {
-        if (procs[currentTask].state == PROC_STATE_RUN) {
-            procs[currentTask].ap = fr->ap;
-            procs[currentTask].bp = fr->bp;
-            procs[currentTask].sp = fr->sp;
-            procs[currentTask].pc = fr->pc;
-        }
-    }
-    if (procs[nextTask].state == PROC_STATE_NEW) {
-        procs[nextTask].state = PROC_STATE_RUN;
-    }
-
-    fr->ap = procs[nextTask].ap;
-    fr->bp = procs[nextTask].bp;
-    fr->sp = procs[nextTask].sp;
-    fr->pc = procs[nextTask].pc;
-    CODE_BANK_SEL = procs[nextTask].codeMemBank;
-    DATA_BANK_SEL = procs[nextTask].dataMemBank;
-    // printf("Sched switch %d -> %d\n", currentTask, nextTask);
-    // printf("Switch to PC 0x%04x\n", fr->pc);
-    currentTask = nextTask;
-    cProc = &(procs[nextTask]);
-    ticksToSwitch = TIMESLICE;
-}
 
 unsigned int findProcByPid(unsigned int pid, struct Process **p) {
     int i;

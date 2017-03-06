@@ -25,6 +25,8 @@ struct Process {
     unsigned int sp;
     unsigned int pc;
 
+    unsigned int s;
+    unsigned int d;
 
     int mode;
 
@@ -55,6 +57,8 @@ struct IntFrame {
     unsigned int pc;
     unsigned int bp;
     unsigned int ap;
+    unsigned int s;
+    unsigned int d;
 };
 
 unsigned int sendSig(unsigned int pid, unsigned int sig);

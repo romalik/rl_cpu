@@ -151,6 +151,9 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
 
+        cProc->s = fr->s;
+        cProc->d = fr->d;
+
         cProc->state = PROC_STATE_KWORKER;
         ei();
         resched_now();
@@ -165,6 +168,9 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
 
+        cProc->s = fr->s;
+        cProc->d = fr->d;
+        
         cProc->state = PROC_STATE_KWORKER;
         ei();
         resched_now();
@@ -177,6 +183,8 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
+        cProc->s = fr->s;
+        cProc->d = fr->d;
         cProc->state = PROC_STATE_KWORKER;
         ei();
         resched_now();
@@ -189,6 +197,8 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
+        cProc->s = fr->s;
+        cProc->d = fr->d;
         cProc->state = PROC_STATE_KWORKER;
         ei();
         resched_now();
@@ -201,6 +211,8 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
+        cProc->s = fr->s;
+        cProc->d = fr->d;
         cProc->state = PROC_STATE_KWORKER;
         ei();
         resched_now();

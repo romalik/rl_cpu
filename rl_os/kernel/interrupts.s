@@ -50,17 +50,18 @@ gt_w __tiwrapper_exit
 
 
 cnst_w sched_stack
-addrl_b -7
-cnst_b 4
+addrl_b -9
+cnst_b 6
 call0_w __builtin_memcpy
 
-loadsp_w sched_stack+4
 
-;; this shit would work great, if my compiler supported pass-by-reference (func(int &a) {..}). But it does not. So, slow, but cross-compiler version here
-cnst_w sched_stack+4
+
+loadsp_w sched_stack+6
+
+cnst_w sched_stack+6
 popbp
 
-addrl_b -4 ;SP PC BP AP
+cnst_w sched_stack
 call0_w resched 
 discard_b 1
 ei
@@ -73,24 +74,12 @@ ret
 .export __system_interrupt_vector
 .label  __system_interrupt_vector
 ;di
+iaddrf_b 0 ;pointer to syscall struct
+addrs_b -7 ; ->SP PC BP AP S D [ptr to scall]
 call0_w system_interrupt
 ;ei
+discard_b 2
 reti
 
 
-.export __system_interrupt_wrapper
-.import system_interrupt
-.label  __system_interrupt_wrapper
-
-; Stack now: [SP,PC,BP,AP int] [PC ret] [AP ret] [BP ret] <addrl 0>
-
-iaddrf_b 0 ;pointer to syscall struct
-addrl_b -7 ;SP PC BP AP
-call0_w system_interrupt
-
-; Stack now: [SP,PC,BP,AP int] [PC ret] [AP ret] [BP ret] [addrl 0] [addrl 1] <sp>
-
-discard_b 5 ;  PC AP BP SyscallStructPtr IntFramePtr
-
-reti
 
