@@ -585,6 +585,8 @@ class Cpu {
   w IR;
   w ML;
 
+  w S;
+  w D;
 
   w intEnabled;
   w userMode;

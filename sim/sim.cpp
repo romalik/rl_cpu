@@ -154,6 +154,8 @@ void Cpu::execute() {
       this->push(PC);
       this->push(BP);
       this->push(AP);
+      this->push(S);
+      this->push(D);
       this->userMode = 0;
       //printf("Try get vec..");
       PC = intCtl->getIrqVector();
@@ -582,6 +584,8 @@ void Cpu::execute() {
     intCtl->request(0);
 
   } else if(op == reti) {
+    D = pop();
+    S = pop();
     AP = pop();
     BP = pop();
     PC = pop();
@@ -602,6 +606,56 @@ void Cpu::execute() {
     RB = this->memRead(RA, C_SEG_DATA);
     this->memWrite(RA, IRHigh(), C_SEG_DATA); 
     push(RB);
+  
+  
+  } else if(op == pops) {
+    S = pop();
+  } else if(op == loads_w) {
+    RA = this->memRead(PC, C_SEG_CODE);
+    PC++;
+    S = RA;
+  } else if(op == pushs) {
+    push(S);
+  } else if(op == incs) {
+    S++;
+  } else if(op == decs) {
+    S--;
+  
+  
+  } else if(op == popd) {
+    D = pop();
+  } else if(op == loadd_w) {
+    RA = this->memRead(PC, C_SEG_CODE);
+    PC++;
+    D = RA;
+  } else if(op == pushd) {
+    push(D);
+  } else if(op == incd) {
+    D++;
+  } else if(op == decd) {
+    D--;
+
+
+  } else if(op == sdm) {
+    // S -> ml
+    // mr -> RA
+    // D -> ml
+    // RA -> mr
+
+    RA = this->memRead(S, C_SEG_DATA);
+    this->memWrite(D, RA, C_SEG_DATA);
+
+  } else if(op == sdmi) {
+    // S -> ml
+    // mr -> RA
+    // D -> ml
+    // RA -> mr
+
+    RA = this->memRead(S, C_SEG_DATA);
+    this->memWrite(D, RA, C_SEG_DATA);
+    S++;
+    D++;
+    
 
   } else {
       printf("op not implemented! %d\n", op);

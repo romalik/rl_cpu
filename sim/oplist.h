@@ -114,7 +114,23 @@ enum opname {
 
     swp,
     swp_b,
-    swp_w
+    swp_w,
+
+    pops,
+    loads_w,
+    pushs,
+    incs,
+    decs,
+
+    popd,
+    loadd_w,
+    pushd,
+    incd,
+    decd,
+
+    sdm,
+    sdmi
+
 };
 
 char oplist[][16] = {
@@ -231,6 +247,22 @@ char oplist[][16] = {
     "swp",
     "swp_b",
     "swp_w",
+
+
+    "pops",
+    "loads_w",
+    "pushs",
+    "incs",
+    "decs",
+
+    "popd",
+    "loadd_w",
+    "pushd",
+    "incd",
+    "decd",
+
+    "sdm",
+    "sdmi"
     ""
 
 };
