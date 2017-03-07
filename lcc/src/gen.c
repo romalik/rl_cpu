@@ -86,6 +86,7 @@ unsigned vmask[2];
 void asmcode(char *str, Symbol argv[])
 
 {
+	print("asm ");
 	for ( ; *str; str++)
 		if ((*str == '%') && (str[1] >= 0) && (str[1] <= 9))
 			print("%s", asmname(argv[*++str]));

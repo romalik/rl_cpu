@@ -77,6 +77,8 @@ void parseDirective(std::string line) {
         output.push_back(RCEntry(1, rc_byte, lccArg.c_str()));
     } else if(!strcmp(lccWord.c_str(), "address")) {
         output.push_back(RCEntry(1, rc_address, lccArg.c_str()));
+    } else if(!strcmp(lccWord.c_str(), "asm")) {
+        output.push_back(RCEntry(1, rc_asm, lccArg.c_str()));
     } else {
         fprintf(stderr, "Unknown directive %s\n", line.c_str());
         exit(1);
@@ -549,7 +551,11 @@ void optimize2() {
 void dumpCode() {
     for(int i = 0; i<output.size(); i++) {
         if(output[i].isDirective == 1) {
+          if(output[i].name == rc_asm) {
+            printf("%s\n", output[i].arg);
+          } else {
             printf(".%s %s\n", directive_rc_str[output[i].name], output[i].arg);
+          }
         } else {
             char argTypeStr[10];
             if(output[i].argType == ARG_NONE) {

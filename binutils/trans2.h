@@ -227,7 +227,8 @@ char directive_rc_str[][16] = {
     "skip",
     "byte",
     "address",
-    "label"
+    "label",
+    ""
 
 };
 
@@ -242,7 +243,8 @@ enum directive_rc {
     rc_skip,
     rc_byte,
     rc_address,
-    rc_label
+    rc_label,
+    rc_asm
 
 };
 

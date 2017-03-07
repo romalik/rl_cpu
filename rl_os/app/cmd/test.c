@@ -12,20 +12,23 @@ int main(int argc, char **argv) {
     printf("This test will check different math routines\n");
     printf("test 123: %d ", 123);
     puts(__ltostr(123,10));
-    printf("\n"); 
+    printf("\n");
+
+
+    asm("nop");
 
     printf("test 1 2 3: %d %d %d ", 1, 2, 3);
-    printf("\n"); 
+    printf("\n");
 
     printf("test 12345: %d ", 12345);
     puts(__ltostr(12345,10));
-    printf("\n"); 
+    printf("\n");
 
     printf("test 60000 d u tlostr ultostr: %d %u ", 60000, 60000);
     puts(__ltostr(60000,10));
-    printf(" "); 
+    printf(" ");
     puts(__ultostr(60000,10));
-    printf("\n"); 
+    printf("\n");
 
     return 0;
 }
