@@ -153,6 +153,68 @@ static Symbol fcon(void);
 static Symbol icon(unsigned long, int, int);
 static void ppnumber(char *);
 
+static char *asmargs(Symbol, Symbol [], int);
+static void assem(void);
+
+/* asmargs - break out %name in string p, fill in argv, returned edited string */
+static char *asmargs(Symbol p, Symbol argv[], int size) {
+	int n = 0;
+	char *s1, *s2, str[MAXLINE];
+
+	if (p->type->size >= MAXLINE) {
+		error("asm string too long\n");
+		return "";
+	}
+	for (s2 = str, s1 = p->u.c.v.p; *s1; )
+		if ((*s2++ = *s1++) == '%' && *s1 && map[*s1]&LETTER) {
+			char *t = s1;
+			while (*t && map[*t]&(LETTER|DIGIT))
+				t++;
+			if ((argv[n] = lookup(stringn(s1, t - s1), identifiers))
+			&& argv[n]->sclass != TYPEDEF && argv[n]->sclass != ENUM) {
+				argv[n]->ref += refinc;
+				if (++n == size) {
+					error("too many variable references in asm string\n");
+					n = size - 1;
+				} else {
+					*s2++ = n - 1;
+					s1 = t;
+				}
+			}
+		}
+	*s2 = 0;
+	argv[n] = 0;
+	return stringn(str, s2 - str);
+}
+
+/* assem - parse asm("assembly code") */
+static void assem() {
+
+
+  if (Aflag >= 2)
+		warning("non-ANSI asm\n");
+	t = gettok();
+	expect('(');
+	if (t == SCON) {
+		char *s;
+		Symbol *argv = (Symbol *)malloc(11*sizeof(Symbol *));
+		s = asmargs(tsym, argv, 11);
+		if (file) {
+			code(Asm);
+			codelist->u.acode.code = s;
+			codelist->u.acode.argv = argv;
+		} else
+			asmcode(s, argv);
+		
+		
+		t = gettok();
+	} else
+		error("missing string constant in asm\n");
+	if (t != ')')
+		expect(')');
+}
+
+
 int gettok(void) {
 	for (;;) {
 		register unsigned char *rcp = cp;
@@ -208,7 +270,7 @@ int gettok(void) {
 		case '+': return *rcp == '+' ? cp++, INCR   : '+';
 		case ';': case ',': case ':':
 		case '*': case '~': case '%': case '^': case '?':
-		case '[': case ']': case '{': case '}': case '(': case ')': 
+		case '[': case ']': case '{': case '}': case '(': case ')':
 			return rcp[-1];
 		case '\n': case '\v': case '\r': case '\f':
 			nextline();
@@ -382,7 +444,16 @@ int gettok(void) {
 				cp = rcp + 3;
 				return AUTO;
 			}
+			
+			if (rcp[0] == 's'
+			&&  rcp[1] == 'm'
+			&& !(map[rcp[2]]&(DIGIT|LETTER))) {
+				cp = rcp + 2;
+				assem();
+				continue;
+			}
 			goto id;
+
 		case 'b':
 			if (rcp[0] == 'r'
 			&&  rcp[1] == 'e'

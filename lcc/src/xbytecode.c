@@ -141,7 +141,14 @@ static void dumptree(Node p) {
 	}
 	assert(0);
 }
-
+/*
+static void I(asmcode)(char * s , Symbol ss[] ) {
+  
+  write(2, "EMIT ASM", strlen("EMIT ASM"));
+  
+  print("asm\n");
+}
+*/
 static void I(emit)(Node p) {
 	for (; p; p = p->link) {
 		dumptree(p);
@@ -265,6 +272,7 @@ Interface xbytecodeIR = {
 	I(address),
 	I(blockbeg),
 	I(blockend),
+	0, //I(asmcode),
 	I(defaddress),
 	I(defconst),
 	I(defstring),

@@ -472,7 +472,7 @@ void gencode(Symbol caller[], Symbol callee[]) {
 			       fixup(cp->u.forest);
 			       cp->u.forest = (*IR->gen)(cp->u.forest); break;
 		case Local:    (*IR->local)(cp->u.var); break;
-		case Switch:   break;
+		case Asm: case Switch:   break;
 		default: assert(0);
 		}
 	src = save;
@@ -506,6 +506,11 @@ void emitcode(void) {
 	for ( ; errcnt <= 0 && cp; cp = cp->next)
 		switch (cp->kind) {
 		case Address: break;
+		
+		case Asm:
+		      asmcode(cp->u.acode.code, cp->u.acode.argv);
+		      break;
+	
 		case Blockbeg: if (glevel && IR->stabblock) {
 			       	(*IR->stabblock)('{',  cp->u.block.level - LOCAL, cp->u.block.locals);
 			       	swtoseg(CODE);

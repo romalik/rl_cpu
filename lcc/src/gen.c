@@ -37,6 +37,10 @@ static Symbol   spillee(Symbol, unsigned mask[], Node);
 static void     spillr(Symbol, Node);
 static int      uses(Node, Regnode);
 
+char *asmname(Symbol p);
+void asmcode(char *str, Symbol argv[]);
+
+
 int offset;
 
 int maxoffset;
@@ -76,6 +80,28 @@ unsigned freemask[2];
 unsigned usedmask[2];
 unsigned tmask[2];
 unsigned vmask[2];
+
+
+
+void asmcode(char *str, Symbol argv[])
+
+{
+	for ( ; *str; str++)
+		if ((*str == '%') && (str[1] >= 0) && (str[1] <= 9))
+			print("%s", asmname(argv[*++str]));
+		else
+			print("%c", *str);
+
+	print("\n");
+}
+
+/* asmname - print assembler code for symbol p */
+char *asmname(Symbol p) {
+	return p->x.name;
+}
+
+
+
 Symbol mkreg(char *fmt, int n, int mask, int set) {
 	Symbol p;
 

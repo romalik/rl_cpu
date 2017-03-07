@@ -124,6 +124,7 @@ typedef struct interface {
 void (*address)(Symbol p, Symbol q, long n);
 void (*blockbeg)(Env *);
 void (*blockend)(Env *);
+void (*asmcode)(char *, Symbol[]);
 void (*defaddress)(Symbol);
 void (*defconst)  (int suffix, int size, Value v);
 void (*defstring)(int n, char *s);
@@ -207,10 +208,14 @@ struct list {
 
 struct code {
 	enum { Blockbeg, Blockend, Local, Address, Defpoint,
-	       Label,    Start,    Gen,   Jump,    Switch
+	       Label,    Start,    Asm, Gen,   Jump,    Switch
 	} kind;
 	Code prev, next;
 	union {
+		struct {		/* Asm: assembly language */
+		  char *code;		/* assembly code */
+		  Symbol *argv;		/* %name arguments */
+		} acode;
 		struct {
 			int level;
 			Symbol *locals;
@@ -228,7 +233,7 @@ struct code {
 		struct {
 			Coordinate src;
 			int point;
-		} point; 
+		} point;
 		Node forest;
 		struct {
 			Symbol sym;
