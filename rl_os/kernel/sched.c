@@ -3,14 +3,16 @@
 #include <kernel_worker.h>
 
 #define EXEC_READ_CHUNK 0x1000
-#define ARGV_BUFFER_SIZE 64 * 4
+#define ARGV_BUFFER_SIZE 256
+#define SCHED_STACK_SIZE 512
 
-#define TIMESLICE 10
+
+#define TIMESLICE 5
 
 #define STACK_PLACEMENT 0xf000
 
 unsigned int argvBuffer[ARGV_BUFFER_SIZE];
-unsigned int sched_stack[8 * 64];
+unsigned int sched_stack[SCHED_STACK_SIZE];
 unsigned sched_active = 0;
 unsigned int ticks = 0;
 struct Process *cProc;

@@ -2,7 +2,6 @@
 #include <ata.h>
 
 struct Block blockCache[BLOCK_CACHE_SIZE];
-unsigned int blockDataCache[BLOCK_CACHE_SIZE * 64 * 4];
 
 void dump_blocks() {
     int i;
@@ -46,7 +45,7 @@ struct Block *bread(unsigned int device, unsigned int n) {
                 blockCache[i].device = device;
                 blockCache[i].n = n;
                 blockCache[i].cnt = 1;
-                blockCache[i].data = &blockDataCache[64 * 4 * i];
+//                blockCache[i].data = &blockDataCache[64 * 4 * i];
                 ataReadSectorsLBA(n, blockCache[i].data);
                 //        printf("bread fetch and ret %d\n", i);
                 return &blockCache[i];

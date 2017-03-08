@@ -15,7 +15,7 @@ struct Block {
     unsigned int device;
     unsigned int n;
     unsigned int cnt;
-    unsigned int *data;
+    unsigned int data[256];
 };
 
 extern struct Block blockCache[];

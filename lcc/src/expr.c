@@ -138,7 +138,7 @@ static Tree unary(void) {
 
 	switch (t) {
 	case '*':    t = gettok(); p = unary(); p = pointer(p);
-						  if (isptr(p->type)
+                                                  if (isptr(p->type)
 						  && (isfunc(p->type->type) || isarray(p->type->type)))
 						  	p = retype(p, p->type->type);
 						  else {

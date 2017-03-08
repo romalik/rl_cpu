@@ -44,6 +44,8 @@ int kernel_main() {
     sched_init();
     kernel_worker_init();
 
+
+
     k_regDevice(0, tty_write, tty_read);
     k_regDevice(1, proc_file_write, proc_file_read);
 
