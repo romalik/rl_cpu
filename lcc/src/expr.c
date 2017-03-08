@@ -532,10 +532,13 @@ Tree cast(Tree p, Type type) {
 	Type src, dst;
 
 	p = value(p);
-	if (p->type == type)
+        
+        if (p->type == type)
 		return p;
 	dst = unqual(type);
 	src = unqual(p->type);
+
+
 	if (src->op != dst->op || src->size != dst->size) {
 		switch (src->op) {
 		case INT:

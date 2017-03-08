@@ -198,8 +198,9 @@ int intexpr(int tok, int n) {
 
 	needconst++;
 	if (p->op == CNST+I || p->op == CNST+U) {
-		n = cast(p, inttype)->u.v.i;
-                warning("   ---------->>>>> N = %d\n", n);
+	    //hack here	
+            //n = cast(p, inttype)->u.v.i;
+            n = cast(p, longtype)->u.v.i;
         }
         else
 		error("integer expression must be constant\n");

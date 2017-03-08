@@ -271,7 +271,7 @@ public:
 
         sections.push_back(tVec);
         labelsPerObj.push_back(cLabels);
-        printf("%s:\ttext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
+//        printf("%s:\ttext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
 /*
         printf("OK\n");
 

@@ -45,10 +45,14 @@ static Type xxinit(int op, char *name, Metrics m) {
 	p->addressed = m.outofline;
 	switch (ty->op) {
 	case INT:
+// hack here
+		//p->u.limits.max.i = ones(16*ty->size)>>1;
 		p->u.limits.max.i = ones(8*ty->size)>>1;
 		p->u.limits.min.i = -p->u.limits.max.i - 1;
 		break;
 	case UNSIGNED:
+// hack here
+		//p->u.limits.max.u = ones(16*ty->size);
 		p->u.limits.max.u = ones(8*ty->size);
 		p->u.limits.min.u = 0;
 		break;
