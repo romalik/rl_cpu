@@ -28,9 +28,9 @@ make -C kernel
 #make -C lib clean
 #make -C lib
 #cp -rfv lib/include rootfs/lib
-make -C libc-fuzix clean
-make -C libc-fuzix
-cp -rfv libc-fuzix/include rootfs/lib
+make -C libc clean
+make -C libc
+cp -rfv libc/include rootfs/lib
 #-------------------
 
 ####################
