@@ -31,16 +31,15 @@ extern FILE *__IO_list;		/* For fflush at exit */
 #define Inline_init __io_init_vars()
 #endif
 
-#ifdef L__stdio_init
 
 #define buferr (stderr->unbuf)	/* Stderr is unbuffered */
 
 FILE *__IO_list = 0;		/* For fflush at exit */
 
-static char bufin[BUFSIZ];
-static char bufout[BUFSIZ];
+static unsigned char bufin[BUFSIZ];
+static unsigned char bufout[BUFSIZ];
 #ifndef buferr
-static char buferr[BUFSIZ];
+static unsigned char buferr[BUFSIZ];
 #endif
 
 FILE  stdin[1] =
@@ -97,7 +96,6 @@ __io_init_vars()
       stdout->mode |= _IOLBF;
    atexit(__stdio_close_all);
 }
-#endif
 
 int
 fputc(ch, fp)

@@ -3,7 +3,7 @@
  *
  * 19-OCT-88: Dale Schumacher
  * > John Stanley has again been a great help in debugging, particularly
- * > with the printf/scanf functions which are his creation.  
+ * > with the printf/scanf functions which are his creation.
  *
  *    Dale Schumacher                         399 Beacon Ave.
  *    (alias: Dalnefre')                      St. Paul, MN  55104
@@ -24,7 +24,6 @@
 #define va_strt(p,i) va_start(p)
 #endif
 
-#ifdef L_scanf
 #if defined(__STDC__) && !defined(__FIRST_ARG_IN_AX__)
 int scanf(const char * fmt, ...)
 #else
@@ -40,9 +39,7 @@ va_dcl
   va_end(ptr);
   return rv;
 }
-#endif
 
-#ifdef L_sscanf
 #if defined(__STDC__) && !defined(__FIRST_ARG_IN_AX__)
 int sscanf(char * sp, const char * fmt, ...)
 #else
@@ -54,21 +51,19 @@ va_dcl
 {
 static FILE  string[1] =
 {
-   {0, (char*)(unsigned) -1, 0, 0, (char*) (unsigned) -1, -1,
+   {0, (unsigned char*)(unsigned) -1, 0, 0, (unsigned char*) (unsigned) -1, -1,
     _IOFBF | __MODE_READ}
 };
 
   va_list ptr;
   int rv;
   va_strt(ptr, fmt);
-  string->bufpos = sp;
+  string->bufpos = (unsigned char *)sp;
   rv = vfscanf(string,fmt,ptr);
   va_end(ptr);
   return rv;
 }
-#endif
 
-#ifdef L_fscanf
 #if defined(__STDC__) && !defined(__FIRST_ARG_IN_AX__)
 int fscanf(FILE * fp, const char * fmt, ...)
 #else
@@ -85,34 +80,28 @@ va_dcl
   va_end(ptr);
   return rv;
 }
-#endif
 
-#ifdef L_vscanf
 int vscanf(fmt, ap)
 __const char *fmt;
 va_list ap;
 {
   return vfscanf(stdin,fmt,ap);
 }
-#endif
 
-#ifdef L_vsscanf
 int vsscanf(sp, fmt, ap)
 char * sp;
 __const char *fmt;
 {
 static FILE  string[1] =
 {
-   {0, (char*)(unsigned) -1, 0, 0, (char*) (unsigned) -1, -1,
+   {0, (unsigned char*)(unsigned) -1, 0, 0, (unsigned char*) (unsigned) -1, -1,
     _IOFBF | __MODE_READ}
 };
 
-  string->bufpos = sp;
+  string->bufpos = (unsigned char *)sp;
   return vfscanf(string,fmt,ap);
 }
-#endif
 
-#ifdef L_vfscanf
 /* #define	skip()	do{c=getc(fp); if (c<1) goto done;}while(isspace(c))*/
 
 #define	skip()	while(isspace(c)) { if ((c=getc(fp))<1) goto done; }
@@ -183,8 +172,8 @@ va_list ap;
    register long n;
    register int c, width, lval, cnt = 0;
    int   store, neg, base, wide1, endnull, rngflag, c2;
-   register unsigned char *p;
-   unsigned char delim[128], digits[17], *q;
+   register char *p;
+   char delim[128], digits[17], *q;
 #if FLOATS
    long  frac, expo;
    int   eneg, fraclen, fstate, trans;
@@ -302,7 +291,7 @@ va_list ap;
 	    }
 
 	    digits[base] = '\0';
-	    p = ((unsigned char *)
+	    p = ((char *)
 		 strchr(digits, toupper(c)));
 
 	    if ((!c || !p) && width)
@@ -313,7 +302,7 @@ va_list ap;
 	       n = (n * base) + (p - digits);
 	       c = getc(fp);
 	     zeroin:
-	       p = ((unsigned char *)
+	       p = ((char *)
 		    strchr(digits, toupper(c)));
 	    }
 	  savnum:
@@ -462,12 +451,12 @@ va_list ap;
 	    skip();
 	  strproc:
 	    /* process string */
-	    p = va_arg(ap, unsigned char *);
+	    p = va_arg(ap, char *);
 
 	    /* if the 1st char fails, match fails */
 	    if (width)
 	    {
-	       q = ((unsigned char *)
+	       q = ((char *)
 		    strchr(delim, c));
 	       if ((c < 1) || lval == (q==0))
 	       {
@@ -485,7 +474,7 @@ va_list ap;
 		   (--width == 0))
 		  break;
 
-	       q = ((unsigned char *)
+	       q = ((char *)
 		    strchr(delim, c));
 	       if (lval == (q==0))
 	          break;
@@ -532,5 +521,4 @@ va_list ap;
    return (cnt);
 }
 
-#endif
 

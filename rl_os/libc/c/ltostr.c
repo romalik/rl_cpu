@@ -8,7 +8,7 @@
 static char buf[34];
 
 
-char * __ultostr(unsigned long val_, int radix)
+char * ultostr(unsigned long val_, int radix)
 {
    register char *p;
    register int c;
@@ -29,14 +29,14 @@ char * __ultostr(unsigned long val_, int radix)
    return p;
 }
 
-char * __ltostr(long val_, int radix)
+char * ltostr(long val_, int radix)
 {
-    
+
    char *p;
    int flg = 0;
    int val = val_;
    if( val < 0 ) { flg++; val= -val; }
-   p = __ultostr(val, radix);
+   p = ultostr(val, radix);
    if(p && flg) *--p = '-';
    return p;
 }
@@ -46,10 +46,10 @@ char * __ltostr(long val_, int radix)
 
 char *ultoa (unsigned long value, char *strP, int radix)
 {
-    return strcpy(strP, __ultostr(value, radix));
+    return strcpy(strP, ultostr(value, radix));
 }
 
 char *ltoa (long value, char *strP, int radix)
 {
-    return strcpy(strP, __ltostr(value, radix));
+    return strcpy(strP, ltostr(value, radix));
 }

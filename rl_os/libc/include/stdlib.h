@@ -48,8 +48,8 @@ extern char *_uitoa(unsigned int __value);
 extern char *_ltoa(long __value);
 extern char *_ultoa(unsigned long __value);
 
-extern char *__ultostr(unsigned long value, int __radix);
-extern char *__ltostr(long __value, int __radix);
+extern char *ultostr(unsigned long value, int __radix);
+extern char *ltostr(long __value, int __radix);
 
 extern long strtol(const char *__nptr, char **__endptr, int __base);
 extern unsigned long strtoul(const char *__nptr,

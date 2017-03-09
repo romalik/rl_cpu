@@ -2,7 +2,9 @@
 .import main
 .import exit
 .import malloc_init_auto
+.import __io_init_vars
 call0_w malloc_init_auto
+call0_w __io_init_vars 
 call1_w main
 call0_w exit
 .data
