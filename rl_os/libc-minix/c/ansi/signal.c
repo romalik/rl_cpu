@@ -1,11 +1,9 @@
 /* SYSVR4 and ANSI compatible signal(2). */
 
-#include <lib.h>
-#define sigaction	_sigaction
-#define sigemptyset	_sigemptyset
+#include <errno.h>
 #include <signal.h>
 
-PUBLIC sighandler_t signal(sig, disp)
+sighandler_t signal(sig, disp)
 int sig;			/* signal number */
 sighandler_t disp;		/* signal handler, or SIG_DFL, or SIG_IGN */
 {

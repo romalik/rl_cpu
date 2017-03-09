@@ -1,7 +1,7 @@
 # Declaration of variables
 CC = lcc -d1000
 LD = link
-CC_FLAGS = "-I./include"
+CC_FLAGS = -I./include -D__STDC__=1 -D_POSIX_SOURCE -D_EM_WSIZE=2 -DPRIVATE=static -D_MINIX 
 AS = asm
 
 

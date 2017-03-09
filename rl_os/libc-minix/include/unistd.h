@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #endif
 
+
+#define PUBLIC
 /* Values used by access().  POSIX Table 2-8. */
 #define F_OK               0	/* test if file exists */
 #define X_OK               1	/* test if file is executable */
@@ -112,7 +114,7 @@ _PROTOTYPE( int pause, (void)						);
 _PROTOTYPE( int pipe, (int _fildes[2])					);
 _PROTOTYPE( ssize_t read, (int _fd, void *_buf, size_t _n)		);
 _PROTOTYPE( int rmdir, (const char *_path)				);
-_PROTOTYPE( int setgid, (Gid_t _gid)					);
+_PROTOTYPE( int setgid, (gid_t _gid)					);
 _PROTOTYPE( int setpgid, (pid_t _pid, pid_t _pgid)			);
 _PROTOTYPE( pid_t setsid, (void)					);
 _PROTOTYPE( int setuid, (Uid_t _uid)					);

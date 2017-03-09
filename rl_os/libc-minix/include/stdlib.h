@@ -44,6 +44,11 @@ _PROTOTYPE( char *getenv, (const char *_name)				);
 _PROTOTYPE( long labs, (long _j)					);
 _PROTOTYPE( ldiv_t ldiv, (long _numer, long _denom)			);
 _PROTOTYPE( void *malloc, (size_t _size)				);
+_PROTOTYPE( void *malloc, (size_t _size)				);
+_PROTOTYPE( void *malloc, (size_t _size)				);
+
+
+
 _PROTOTYPE( int mblen, (const char *_s, size_t _n)			);
 _PROTOTYPE( size_t mbstowcs, (wchar_t *_pwcs, const char *_s, size_t _n));
 _PROTOTYPE( int mbtowc, (wchar_t *_pwc, const char *_s, size_t _n)	);

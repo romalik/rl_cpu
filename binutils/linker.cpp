@@ -25,6 +25,8 @@ typedef struct LabelEntry_t {
     int needExport;
     int needImport;
     int shift;
+
+    std::string name;
 } LabelEntry;
 
 
@@ -110,6 +112,7 @@ class Linker {
             entry.needImport = (uint8_t)im;
             entry.needExport = (uint8_t)ex;
             entry.shift = labelShift;
+            entry.name = labelName;
             labels[labelName] = entry;
         }
 
@@ -196,9 +199,9 @@ public:
                 if(it->second.needImport == 1) {
                     LabelEntry entry;
                     if(findGlobalLabel(it->first, entry) == 0) {
-                        printf("Unresolved symbol %s in file %s\n", it->first.c_str(), sections[i][0].filename.c_str());
+                        //printf("Unresolved symbol %s in file %s\n", it->first.c_str(), sections[i][0].filename.c_str());
                         //dumpLabels();
-                        exit(1);
+                        //exit(1);
                     } else {
 						it->second.position = entry.position;
 						it->second.section = entry.section;
@@ -322,8 +325,14 @@ public:
                         exit(1);
                     } else {
                       //printf("Obj %d uid %d pos %d\n", i, labelUid, entry.position);
-        						  sections[i][cSect].code[j] = entry.position + entry.shift;
-				          	}
+                        if(entry.needImport) {
+                            printf("Unresolved symbol %s in file %s\n", entry.name.c_str(), sections[i][cSect].filename.c_str());
+                            exit(1);
+                            
+                        } else {                
+                             sections[i][cSect].code[j] = entry.position + entry.shift;
+                        }
+		    }
                 }
               }
             }

@@ -66,6 +66,14 @@ typedef char            i8_t;      /* 8 bit signed type */
 typedef short          i16_t;      /* 16 bit signed type */
 typedef long           i32_t;      /* 32 bit signed type */
 
+typedef unsigned char   uint8_t;	   /* 8 bit type */
+typedef unsigned short uint16_t;	   /* 16 bit type */
+typedef unsigned long  uint32_t;	   /* 32 bit type */
+
+typedef char            int8_t;      /* 8 bit signed type */
+typedef short          int16_t;      /* 16 bit signed type */
+typedef long           int32_t;      /* 32 bit signed type */
+
 typedef struct { u32_t _[2]; } u64_t;
 
 /* The following types are needed because MINIX uses K&R style function
