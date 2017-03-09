@@ -341,6 +341,8 @@ int gettok(void) {
 					else
 						n = (n<<4) + d;
 				}
+
+
 				if ((char *)rcp - token <= 2)
 					error("invalid hexadecimal constant `%S'\n", token, (char *)rcp-token);
 				cp = rcp;
@@ -984,7 +986,9 @@ static int backslash(int q) {
 		}
 		if (overflow)
 			warning("overflow in hexadecimal escape sequence\n");
-		return c&ones(8*widechar->size);
+                //hack here
+		// return c&ones(8*widechar->size);
+		return c&ones(16*widechar->size);
 		}
 	case '0': case '1': case '2': case '3':
 	case '4': case '5': case '6': case '7':

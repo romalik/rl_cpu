@@ -996,6 +996,7 @@ void editorRefreshScreen(void) {
             cx++;
         }
     }
+    printf("L5.7\n");
     snprintf(buf,sizeof(buf),"\x1b[%d;%dH",E.cy+1,cx);
     abAppend(&ab,buf,strlen(buf));
     abAppend(&ab,"\x1b[?25h",6); /* Show cursor. */
