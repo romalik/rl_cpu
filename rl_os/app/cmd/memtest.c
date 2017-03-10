@@ -7,8 +7,14 @@ char * p2;
 char * p3;
 char * p4;
 
+extern char __code_end;
+extern char __data_end;
+
 int main(int argc, char ** argv) {
     size_t maxSize = 0xffff;
+    printf("__code_end 0x%04x, __data_end 0x%04x\n", &__code_end, &__data_end);
+
+
     printf("Testing malloc\n");
     p1 = malloc(0x10);
     printf("p1 is 0x%04x\n", p1);

@@ -19,20 +19,41 @@
 
 extern FILE *__IO_list;		/* For fflush at exit */
 
-#ifdef __AS386_16__
-#define Inline_init
-#endif
+/*
+void __real_dputs(char * s) {
+    while(*s) {
+        *(unsigned char *)(0x7fff) = *s;
+        s++;
+    }
+}
+    
+void __dputs(char *s) {
+    __real_dputs("STDIO DEBUG: ");
+    __real_dputs(s);
+    __real_dputs("\n");
 
-#ifdef __AS386_32__
-#define Inline_init
-#endif
-
-#ifndef Inline_init
-#define Inline_init __io_init_vars()
-#endif
+}
+*/
 
 
-#define buferr (stderr->unbuf)	/* Stderr is unbuffered */
+int getc(FILE * stream) {
+//    printf("getc called on fd %d\n", stream->fd);
+    if(stream->bufpos >= stream->bufread) {
+        return fgetc(stream);
+    } else {
+        return (*(stream->bufpos++));
+    }
+}
+
+int putc(int c, FILE * stream) {
+    if(stream->bufpos >= stream->bufwrite) {
+        return fputc(c, stream);
+    } else {
+        return (unsigned char)(*(stream->bufpos++) = c);
+    }
+}
+
+//#define buferr (stderr->unbuf)	/* Stderr is unbuffered */
 
 FILE *__IO_list = 0;		/* For fflush at exit */
 
@@ -42,31 +63,54 @@ static unsigned char bufout[BUFSIZ];
 static unsigned char buferr[BUFSIZ];
 #endif
 
-FILE  stdin[1] =
-{
-   {bufin, bufin, bufin, bufin, bufin + sizeof(bufin),
-    0, _IOFBF | __MODE_READ | __MODE_IOTRAN}
-};
 
-FILE  stdout[1] =
-{
-   {bufout, bufout, bufout, bufout, bufout + sizeof(bufout),
-    1, _IOFBF | __MODE_WRITE | __MODE_IOTRAN}
-};
+FILE stdin_s;
+FILE stdout_s;
+FILE stderr_s;
 
-FILE  stderr[1] =
-{
-   {buferr, buferr, buferr, buferr, buferr + sizeof(buferr),
-    2, _IONBF | __MODE_WRITE | __MODE_IOTRAN}
-};
+
+FILE  *stdin;
+FILE  *stdout;
+FILE  *stderr;
+
+void __stdio_init_stdstreams() {
+    stdin = &stdin_s;
+    stdout = &stdout_s;
+    stderr = &stderr_s;
+
+
+    stdin->bufpos = bufin;
+    stdin->bufread = bufin;
+    stdin->bufwrite = bufin;
+    stdin->bufstart = bufin;
+    stdin->bufend = bufin + BUFSIZ;
+    stdin->fd = 0;
+    stdin->mode = _IONBF | __MODE_READ | __MODE_IOTRAN;
+
+    stdout->bufpos = bufout;
+    stdout->bufread = bufout;
+    stdout->bufwrite = bufout;
+    stdout->bufstart = bufout;
+    stdout->bufend = bufout + BUFSIZ;
+    stdout->fd = 1;
+    stdout->mode = _IOLBF | __MODE_WRITE | __MODE_IOTRAN;
+
+    stderr->bufpos = buferr;
+    stderr->bufread = buferr;
+    stderr->bufwrite = buferr;
+    stderr->bufstart = buferr;
+    stderr->bufend = buferr + BUFSIZ;
+    stderr->fd = 2;
+    stderr->mode = _IOLBF | __MODE_WRITE | __MODE_IOTRAN;
+
+
+}
+
 
 /* Call the stdio initiliser; it's main job it to call atexit */
 
-#ifndef STATIC
-#define STATIC
-#endif
 
-STATIC int
+int
 __stdio_close_all()
 {
    FILE *fp;
@@ -82,16 +126,11 @@ __stdio_close_all()
    }
 }
 
-STATIC void
+void
 __io_init_vars()
 {
-#ifndef __AS386_16__
-#ifndef __AS386_32__
-   static int first_time = 1;
-   if( !first_time ) return ;
-   first_time = 0;
-#endif
-#endif
+    __stdio_init_stdstreams();
+
    if (isatty(1))
       stdout->mode |= _IOLBF;
    atexit(__stdio_close_all);
@@ -103,7 +142,6 @@ int   ch;
 FILE *fp;
 {
    register int v;
-   Inline_init;
 
    /* If last op was a read ... note fflush may change fp->mode and ret OK */
    if ((fp->mode & __MODE_READING) && fflush(fp))
@@ -143,31 +181,45 @@ FILE *fp;
    return (unsigned char) ch;
 }
 
+
 int
 fgetc(fp)
 FILE *fp;
 {
    int   ch;
 
-   if (fp->mode & __MODE_WRITING)
+   //__dputs("in fgetc");
+
+
+   //printf("fp->fd %d fp->bufpos 0x%04x\n", fp->fd, fp->bufpos);
+   if (fp->mode & __MODE_WRITING) {
+        //__dputs("in fgetc flush bc __MODE_WRITING\n");
       fflush(fp);
+   }
 
  try_again:
    /* Can't read or there's been an EOF or error then return EOF */
-   if ((fp->mode & (__MODE_READ | __MODE_EOF | __MODE_ERR)) != __MODE_READ)
+   if ((fp->mode & (__MODE_READ | __MODE_EOF | __MODE_ERR)) != __MODE_READ) {
+      //__dputs("ERR EOF");
       return EOF;
+   }
 
    /* Nothing in the buffer - fill it up */
    if (fp->bufpos >= fp->bufread)
    {
       /* Bind stdin to stdout if it's open and line buffered */
-      if( fp == stdin && stdout->fd >= 0 && (stdout->mode & _IOLBF ))
+      if( fp == stdin && stdout->fd >= 0 && (stdout->mode & _IOLBF )) {
+         //__dputs("in fgetc flush bc stdout\n");
          fflush(stdout);
+      }
 
       fp->bufpos = fp->bufread = fp->bufstart;
-      ch = fread(fp->bufpos, 1, fp->bufend - fp->bufstart, fp);
-      if (ch == 0)
+        //printf("before fread fp->fd %d fp->bufpos 0x%04x\n", fp->fd, fp->bufpos);
+      ch = fread((char *)fp->bufpos, 1, fp->bufend - fp->bufstart, fp);
+      if (ch == 0) {
+         //__dputs("ch==0 EOF");
 	 return EOF;
+      }
       fp->bufread += ch;
       fp->mode |= __MODE_READING;
       fp->mode &= ~__MODE_UNGOT;
@@ -352,17 +404,36 @@ FILE *fp;
 {
    int   len, v;
    unsigned bytes, got = 0;
-   Inline_init;
+        //printf("inside fread fp->fd %d fp->bufpos 0x%04x\n", fp->fd, fp->bufpos);
+
+    //__dputs("in fread");
+
 
    v = fp->mode;
 
    /* Want to do this to bring the file pointer up to date */
-   if (v & __MODE_WRITING)
-      fflush(fp);
+   if (v & __MODE_WRITING) {
+        //__dputs("fread : fflush\n");
+       fflush(fp);
+   }
 
    /* Can't read or there's been an EOF or error then return zero */
-   if ((v & (__MODE_READ | __MODE_EOF | __MODE_ERR)) != __MODE_READ)
-      return 0;
+   if ((v & (__MODE_READ | __MODE_EOF | __MODE_ERR)) != __MODE_READ) {
+        //__dputs("fread err 1");
+
+        //printf("fd %d bufpos %04x bufread %04x bufwrite %04x bufstart %04x bufend %04x bufin 0x%04x\n", fp->fd, fp->bufpos, fp->bufread, fp->bufwrite, fp->bufstart, fp->bufend, bufin);
+
+        //printf("mode : %d\n" , v);
+       /* 
+       if(v & __MODE_EOF) {
+            __dputs("fread err __MODE_EOF");
+        }
+        if(v & __MODE_ERR) {
+            __dputs("fread err __MODE_ERR");
+        }
+        */
+       return 0;
+   }
 
    /* This could be long, doesn't seem much point tho */
    bytes = size * nelm;
@@ -390,8 +461,12 @@ FILE *fp;
       fp->mode |= __MODE_ERR;
       len = 0;
    }
-   else if (len == 0)
-      fp->mode |= __MODE_EOF;
+   else if (len == 0) {
+        //__dputs("fread set EOF");
+       fp->mode |= __MODE_EOF;
+   }
+
+    //__dputs("fread seems ok\n");
 
    return (got + len) / size;
 }

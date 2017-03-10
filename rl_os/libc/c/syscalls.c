@@ -82,17 +82,13 @@ pid_t fork(void) {
     return s.pid;
 }
 int fstat(int fd, struct stat *buf) {
-  puts("fstat stub!");
-  return 0;
-
-/*
-  struct statSyscall s;
-    s.id = __NR_stat;
-    s.filename = name;
+  struct fstatSyscall s;
+    s.id = __NR_fstat;
+    s.fd = fd;
     s.buf = buf;
     syscall(&s);
     return 0;
-    */
+
 }
 
 pid_t getpid() {

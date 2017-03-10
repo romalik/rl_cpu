@@ -576,6 +576,8 @@ FILE *k_open(const void *__name, unsigned int mode) {
         return NULL;
     }
 }
+
+
 int k_stat(const void *name, struct stat * res) {
     fs_node_t nd;
     int rv;

@@ -248,11 +248,15 @@ fatal:
  * escape sequences. */
 int editorReadKey(int fd) {
     int nread;
-    char c, seq[3];
-    while ((nread = read(fd,&c,1)) == 0);
+    int c, seq[3];
+    printf("L9.0 %d\n", fd);
+    while ((nread = read(fd,&c,1)) == 0) {}
+    printf("L9.1\n");
     if (nread == -1) exit(1);
+    printf("L9.2\n");
 
     while(1) {
+        printf("L9.3 %d\n", c);
         switch(c) {
         case ESC:    /* escape sequence */
             /* If this is just an ESC, we'll timeout here. */
@@ -894,7 +898,7 @@ void editorRefreshScreen(void) {
         if (filerow >= E.numrows) {
             if (E.numrows == 0 && y == E.screenrows/3) {
                 char welcome[80];
-                int welcomelen = snprintf(welcome,sizeof(welcome),
+                int welcomelen = sprintf(welcome,
                     "Kilo editor -- verison %s\x1b[0K\r\n", KILO_VERSION);
                 int padding = (E.screencols-welcomelen)/2;
                 printf("L5.3\n");
@@ -940,7 +944,7 @@ void editorRefreshScreen(void) {
                     int color = current_color;//editorSyntaxToColor(hl[j]);
                     if (color != current_color) {
                         char buf[16];
-                        int clen = snprintf(buf,sizeof(buf),"\x1b[%dm",color);
+                        int clen = sprintf(buf,"\x1b[%dm",color);
                         current_color = color;
                         abAppend(&ab,buf,clen);
                     }
@@ -958,16 +962,16 @@ void editorRefreshScreen(void) {
     abAppend(&ab,"\x1b[0K",4);
     abAppend(&ab,"\x1b[7m",4);
     printf("After this?..\n");
-    len = 0;//snprintf(status, sizeof(status), "%.20s - %d lines %s",
-        //E.filename, E.numrows, E.dirty ? "(modified)" : "");
+    len = sprintf(status, "%.20s - %d lines %s",
+        E.filename, E.numrows, E.dirty ? "(modified)" : "");
     printf("1");
-    rlen = 0;//snprintf(rstatus, sizeof(rstatus),
-        //"%d/%d",E.rowoff+E.cy+1,E.numrows);
+    rlen = sprintf(rstatus,
+        "%d/%d",E.rowoff+E.cy+1,E.numrows);
     printf("2 no\n");
     if (len > E.screencols) len = E.screencols;
     abAppend(&ab,status,len);
-    printf("L5.6\n");
-    while(len < E.screencols) {
+    printf("L5.6 %d\n", E.screencols);
+    while( 0 && len < E.screencols) {
         if (E.screencols - len == rlen) {
             abAppend(&ab,rstatus,rlen);
             break;
@@ -977,12 +981,14 @@ void editorRefreshScreen(void) {
         }
     }
     abAppend(&ab,"\x1b[0m\r\n",6);
+    printf("L5.7\n");
 
     /* Second row depends on E.statusmsg and the status message update time. */
     abAppend(&ab,"\x1b[0K",4);
     msglen = strlen(E.statusmsg);
     if (msglen && time(NULL)-E.statusmsg_time < 5)
         abAppend(&ab,E.statusmsg,msglen <= E.screencols ? msglen : E.screencols);
+    printf("L5.8\n");
 
     /* Put cursor at its current position. Note that the horizontal position
      * at which the cursor is displayed may be different compared to 'E.cx'
@@ -990,18 +996,20 @@ void editorRefreshScreen(void) {
     cx = 1;
     filerow = E.rowoff+E.cy;
     row = (filerow >= E.numrows) ? NULL : &E.row[filerow];
+    printf("L5.9\n");
     if (row) {
         for (j = E.coloff; j < (E.cx+E.coloff); j++) {
             if (j < row->size && row->chars[j] == TAB) cx += 7-((cx)%8);
             cx++;
         }
     }
-    printf("L5.7\n");
-    snprintf(buf,sizeof(buf),"\x1b[%d;%dH",E.cy+1,cx);
+    printf("L5.10\n");
+    sprintf(buf,"\x1b[%d;%dH",E.cy+1,cx);
     abAppend(&ab,buf,strlen(buf));
     abAppend(&ab,"\x1b[?25h",6); /* Show cursor. */
     write(STDOUT_FILENO,ab.b,ab.len);
     abFree(&ab);
+    printf("L5.11\n");
 }
 
 /* Set an editor status message for the second line of the status, at the
@@ -1009,7 +1017,7 @@ void editorRefreshScreen(void) {
 void editorSetStatusMessage(const char *fmt, ...) {
     va_list ap;
     va_start(ap,fmt);
-    vsnprintf(E.statusmsg,sizeof(E.statusmsg),fmt,ap);
+    sprintf(E.statusmsg,fmt,ap);
     va_end(ap);
     E.statusmsg_time = time(NULL);
 }
@@ -1195,8 +1203,10 @@ void editorProcessKeypress(int fd) {
     /* When the file is modified, requires Ctrl-q to be pressed N times
      * before actually quitting. */
     static int quit_times = KILO_QUIT_TIMES;
-
-    int c = editorReadKey(fd);
+    int c;
+    printf("L8.0\n");
+    c = editorReadKey(fd);
+    printf("L8.1\n");
     switch(c) {
     case ENTER:         /* Enter */
         editorInsertNewline();
@@ -1256,6 +1266,7 @@ void editorProcessKeypress(int fd) {
         editorInsertChar(c);
         break;
     }
+    printf("L8.2\n");
 
     quit_times = KILO_QUIT_TIMES; /* Reset it to the original value. */
 }
@@ -1304,6 +1315,8 @@ int main(int argc, char **argv) {
         editorRefreshScreen();
         printf("L6\n");
         editorProcessKeypress(STDIN_FILENO);
+        printf("L7\n");
+
     }
     return 0;
 }

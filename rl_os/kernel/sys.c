@@ -56,7 +56,10 @@ void system_interrupt(void *p, struct IntFrame *fr) {
     } else if (scall_id == __NR_stat) {
         struct statSyscall *s = (struct statSyscall *)p;
         k_stat(s->filename, s->buf);
-        //printf("KERNEL: stat %s\n", s->filename);
+        return;
+    } else if (scall_id == __NR_fstat) {
+        struct fstatSyscall *s = (struct fstatSyscall *)p;
+        fs_stat(&(cProc->openFiles[s->fd]->node), s->buf);
         return;
     } else if (scall_id == __NR_open) {
         int fd;

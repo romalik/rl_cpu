@@ -160,6 +160,12 @@ struct statSyscall {
     void * buf;
 };
 
+struct fstatSyscall {
+    unsigned int id;
+    int fd;
+    void * buf;
+};
+
 
 struct dupSyscall {
   unsigned int id;

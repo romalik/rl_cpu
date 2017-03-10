@@ -59,12 +59,14 @@ int kernel_main() {
     } else {
         struct Process * initP;
         unsigned int b;
+        unsigned int c;
         int initPid = 0;
         mm_allocSegment(&b);
+        mm_allocSegment(&c);
         printf("Loading init\n");
 
         initPid = sched_genPid();
-        initP = sched_add_proc(initPid, b, b, 0);
+        initP = sched_add_proc(initPid, b, c, 0);
 
         if(do_exec(initP, INIT_PATH, NULL, NULL)) {
             printf("Failed to exec init!\n");

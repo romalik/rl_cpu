@@ -61,28 +61,14 @@ struct __stdio_file {
 
 typedef struct __stdio_file FILE;
 
-#ifdef __AS386_16__
 #define BUFSIZ	(256)
-#else
-#define BUFSIZ	(2048)
-#endif
 
-extern FILE stdin[1];
-extern FILE stdout[1];
-extern FILE stderr[1];
+extern FILE *stdin;
+extern FILE *stdout;
+extern FILE *stderr;
 
-#ifdef __MSDOS__
-#define putc(c, fp) fputc(c, fp)
-#define getc(fp) fgetc(fp)
-#else
-#define putc(c, stream)	\
-    (((stream)->bufpos >= (stream)->bufwrite) ? fputc((c), (stream))	\
-                          : (unsigned char) (*(stream)->bufpos++ = (c))	)
-
-#define getc(stream)	\
-  (((stream)->bufpos >= (stream)->bufread) ? fgetc(stream):		\
-    (*(stream)->bufpos++))
-#endif
+extern int getc(FILE * stream);
+extern int putc(int c, FILE * stream);
 
 #define putchar(c) putc((c), stdout)
 #define getchar() getc(stdin)
@@ -124,6 +110,9 @@ extern int puts (char*);
 extern int printf  (const char*, ...);
 extern int fprintf  (FILE*, const char*, ...);
 extern int sprintf  (char*, const char*, ...);
+
+int fread(char * buf, int size, int nelm, FILE * fp);
+int fwrite(char * buf, int size, int nelm, FILE * fp);
 
 #define stdio_pending(fp) ((fp)->bufread>(fp)->bufpos)
 

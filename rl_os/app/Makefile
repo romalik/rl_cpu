@@ -14,7 +14,7 @@ all: $(BINS)
 	cp $(BINS) ../rootfs/bin
 # To obtain object files
 %: %.c
-	$(CC) -Wl"-text" -Wl"0x8000" -Wl"-mode" -Wl"0"  -Wl"-data" -Wl"0x8000" $(CC_FLAGS) $(LIBS) $< -o $@
+	$(CC) -Wl"-text" -Wl"0x8000" -Wl"-mode" -Wl"1"  -Wl"-data" -Wl"0x8000" $(CC_FLAGS) $(LIBS) $< -o $@
 
 # To remove generated files
 clean:

@@ -9,7 +9,7 @@
 
 #define TIMESLICE 5
 
-#define STACK_PLACEMENT 0xf000
+#define STACK_PLACEMENT 0xe000
 
 unsigned int argvBuffer[ARGV_BUFFER_SIZE];
 unsigned int sched_stack[SCHED_STACK_SIZE];

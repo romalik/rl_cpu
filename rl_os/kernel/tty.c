@@ -1,7 +1,9 @@
 #include <tty.h>
 
+
 unsigned int tty_read(unsigned int minor, unsigned int * buf, size_t n) {
-  int to_read = n;
+  int to_read = 1;//n;
+  int got = 0;
   while(to_read) {
     int c;
     while ((c = UART) == 0) {
@@ -9,8 +11,9 @@ unsigned int tty_read(unsigned int minor, unsigned int * buf, size_t n) {
     *buf = c;
     buf++;
     to_read--;
+    got++;
   }
-    return n;
+    return got;
 }
 
 unsigned int tty_write(unsigned int minor, const unsigned int * buf, size_t n) {
