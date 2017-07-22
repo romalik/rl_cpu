@@ -45,13 +45,129 @@ rstore
 ret
 
 
+;// long a = 0x12345678
+;// *(int *)&a == 0x5678
+;// *((int *)&a+1) == 0x1234
+;unsigned long shl2(unsigned long a, unsigned int n) {
+;  unsigned int * rl = (unsigned int *)&a;
+;  unsigned int * rh = ((unsigned int *)&a)+1;
+;
+;  unsigned int carry;
+;  while(n) {
+;        carry = 0;
+;        if((*rl)&0x8000) carry = 1;
+;
+;        *rl = (*rl) << 1;
+;        *rh = ((*rh) << 1) + carry;
+;        n--;
+;  }
+;  return a;
+;}
+;
+;unsigned long shr2(unsigned long a, unsigned int n) {
+;  unsigned int * rl = (unsigned int *)&a;
+;  unsigned int * rh = ((unsigned int *)&a)+1;
+;
+;  unsigned int carry;
+;  while(n) {
+;        carry = 0;
+;        if((*rh)&0x0001) carry = 0x8000;
+;
+;        *rl = ((*rl) >> 1) + carry;
+;        *rh = ((*rh) >> 1);
+;        n--;
+;  }
+;  return a;
+;}
+;
+;
+;
+;unsigned long mul2(unsigned long a, unsigned long b) {
+;  unsigned long res = 0;
+;  while(b) {
+;    if(b&0x0001) {
+;      res += a;
+;    }
+;    a = shl2(a,1);
+;    b = shr2(b,1);
+;  }
+;  return res;
+;}
+
+
+
+
+
 .code
 .export __builtin_MULU2
 .export __builtin_MULI2
 .label __builtin_MULU2
 .label __builtin_MULI2
 
-ret
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
+alloc_b 3
+addrl_b 0
+cnst_b 0
+cnst_b 0
+store2 
+jump_w $18
+.label $17
+addrl_b -5
+indir2 
+cnst_b 1
+cnst_b 0
+band2 
+cnst_b 0
+cnst_b 0
+call0_w __builtin_cmp_EQU2 $20
+discard_b 3
+cnst_b 0
+nop 
+ne_w $20
+addrl_b 0
+addrl_b 0
+indir2 
+addrl_b -7
+indir2 
+add2 
+store2 
+.label $20
+addrl_b 2
+cnst_b 1
+store 
+addrl_b -7
+addrl_b -7
+indir2 
+iaddrl_b 2
+call0_w __builtin_LSHU2
+discard_b 1
+store2 
+addrl_b -5
+addrl_b -5
+indir2 
+iaddrl_b 2
+call0_w __builtin_RSHU2
+discard_b 1
+store2 
+.label $18
+addrl_b -5
+indir2 
+cnst_b 0
+cnst_b 0
+call0_w __builtin_cmp_NEU2 $17
+discard_b 3
+cnst_b 0
+nop 
+ne_w $17
+addrl_b 0
+indir2 
+addrl_b -7
+rstore2 
+ret 
+
 
 
 
@@ -84,8 +200,60 @@ ret
 .export __builtin_LSHU2
 .label __builtin_LSHI2
 .label __builtin_LSHU2
+; Al bp-6 <- ret
+; Ah bp-5
+; n  bp-4
 
-ret
+alloc_b 5
+addrl_b 0
+addrl_b -6
+store 
+addrl_b 2
+addrl_b -5
+store 
+jump_w $5
+.label $4
+addrl_b 1
+cnst_b 0
+store 
+iaddrl_b 0
+indir 
+cnst_b 0
+cnst_w 32768
+cnst_b 0
+band2 
+cnst_b 0
+cnst_b 0
+call0_w __builtin_cmp_EQI2 $7
+discard_b 3
+cnst_b 0
+nop 
+ne_w $7
+addrl_b 1
+cnst_b 1
+store 
+.label $7
+iaddrl_b 0
+iaddrl_b 0
+indir 
+lsh 
+store 
+iaddrl_b 2
+iaddrl_b 2
+indir 
+lsh 
+iaddrl_b 1
+add 
+store 
+addrl_b -4
+iaddrl_b -4
+sub_b 1
+store 
+.label $5
+iaddrl_b -4
+cnst_b 0
+ne_w $4
+ret 
 
 
 
@@ -117,8 +285,54 @@ ret
 .label __builtin_RSHI2
 .label __builtin_RSHU2
 
-
-ret
+; Al bp-6 <- ret
+; Ah bp-5
+; n  bp-4
+alloc_b 6
+addrl_b 2
+addrl_b -6
+store 
+addrl_b 0
+addrl_b -5
+store 
+jump_w $12
+.label $11
+addrl_b 3
+cnst_b 0
+store 
+addrl_b 1
+iaddrl_b 3
+store 
+iaddrl_b 0
+indir 
+band_b 1
+iaddrl_b 3
+eq_w $14
+addrl_b 1
+cnst_w 32768
+store 
+.label $14
+iaddrl_b 2
+iaddrl_b 2
+indir 
+rsh 
+iaddrl_b 1
+add 
+store 
+iaddrl_b 0
+iaddrl_b 0
+indir 
+rsh 
+store 
+addrl_b -4
+iaddrl_b -4
+sub_b 1
+store 
+.label $12
+iaddrl_b -4
+cnst_b 0
+ne_w $11
+ret 
 
 
 

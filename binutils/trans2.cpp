@@ -338,7 +338,7 @@ void parseOp(std::string line) {
                 val--;
             }
         } else {
-            genBuiltin(line, opSize);
+            genBuiltin(line, 1/*opSize*/); //2nd arg always one word
         }
     } else if(op == "RSH") {
         if((opSize == 1) && (output.back().name == rc_cnst)) {
@@ -349,7 +349,7 @@ void parseOp(std::string line) {
                 val--;
             }
         } else {
-            genBuiltin(line, opSize);
+            genBuiltin(line, 1/*opSize*/); //2nd arg always one word
         }
     } else if(op == "ASGN") {
         if(opType == 'B') {
