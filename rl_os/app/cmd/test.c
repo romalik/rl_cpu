@@ -32,87 +32,53 @@ void printLong(unsigned long a) {
 }
 
 
+unsigned long divide(unsigned long dividend, unsigned long divisor) {
 
-unsigned long mul2(unsigned long a, unsigned long b) {
-  unsigned long res = 0;
-  while(b) {
-    if(b&0x0001) {
-      res += a;
+    unsigned long denom=divisor;
+    unsigned long current = 1;
+    unsigned long answer=0;
+
+    if ( denom > dividend)
+        return 0;
+
+    if ( denom == dividend)
+        return 1;
+
+    while (denom <= dividend) {
+        denom <<= 1;
+        current <<= 1;
     }
-    a = a << 1;
-    b = b >> 1;
-  }
-  return res;
+
+    denom >>= 1;
+    current >>= 1;
+
+    while (current!=0) {
+        if ( dividend >= denom) {
+            dividend -= denom;
+            answer |= current;
+        }
+        current >>= 1;
+        denom >>= 1;
+    }
+    return answer;
+}
+
+unsigned long mod(unsigned long a, unsigned long b) {
+  return a - (a/b)*b; //awful
 }
 
 int main(int argc, char **argv) {
 
-  //  int a = 0;
-  //  int b = 0;
     unsigned long al = 0;
     unsigned long bl = 0;
     unsigned long res = 0;
-/*
-    char buf[100];
+    int q,r;
+    al = 143567;
 
-    int mode;
-
-    mode = _IONBF | __MODE_READ | __MODE_IOTRAN;
-
-    printf("Mode : %d\n", mode);
-
-    printf("This is a test for printf\n");
-    printf("This is a test for printf\n");
-    printf("This is a test for printf\n");
-    printf("This is a test for printf\n");
-    printf("This is a test for printf\n");
-    
-    printf("sprintf test\n");
-    sprintf(buf, "%s %d %d\n", "string 12 23", 12, 23);
-    printf("s: %s\n", buf);
-    asm("nop");
-
-    
-
-    printf("fprintf test\n");
-    fprintf(stdout, "%s %d %d\n", "string 12 23", 12, 23);
-
-    printf("test 1 2 3: %d %d %d ", 1, 2, 3);
-    printf("\n");
-
-    printf("test 12345: %d ", 12345);
-    //puts(ltostr(12345,10));
-    printf("\n");
-
-    printf("long multiplication test\n");
-*/
-
-    al = 0xfffe;
-    while(al < 0x0001000c) {
-      printLong(al);
-      al++;
-    }
-
-    al = 0x12345678;
-    bl = 0x90ABCDEF;
-
-    //res = al*bl;
-
-
-
-    printf("al ");
+    printf("gonna try to print 143567\nprintLong: ");
     printLong(al);
-    res = al << 1;
-    printLong(res);
-
-    res = al >> 1;
-    printLong(res);
-
-    res = al * 0x1234;//mul2(al,0x1234);
-    printLong(res);
-
-//    printf("12345*34567 = 426729615 hex 0x%08X [should be 196F608F] high 0x%04X low 0x%04X\n", res, (res >> 16), (res & 0xffff));
-
+    printf("printf as %%lx : 0x%08lx\n", al);
+    printf("printf as lu %lu\n", al);
 
 
     return 0;

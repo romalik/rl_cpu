@@ -7,7 +7,7 @@
 #define SCHED_STACK_SIZE 512
 
 
-#define TIMESLICE 5
+#define TIMESLICE 25
 
 #define STACK_PLACEMENT 0xe000
 

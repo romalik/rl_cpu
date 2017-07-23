@@ -395,21 +395,230 @@ rstore
 ret
 
 
+
+;unsigned long divide(unsigned long dividend, unsigned long divisor) {
+;
+;    unsigned long denom=divisor;
+;    unsigned long current = 1;
+;    unsigned long answer=0;
+;
+;    if ( denom > dividend)
+;        return 0;
+;
+;    if ( denom == dividend)
+;        return 1;
+;
+;    while (denom <= dividend) {
+;        denom <<= 1;
+;        current <<= 1;
+;    }
+;
+;    denom >>= 1;
+;    current >>= 1;
+;
+;    while (current!=0) {
+;        if ( dividend >= denom) {
+;            dividend -= denom;
+;            answer |= current;
+;        }
+;        current >>= 1;
+;        denom >>= 1;
+;    }
+;    return answer;
+;}
+;
+;unsigned long mod(unsigned long a, unsigned long b) {
+;  return a - divide(a,b)*b; //awful
+;}
+
 .code
 .export __builtin_DIVU2
 .export __builtin_DIVI2
 .label __builtin_DIVU2
 .label __builtin_DIVI2
+; Al bp-7 <----result here
+; Ah bp-6
+; Bl bp-5
+; Bh bp-4
 
-ret
+alloc_b 8
+addrl_b 0
+addrl_b -5
+indir2 
+store2
+addrl_b 2
+cnst_b 1
+cnst_b 0
+store2 
+addrl_b 4
+cnst_b 0
+cnst_b 0
+store2 
+addrl_b 0
+indir2 
+addrl_b -7
+indir2 
+call0_w __builtin_cmp_LEU2 $2_d2
+discard_b 3
+cnst_b 0
+nop 
+ne_w $2_d2
+cnst_b 0
+cnst_b 0
+addrl_b -7
+rstore2 
+ret 
+.label $2_d2
+addrl_b 0
+indir2 
+addrl_b -7
+indir2 
+call0_w __builtin_cmp_NEU2 $7_d2
+discard_b 3
+cnst_b 0
+nop 
+ne_w $7_d2
+cnst_b 1
+cnst_b 0
+addrl_b -7
+rstore2 
+ret 
+.label $6_d2
+addrl_b 6
+cnst_b 1
+store 
+addrl_b 0
+addrl_b 0
+indir2 
+iaddrl_b 6
+call0_w __builtin_LSHU2
+discard_b 1
+store2 
+addrl_b 2
+addrl_b 2
+indir2 
+iaddrl_b 6
+call0_w __builtin_LSHU2
+discard_b 1
+store2 
+.label $7_d2
+addrl_b 0
+indir2 
+addrl_b -7
+indir2 
+call0_w __builtin_cmp_LEU2 $6_d2
+discard_b 3
+cnst_b 0
+nop 
+ne_w $6_d2
+addrl_b 6
+cnst_b 1
+store 
+addrl_b 0
+addrl_b 0
+indir2 
+iaddrl_b 6
+call0_w __builtin_RSHU2
+discard_b 1
+store2 
+addrl_b 2
+addrl_b 2
+indir2 
+iaddrl_b 6
+call0_w __builtin_RSHU2
+discard_b 1
+store2 
+jump_w $10_d2
+.label $9_d2
+addrl_b -7
+indir2 
+addrl_b 0
+indir2 
+call0_w __builtin_cmp_LTU2 $12_d2
+discard_b 3
+cnst_b 0
+nop 
+ne_w $12_d2
+addrl_b -7
+addrl_b -7
+indir2 
+addrl_b 0
+indir2 
+sub2 
+store2 
+addrl_b 4
+addrl_b 4
+indir2 
+addrl_b 2
+indir2 
+bor2 
+store2 
+.label $12_d2
+addrl_b 7
+cnst_b 1
+store 
+addrl_b 2
+addrl_b 2
+indir2 
+iaddrl_b 7
+call0_w __builtin_RSHU2
+discard_b 1
+store2 
+addrl_b 0
+addrl_b 0
+indir2 
+iaddrl_b 7
+call0_w __builtin_RSHU2
+discard_b 1
+store2 
+.label $10_d2
+addrl_b 2
+indir2 
+cnst_b 0
+cnst_b 0
+call0_w __builtin_cmp_NEU2 $9_d2
+discard_b 3
+cnst_b 0
+nop 
+ne_w $9_d2
+addrl_b 4
+indir2 
+addrl_b -7
+rstore2 
+ret 
 
 .code
 .export __builtin_MODU2
 .export __builtin_MODI2
 .label __builtin_MODU2
 .label __builtin_MODI2
+alloc_b 4
+addrl_b 0
+addrl_b -7
+indir2 
+store2 
+addrl_b 2
+addrl_b -5
+indir2 
+store2 
+addrl_b 0
+indir2 
+addrl_b 0
+indir2 
+addrl_b 2
+indir2 
+call0_w __builtin_DIVU2
+discard_b 2
+addrl_b 2
+indir2 
+call0_w __builtin_MULU2
+discard_b 2
+sub2 
+addrl_b -7
+rstore2 
+ret 
 
-ret
+
 
 ;;unsigned comparison
 

@@ -107,6 +107,7 @@ void put_file(char *name) {
           }
         }
         image[nodeAddr + 1] = fileSize;
+        image[nodeAddr + 2] = fileSize>>16;
 
         dirEntryIdx++;
     }

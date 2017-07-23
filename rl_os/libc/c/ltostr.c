@@ -12,7 +12,7 @@ char * ultostr(unsigned long val_, int radix)
 {
    register char *p;
    register int c;
-    unsigned int val = val_;
+    unsigned long val = val_;
 
    if( radix > 36 || radix < 2 ) return 0;
 
@@ -34,7 +34,7 @@ char * ltostr(long val_, int radix)
 
    char *p;
    int flg = 0;
-   int val = val_;
+   long val = val_;
    if( val < 0 ) { flg++; val= -val; }
    p = ultostr(val, radix);
    if(p && flg) *--p = '-';
