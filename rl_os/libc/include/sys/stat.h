@@ -46,7 +46,7 @@ struct stat {
         unsigned int   st_uid;     /* owner id */
         unsigned int   st_gid;     /* owner group */
         unsigned int   st_rdev;    /* */
-        unsigned int   st_size;    /* file size */
+        off_t   st_size;    /* file size */
         unsigned long   st_atime;   /* last access time */
         unsigned long   st_mtime;   /* last modification time */
         unsigned long   st_ctime;   /* file creation time */

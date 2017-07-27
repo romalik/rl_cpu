@@ -275,11 +275,19 @@ int write(int fd, const void *buf, int count) {
     return s.size;
 }
 
+int unlink(const char *path){
+  struct unlinkSyscall s;
+  s.id = __NR_unlink;
+  s.path = path;
+
+  syscall(&s);
+  return s.res;
+}
+
 
 
  int mknod(const char *path, mode_t mode, dev_t dev) { return 0; }
  int link(const char *path, const char *path2){ return 0; }
- int unlink(const char *path){ return 0; }
  int sync(void){ return 0; }
  int chmod(const char *path, mode_t mode){ return 0; }
  int chown(const char *path, uid_t owner, gid_t group){ return 0; }

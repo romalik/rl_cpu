@@ -139,6 +139,10 @@ int main(int argc, char **argv) {
     image[34*256 + 8] = 40;
     image[34*256 + 9] = 41;
     image[34*256 + 10] = 42;
+    image[34*256 + 11] = 43;
+    image[34*256 + 12] = 44;
+    image[34*256 + 13] = 45;
+    image[34*256 + 14] = 46;
 
 
     image[dirEntryIdx * 32 + 35*256] = '.';
@@ -174,7 +178,7 @@ int main(int argc, char **argv) {
     image[34*256 + 1] = rootEntrySz;//(rootEntrySz >> 8) | ((rootEntrySz &0xff) << 8);
 
 
-    for(int i = 256; i<269; i++) {
+    for(int i = 256; i<290; i++) {
       image[i] = 0xffff;
     }
 

@@ -101,7 +101,7 @@
  *    Link
  *    rwxrwxrwx
  */
-
+#define DIRECT_INDEXES_CNT 150
 /* File/dir node:
  *  Flags
  *  SizeL(16)
@@ -191,7 +191,7 @@ struct stat {
             unsigned int   st_uid;     /* owner id */
             unsigned int   st_gid;     /* owner group */
             unsigned int   st_rdev;    /* */
-            unsigned int   st_size;    /* file size */
+            off_t   st_size;    /* file size */
             unsigned int   st_atime;   /* last access time */
             unsigned int   st_mtime;   /* last modification time */
             unsigned int   st_ctime;   /* file creation time */
@@ -218,6 +218,8 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
 
 FILE *fs_open(fs_node_t *node, unsigned int mode);
 
+void fs_reset(fs_node_t *node);
+
 size_t k_write(FILE *fd, const unsigned int *buf, size_t size);
 size_t k_read(FILE *fd, unsigned int *buf, size_t size);
 
@@ -238,5 +240,7 @@ int k_mkdir(const void *__path);
 int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor);
 
 int k_regDevice(unsigned int major, void *writeFunc, void *readFunc);
+
+int k_unlink(const char * name);
 
 #endif

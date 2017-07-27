@@ -108,6 +108,18 @@ struct chdirSyscall {
     int res;
 };
 
+struct unlinkSyscall {
+    unsigned int id;
+    const char *path;
+    int res;
+};
+
+struct rmdirSyscall {
+    unsigned int id;
+    const char *path;
+    int res;
+};
+
 
 struct mkdirSyscall {
     unsigned int id;

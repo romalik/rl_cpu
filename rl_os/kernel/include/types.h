@@ -10,7 +10,7 @@ typedef char int8_t;
 
 typedef unsigned int size_t;
 
-typedef unsigned int off_t;
+typedef unsigned long off_t;
 typedef unsigned int blk_t;
 
 typedef int16_t pid_t;

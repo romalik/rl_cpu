@@ -16,8 +16,8 @@ typedef uint16_t uintptr_t;
 
 
 
-typedef unsigned int fpos_t;
-typedef unsigned int off_t;
+typedef unsigned long fpos_t;
+typedef unsigned long off_t;
 typedef unsigned int blk_t;
 typedef uint16_t mode_t;
 typedef int16_t pid_t;

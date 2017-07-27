@@ -10,8 +10,10 @@ app/cmd/memtest.c
 app/cmd/mkdir.c
 app/cmd/mt_test.c
 app/cmd/ps.c
+app/cmd/rm.c
 app/cmd/sh.c
 app/cmd/ssh.c
+app/cmd/tar.c
 app/cmd/test.c
 app/cmd/text2wide.c
 app/cmd/xv6sh.c

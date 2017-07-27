@@ -83,7 +83,6 @@ struct killSyscall {
     int sig;
 };
 
-
 struct writeSyscall {
     unsigned int id;
     int fd;
@@ -110,6 +109,20 @@ struct mkdirSyscall {
     const char *path;
     int res;
 };
+
+struct unlinkSyscall {
+    unsigned int id;
+    const char *path;
+    int res;
+};
+
+
+struct rmdirSyscall {
+    unsigned int id;
+    const char *path;
+    int res;
+};
+
 
 
 

@@ -53,6 +53,16 @@ void system_interrupt(void *p, struct IntFrame *fr) {
             s->res = -1;
         }
         return;
+    } else if (scall_id == __NR_unlink) {
+        struct unlinkSyscall *s = (struct unlinkSyscall *)p;
+        struct stat st;
+        k_stat(s->path, &st);
+        if (S_ISDIR(st.st_mode)) {
+            s->res = -1;
+        } else {
+            s->res = k_unlink(s->path);
+        }
+        return;
     } else if (scall_id == __NR_stat) {
         struct statSyscall *s = (struct statSyscall *)p;
         k_stat(s->filename, s->buf);

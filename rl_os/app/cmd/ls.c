@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
             void * n = res->d_name;
             struct dirent * r = res;
             stat(res->d_name, &st);
-            printf("%s\t%05u\t%05u\t -\t", (S_ISREG(st.st_mode)?"REG":(S_ISDIR(st.st_mode)?"DIR":(S_ISCHR(st.st_mode)?"CHR":"???"))), st.st_ino, st.st_size);
+            printf("%s\t%05u\t%10lu\t -\t", (S_ISREG(st.st_mode)?"REG":(S_ISDIR(st.st_mode)?"DIR":(S_ISCHR(st.st_mode)?"CHR":"???"))), st.st_ino, st.st_size);
 
         } 
         printf("%s\n", res->d_name);
