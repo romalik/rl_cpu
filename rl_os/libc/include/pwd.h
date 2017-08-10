@@ -14,21 +14,21 @@ struct passwd {
 	char	*pw_shell;	/* Shell program */
 };
 
-extern void setpwent(void);
-extern void endpwent(void);
-extern struct passwd *getpwent(void);
+void setpwent(void);
+void endpwent(void);
+struct passwd *getpwent(void);
 
-extern int putpwent(const struct passwd *__p, FILE *__f);
-extern int getpw(uid_t uid, char *buf);
+int putpwent(const struct passwd *__p, FILE *__f);
+int getpw(uid_t uid, char *buf);
 
-extern struct passwd *fgetpwent(FILE *__file);
+struct passwd *fgetpwent(FILE *__file);
 
-extern struct passwd *getpwuid(uid_t __uid);
-extern struct passwd *getpwnam(const char *__name);
+struct passwd *getpwuid(uid_t __uid);
+struct passwd *getpwnam(const char *__name);
 
-extern struct passwd * __getpwent(int __passwd_fd);
+struct passwd * __getpwent(int __passwd_fd);
 
 //WTF?
-//extern char *_path_passwd;
+//char *_path_passwd;
 
 #endif /* pwd.h  */

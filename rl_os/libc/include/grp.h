@@ -14,19 +14,19 @@ struct group {
 	char	**gr_mem;	/* Member list. */
 };
 
-extern void setgrent(void);
-extern void endgrent(void);
-extern struct group *getgrent(void);
+void setgrent(void);
+void endgrent(void);
+struct group *getgrent(void);
 
-extern struct group *getgrgid(const gid_t __gid);
-extern struct group *getgrnam(const char *__name);
+struct group *getgrgid(const gid_t __gid);
+struct group *getgrnam(const char *__name);
 
-extern struct group *fgetgrent(FILE *__file);
+struct group *fgetgrent(FILE *__file);
 
-extern int initgroups(const char *__user, gid_t __gid);
+int initgroups(const char *__user, gid_t __gid);
 
-extern struct group * __getgrent(int __grp_fd);
+struct group * __getgrent(int __grp_fd);
 
-//extern char *_path_group;
+//char *_path_group;
 
 #endif /* _GRP_H */

@@ -75,10 +75,10 @@ extern const char *sys_siglist[];
 //extern void sigignore(int __sig);
 //extern sighandler_t sigset(int __sig, sighandler_t __disp);
 
-extern int raise(int __sig);
+int raise(int __sig);
 
 typedef int sig_atomic_t;
 
-extern sighandler_t signal(int signum, sighandler_t sighandler);
+sighandler_t signal(int signum, sighandler_t sighandler);
 
 #endif

@@ -44,15 +44,15 @@ struct __dirent {
         char            d_name[31];
         ino_t           d_ino;
 };
-extern DIR *opendir(char *__name);
-extern DIR *opendir_r(DIR *__dirp, char *__name);
-extern int closedir(DIR *__dirp);
-extern int closedir_r(DIR *__dirp);
-extern struct dirent *readdir(DIR *__dirp);
-extern void rewinddir(DIR *__dirp);
+DIR *opendir(char *__name);
+DIR *opendir_r(DIR *__dirp, char *__name);
+int closedir(DIR *__dirp);
+int closedir_r(DIR *__dirp);
+struct dirent *readdir(DIR *__dirp);
+void rewinddir(DIR *__dirp);
 
-extern void seekdir(DIR *__dirp, off_t __pos);
-extern off_t telldir(DIR *__dirp);
+void seekdir(DIR *__dirp, off_t __pos);
+off_t telldir(DIR *__dirp);
 
 /* Scan the directory DIR, calling SELECT on each directory entry.
  *    Entries for which SELECT returns nonzero are individually malloc'd,
@@ -61,7 +61,7 @@ extern off_t telldir(DIR *__dirp);
  *           */
 
 /*
-extern int scandir(char *__dir,
+int scandir(char *__dir,
                    struct dirent ***__namelist,
                    __dir_select_fn_t __select,
                    __dir_compar_fn_t __compar);

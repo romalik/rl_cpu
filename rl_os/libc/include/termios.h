@@ -142,20 +142,20 @@ struct termios {
 #define TIOCOSTOP	8
 #define TIOCOSTART	9
 
-extern speed_t cfgetispeed(const struct termios *__termios_p);
-extern speed_t cfgetospeed(const struct termios *__termios_p);
-extern int cfsetispeed(struct termios *__termios_p, speed_t __speed);
-extern int cfsetospeed(struct termios *__termios_p, speed_t __speed);
+speed_t cfgetispeed(const struct termios *__termios_p);
+speed_t cfgetospeed(const struct termios *__termios_p);
+int cfsetispeed(struct termios *__termios_p, speed_t __speed);
+int cfsetospeed(struct termios *__termios_p, speed_t __speed);
 
-extern void cfmakeraw (struct termios *__t);
+void cfmakeraw (struct termios *__t);
 
-extern int tcsetattr(int __fd, int __opt, const struct termios *__termios_p);
-extern int tcgetattr(int __fildes, struct termios *__termios_p);
-extern int tcdrain(int __fildes);
-extern int tcflow(int __fildes, int __action);
-extern int tcflush(int __fildes, int __queue_selector);
-//extern int tcsendbreak(int __fildes, int __duration);
-//extern int tcgetpgrp(int __fildes);
-//extern int tcsetpgrp(int __fildes, int __pgrp_id);
+int tcsetattr(int __fd, int __opt, const struct termios *__termios_p);
+int tcgetattr(int __fildes, struct termios *__termios_p);
+int tcdrain(int __fildes);
+int tcflow(int __fildes, int __action);
+int tcflush(int __fildes, int __queue_selector);
+//int tcsendbreak(int __fildes, int __duration);
+//int tcgetpgrp(int __fildes);
+//int tcsetpgrp(int __fildes, int __pgrp_id);
 
 #endif

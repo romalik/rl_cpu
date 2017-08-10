@@ -33,129 +33,129 @@ struct _sockio {
 };
 
 
-
-
-extern off_t lseek(int __fd, off_t __offset, int __whence);
-
-extern int isatty(int __fd);
-
-extern int lstat(const char *__pathname, struct stat *__buf);
-extern int readlink(const char *__pathname, char *__buf, int __bufsiz);
-
-extern unsigned int sleep(unsigned int __seconds);
-extern int usleep(useconds_t __usecs);
-
 extern char **environ;
 
-extern const char * _findPath(const char *__pathname);
-extern int execl(const char *__pathname, const char *__arg0, ...);
-//extern int execle(const char *__pathname, const char *__arg0, ...);
-extern int execlp(const char *__pathname, const char *__arg0, ...);
-//extern int execlpe(const char *__pathname, const char *__arg0, ...);
-extern int execv(const char *__pathname, char *const __argv[]);
-extern int execve(const char *__pathname, char * const __argv[], char * const __envp[]);
-extern int execvp(const char *__pathname, char *const __argv[]);
-//extern int execvpe(const char *__pathname, char *const __argv[], char * const __envp[]);
 
-extern char *ttyname(int __fd);
-extern int ttyname_r(int __fd, char *__buf, size_t __size);
-extern char *getlogin(void);
-extern int getlogin_r(char * __buf, size_t __size);
-extern int system(const char *);
-extern int pause(void);
-extern pid_t fork(void);
-extern char *getcwd(char *, int);
-extern void swab(const void * __from, void * __to, ssize_t __count);
+off_t lseek(int __fd, off_t __offset, int __whence);
 
-extern long sysconf(int __name);
-extern long fpathconf(int __fd, int __name);
-extern long pathconf(const char *__path, int __name);
-extern long _pathconf(int __name);
+int isatty(int __fd);
+
+int lstat(const char *__pathname, struct stat *__buf);
+int readlink(const char *__pathname, char *__buf, int __bufsiz);
+
+unsigned int sleep(unsigned int __seconds);
+int usleep(useconds_t __usecs);
 
 
+const char * _findPath(const char *__pathname);
+int execl(const char *__pathname, const char *__arg0, ...);
+//int execle(const char *__pathname, const char *__arg0, ...);
+int execlp(const char *__pathname, const char *__arg0, ...);
+//int execlpe(const char *__pathname, const char *__arg0, ...);
+int execv(const char *__pathname, char *const __argv[]);
+int execve(const char *__pathname, char * const __argv[], char * const __envp[]);
+int execvp(const char *__pathname, char *const __argv[]);
+//int execvpe(const char *__pathname, char *const __argv[], char * const __envp[]);
 
-extern int open(const char *path, int flags, ...);
-extern int close(int fd);
-extern int creat(const char *path, mode_t mode);
-extern int mknod(const char *path, mode_t mode, dev_t dev);
-extern int link(const char *path, const char *path2);
-extern int unlink(const char *path);
-extern ssize_t read(int fd, void *buf, int len);
-extern ssize_t write(int fd, const void *buf, int len);
-extern int chdir(const char *path);
-extern int sync(void);
-extern int access(const char *path, int way);
-extern int chmod(const char *path, mode_t mode);
-extern int chown(const char *path, uid_t owner, gid_t group);
-extern int dup(int fd);
-extern pid_t getpid(void);
-extern pid_t getppid(void);
-extern uid_t getuid(void);
-extern mode_t umask(mode_t);
-extern int execve(const char *path, char * const argv[], char *const envp[]);
-extern pid_t wait(int *status);
-extern int setuid(uid_t uid);
-extern int setgid(gid_t gid);
-extern int ioctl(int fd, int request,...);
-extern int brk(void *addr);
-extern void *sbrk(intptr_t increment);
-extern int mount(const char *dev, const char *path, int flags);
-extern int umount(const char *dev);
-extern sighandler_t signal(int signum, sighandler_t sighandler);
-extern int dup2(int oldfd, int newfd);
-extern int _pause(unsigned int dsecs);
-extern int kill(pid_t pid, int sig);
-extern int pipe(int *pipefds);
-extern gid_t getgid(void);
-extern uid_t geteuid(void);
-extern gid_t getegid(void);
-extern int chroot(const char *path);
-extern int fcntl(int fd, int cmd, ...);
-extern int fchdir(int fd);
-extern int fchmod(int fd, mode_t mode);
-extern int fchown(int fd, uid_t owner, gid_t group);
-extern int mkdir(const char *path, mode_t mode);
-extern int rmdir(const char *path);
-extern pid_t setpgrp(void);
-extern pid_t waitpid(pid_t pid, int *status, int options);
-extern int uadmin(int cmd, int ctrl, void *ptr);
-extern int nice(int prio);
-extern int rename(const char *path, const char *newpath);
-extern int flock(int fd, int op);
-extern pid_t getpgrp(void);
-extern int sched_yield(void);
-extern int acct(const char *filename);
-extern int setgroups(size_t size, const gid_t *groups);
-extern int getgroups(int size, gid_t *groups);
-extern int getrlimit(int resource, struct rlimit *rlim);
-extern int setrlimit(int resource, const struct rlimit *rlim);
-extern int setpgid(pid_t pid, pid_t pgrp);
-extern pid_t setsid(void);
-extern pid_t getsid(pid_t pid);
-extern int socket(int af, int type, int pf);
-extern int listen(int fd, int len);
-extern int bind(int fd, const struct sockaddr *s, int len);
-extern int connect(int fd, const struct sockaddr *s, int len);
-extern int shutdown(int fd, int how);
+char *ttyname(int __fd);
+int ttyname_r(int __fd, char *__buf, size_t __size);
+char *getlogin(void);
+int getlogin_r(char * __buf, size_t __size);
+int system(const char *);
+int pause(void);
+pid_t fork(void);
+char *getcwd(char *, int);
+void swab(const void * __from, void * __to, ssize_t __count);
+
+long sysconf(int __name);
+long fpathconf(int __fd, int __name);
+long pathconf(const char *__path, int __name);
+long _pathconf(int __name);
+
+
+
+int open(const char *path, int flags, ...);
+int close(int fd);
+int creat(const char *path, mode_t mode);
+int mknod(const char *path, mode_t mode, dev_t dev);
+int link(const char *path, const char *path2);
+int unlink(const char *path);
+ssize_t read(int fd, void *buf, int len);
+ssize_t write(int fd, const void *buf, int len);
+int chdir(const char *path);
+int sync(void);
+int access(const char *path, int way);
+int chmod(const char *path, mode_t mode);
+int chown(const char *path, uid_t owner, gid_t group);
+int dup(int fd);
+pid_t getpid(void);
+pid_t getppid(void);
+uid_t getuid(void);
+mode_t umask(mode_t);
+int execve(const char *path, char * const argv[], char *const envp[]);
+pid_t wait(int *status);
+int setuid(uid_t uid);
+int setgid(gid_t gid);
+int ioctl(int fd, int request,...);
+int brk(void *addr);
+void *sbrk(intptr_t increment);
+int mount(const char *dev, const char *path, int flags);
+int umount(const char *dev);
+sighandler_t signal(int signum, sighandler_t sighandler);
+int dup2(int oldfd, int newfd);
+int _pause(unsigned int dsecs);
+int kill(pid_t pid, int sig);
+int pipe(int *pipefds);
+gid_t getgid(void);
+uid_t geteuid(void);
+gid_t getegid(void);
+int chroot(const char *path);
+int fcntl(int fd, int cmd, ...);
+int fchdir(int fd);
+int fchmod(int fd, mode_t mode);
+int fchown(int fd, uid_t owner, gid_t group);
+int mkdir(const char *path, mode_t mode);
+int rmdir(const char *path);
+pid_t setpgrp(void);
+pid_t waitpid(pid_t pid, int *status, int options);
+int uadmin(int cmd, int ctrl, void *ptr);
+int nice(int prio);
+int rename(const char *path, const char *newpath);
+int flock(int fd, int op);
+pid_t getpgrp(void);
+int sched_yield(void);
+int acct(const char *filename);
+int setgroups(size_t size, const gid_t *groups);
+int getgroups(int size, gid_t *groups);
+int getrlimit(int resource, struct rlimit *rlim);
+int setrlimit(int resource, const struct rlimit *rlim);
+int setpgid(pid_t pid, pid_t pgrp);
+pid_t setsid(void);
+pid_t getsid(pid_t pid);
+int socket(int af, int type, int pf);
+int listen(int fd, int len);
+int bind(int fd, const struct sockaddr *s, int len);
+int connect(int fd, const struct sockaddr *s, int len);
+int shutdown(int fd, int how);
 
 /* asm syscall hooks with C wrappers */
-extern int getdirent(int fd, void *buf, int len);
-extern int getfsys(uint16_t dev, void *fs);
-extern int select(int nfd, uint16_t *base);
-extern int accept(int fd);
-extern int getsockaddrs(int fd, int type, struct sockaddr_in *addr);
-extern int sendto(int fd, const char *buf, size_t len, struct _sockio *uaddr);
-extern int recvfrom(int fd, char *buf, size_t len, struct _sockio *uaddr);
+int getdirent(int fd, void *buf, int len);
+int getfsys(uint16_t dev, void *fs);
+int select(int nfd, uint16_t *base);
+int accept(int fd);
+int getsockaddrs(int fd, int type, struct sockaddr_in *addr);
+int sendto(int fd, const char *buf, size_t len, struct _sockio *uaddr);
+int recvfrom(int fd, char *buf, size_t len, struct _sockio *uaddr);
 
 /* C library provided syscall emulation */
-extern int stat(const char *path, struct stat *s);
-extern int fstat(int fd, struct stat *s);
-extern int alarm(uint16_t seconds);
-extern time_t time(time_t *t);
-extern int stime(const time_t *t);
-extern int utime(const char *filename, const struct utimbuf *utim);
-extern int uname(struct utsname *buf);
-extern int profil(unsigned short *bufbase, size_t bufsize, unsigned long offset,
+int stat(const char *path, struct stat *s);
+int fstat(int fd, struct stat *s);
+int alarm(uint16_t seconds);
+time_t time(time_t *t);
+int stime(const time_t *t);
+int utime(const char *filename, const struct utimbuf *utim);
+int uname(struct utsname *buf);
+int profil(unsigned short *bufbase, size_t bufsize, unsigned long offset,
                                     unsigned int scale);
 
 
@@ -210,11 +210,11 @@ extern int profil(unsigned short *bufbase, size_t bufsize, unsigned long offset,
 #define _POSIX_TIMERS
 #define _POSIX_MONTONIC_CLOCK
 
-extern int gethostname(char *__name, size_t __len);
-extern int sethostname(const char *__name, size_t __len);
+int gethostname(char *__name, size_t __len);
+int sethostname(const char *__name, size_t __len);
 
 #ifndef __STDLIB_H
-extern void exit(int __status);
+void exit(int __status);
 #endif
 
 #ifndef R_OK

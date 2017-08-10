@@ -11,12 +11,12 @@ struct timeval {
   suseconds_t tv_usec;
 };
 
-extern int utimes(const char *__filename, const struct timeval __times[2]);
+int utimes(const char *__filename, const struct timeval __times[2]);
 
 #ifdef _BSD_SOURCE
 
-extern int gettimeofday(struct timeval *__tv, struct timezone *__tz);
-extern int settimeofday(struct timeval *__tv, const struct timezone *__tz);
+int gettimeofday(struct timeval *__tv, struct timezone *__tz);
+int settimeofday(struct timeval *__tv, const struct timezone *__tz);
 
 /* These are courtesy of Linux. Complete with the usual bugs. The only
    change here is to use L for the long types. */

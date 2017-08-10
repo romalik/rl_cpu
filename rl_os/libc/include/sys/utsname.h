@@ -12,6 +12,6 @@ struct utsname {
 	char machine[8];
 };
 
-extern int uname(struct utsname * __utsbuf);
+int uname(struct utsname * __utsbuf);
 
 #endif

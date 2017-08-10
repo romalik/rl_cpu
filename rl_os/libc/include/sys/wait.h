@@ -38,11 +38,11 @@
 #define WAIT_ANY	(-1)	/* Any process.  */
 #define WAIT_MYPGRP	0	/* Any process in my process group.  */
 
-extern pid_t waitpid(pid_t __pid, int *__stat_loc, int __options);
+pid_t waitpid(pid_t __pid, int *__stat_loc, int __options);
 
 /* Wait for a child to die.  When one does, put its status in *STAT_LOC
    and return its process ID.  For errors, return (pid_t) -1.
  */
-extern pid_t wait(int * statloc);
+pid_t wait(int * statloc);
 
 #endif

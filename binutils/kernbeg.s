@@ -1,5 +1,6 @@
 .code
 .import kernel_main
+.import __data_end
 loadsp_w __data_end
 cnst_w __data_end
 popap

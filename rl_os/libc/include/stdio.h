@@ -67,8 +67,8 @@ extern FILE *stdin;
 extern FILE *stdout;
 extern FILE *stderr;
 
-extern int getc(FILE * stream);
-extern int putc(int c, FILE * stream);
+int getc(FILE * stream);
+int putc(int c, FILE * stream);
 
 #define putchar(c) putc((c), stdout)
 #define getchar() getc(stdin)
@@ -85,31 +85,31 @@ extern int putc(int c, FILE * stream);
 
 /* These two call malloc */
 #define setlinebuf(__fp)             setvbuf((__fp), (char*)0, _IOLBF, 0)
-extern int setvbuf (FILE*, char*, int, size_t);
+int setvbuf (FILE*, char*, int, size_t);
 
 /* These don't */
 #define setbuf(__fp, __buf) setbuffer((__fp), (__buf), BUFSIZ)
-extern void setbuffer (FILE*, char*, int);
+void setbuffer (FILE*, char*, int);
 
-extern int fgetc (FILE*);
-extern int fputc (int, FILE*);
+int fgetc (FILE*);
+int fputc (int, FILE*);
 
-extern int fclose (FILE*);
-extern int fflush (FILE*);
-extern char *fgets (char*, size_t, FILE*);
+int fclose (FILE*);
+int fflush (FILE*);
+char *fgets (char*, size_t, FILE*);
 
-extern FILE *fopen (char*, char*);
-extern FILE *fdopen (int, char*);
-extern FILE *freopen  (char*, char*, FILE*);
+FILE *fopen (char*, char*);
+FILE *fdopen (int, char*);
+FILE *freopen  (char*, char*, FILE*);
 
-extern FILE *__fopen (char*, int, FILE*, char*);
+FILE *__fopen (char*, int, FILE*, char*);
 
-extern int fputs (char*, FILE*);
-extern int puts (char*);
+int fputs (char*, FILE*);
+int puts (char*);
 
-extern int printf  (const char*, ...);
-extern int fprintf  (FILE*, const char*, ...);
-extern int sprintf  (char*, const char*, ...);
+int printf  (const char*, ...);
+int fprintf  (FILE*, const char*, ...);
+int sprintf  (char*, const char*, ...);
 
 int fread(char * buf, int size, int nelm, FILE * fp);
 int fwrite(char * buf, int size, int nelm, FILE * fp);

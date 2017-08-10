@@ -1,6 +1,6 @@
 #!/bin/sh
 
-g++ -o asm ./assembler.cpp
+g++ -std=c++11 -o asm ./assembler.cpp
 #g++ -o trans ./translator.cpp
 g++ -std=c++11 -o link ./linker.cpp
 g++ -o trans ./trans2.cpp

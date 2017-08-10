@@ -12,12 +12,13 @@
 
 
 typedef struct LabelEntry_t {
-    LabelEntry_t() {uid = -1; position = -1; needExport = 0; needImport = 0; section = 0;}
+    LabelEntry_t() {uid = -1; position = -1; needExport = 0; needImport = 0; section = 0;used = 0;}
     int section;
     int uid;
     int position;
     int needExport;
     int needImport;
+    int used;
 } LabelEntry;
 
 
@@ -49,6 +50,13 @@ public:
 
     std::map<std::string, LabelEntry> labels;
 
+
+	std::string findLabelByUID(int uid) {
+		for(const auto & l : labels) {
+			if(l.second.uid == uid) return l.first;
+		}
+		return "";
+	}
 
 
     void regLabel(std::string & name) {
@@ -108,9 +116,6 @@ public:
                 entry.needImport = 1;
 
 
-            int skip = sprintf(p, "%s", labelName.c_str());
-            p+=skip;
-            p++; // skip null-terminator
             uint16_t uid = (uint16_t)entry.uid;
             char uidH = ((uid & 0xff00) >> 8);
             char uidL = (uid & 0xff);
@@ -120,7 +125,13 @@ public:
             char sect = (char)entry.section;
             char im = (char)entry.needImport;
             char ex = (char)entry.needExport;
-            *p = uidH;
+            if(im && (!entry.used)) continue; 
+            
+	    int skip = sprintf(p, "%s", labelName.c_str());
+            p+=skip;
+            p++; // skip null-terminator
+
+	    *p = uidH;
             p++;
             *p = uidL;
             p++;
@@ -288,6 +299,7 @@ int main(int argc, char ** argv) {
               int labelUid = assembly.getLabelUid(word);
               assembly.markLabelPosition();
               assembly.output(labelUid);
+	      assembly.labels[word].used = 1;
             }
         } else {
             //printf("Opcode: [%s]\n", word.c_str());
@@ -334,6 +346,7 @@ int main(int argc, char ** argv) {
                     int labelUid = assembly.getLabelUid(arg);
                     assembly.markLabelPosition();
                     assembly.output(labelUid);
+		    assembly.labels[arg].used = 1;
                 }
             }
         }

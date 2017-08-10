@@ -17,7 +17,7 @@ extern void __timer_interrupt_vector();
 extern void __system_interrupt_vector();
 
 extern void syscall();
-
+extern void ei();
 #define TIMER_INTERRUPT_ADDR_PORT INT3_vec
 #define SYSTEM_INTERRUPT_ADDR_PORT INT0_vec
 
