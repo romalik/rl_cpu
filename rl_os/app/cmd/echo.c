@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-extern char * __ultostr(unsigned long val, int radix);
 
 int main(int argc, char **argv) {
     int i = 0;

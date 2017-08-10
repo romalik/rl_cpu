@@ -7,6 +7,7 @@
 #include <map>
 #include <stdlib.h>
 #include <stdint.h>
+#include <algorithm>
 
 #include "oplist.h"
 
@@ -132,55 +133,115 @@ public:
     int mode;
     int globalOffset;
     int dataOffset;
+    
 
-    void computeOffsets() {
-            int cOffset = 0;
-            for(int i = 0; i<sections.size(); i++) { //concatenate all text sections
-                sections[i][0].offset = cOffset;
-                cOffset += sections[i][0].code.size();
-            }
+    void strip() {
+        printf("Strip: %d objs before\n", labelsPerObj.size());
+        std::vector<int> requiredObjs;
+        requiredObjs.push_back(whoProvides("__progbeg"));
 
-            if(mode == O_MODE_TWOSEG) cOffset = 0; //reset offset for two-seg mode
+//        printf("added main from %d\n", requiredObjs[0]);
 
-            for(int i = 0; i<sections.size(); i++) { //concatenate all data sections
-                sections[i][1].offset = cOffset;
-                cOffset += sections[i][1].code.size();
-            }
 
-            for(int i = 0; i<labelsPerObj.size(); i++) {
-                for(LabelMap::iterator it = labelsPerObj[i].begin(); it != labelsPerObj[i].end(); it++) {
-                    if(it->second.needImport != 1) {
-                        it->second.position += globalOffset + sections[i][it->second.section].offset;
+        for(int i = 0; i<requiredObjs.size(); i++) {
+            int r = requiredObjs[i];
+//            printf("Checking obj %d [%s]\n", r, sections[r][0].filename.c_str());
+            for(const auto & ll : labelsPerObj[r]) {
+                if(ll.second.needImport) {
+//                    printf("Searching label %s\n", ll.first.c_str());
+                    int who = whoProvides(ll.first);
+//                    printf("Found as %d\n", who);
+                    if(who < 0) {
+                        //printf("Warning! Label %s was imported but not found!\n", ll.first.c_str());
+                    } else {
+                        if(std::find(requiredObjs.begin(), requiredObjs.end(), who) == requiredObjs.end()) {
+//                            printf("%s needs import - found in %d [%s]\n", ll.first.c_str(), who, sections[who][0].filename.c_str());
+                            requiredObjs.push_back(who);
+                            printf("%s requested by %s\n", sections[who][0].filename.c_str(), sections[r][0].filename.c_str());
+
+                        } else {
+//                            printf("File already imported\n");
+                        }
                     }
                 }
             }
+        }
+
+        std::vector<std::vector<Section> > newSects;
+        std::vector<LabelMap> newLabelsPerObj;
+
+        std::sort(requiredObjs.begin(), requiredObjs.end());
+
+        for(const auto i : requiredObjs) {
+            newSects.push_back(sections[i]);
+            newLabelsPerObj.push_back(labelsPerObj[i]);
+        }
+        sections = newSects;
+        labelsPerObj = newLabelsPerObj;
+        printf("Strip: %d objs after\n", labelsPerObj.size());
+
+    }
+
+    int whoProvides(const std::string & name) {
+        for(int i = 0; i<labelsPerObj.size(); i++) {
+            if(labelsPerObj[i].count(name)) {
+                if(labelsPerObj[i][name].needExport) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+
+    void computeOffsets() {
+        int cOffset = 0;
+        for(int i = 0; i<sections.size(); i++) { //concatenate all text sections
+            sections[i][0].offset = cOffset;
+            cOffset += sections[i][0].code.size();
+        }
+
+        if(mode == O_MODE_TWOSEG) cOffset = 0; //reset offset for two-seg mode
+
+        for(int i = 0; i<sections.size(); i++) { //concatenate all data sections
+            sections[i][1].offset = cOffset;
+            cOffset += sections[i][1].code.size();
+        }
+
+        for(int i = 0; i<labelsPerObj.size(); i++) {
+            for(LabelMap::iterator it = labelsPerObj[i].begin(); it != labelsPerObj[i].end(); it++) {
+                if(it->second.needImport != 1) {
+                    it->second.position += globalOffset + sections[i][it->second.section].offset;
+                }
+            }
+        }
 
     }
 
     int findGlobalLabel(std::string _name, LabelEntry & entry) {
 
-      std::string name;
-      name = _name;
-      size_t plusPos = name.find('+');
-      size_t minusPos = name.find('-');
-      size_t cropPos = 0;
-      if(plusPos == std::string::npos && minusPos == std::string::npos) {
-        cropPos = 0;
-      } else if(plusPos != std::string::npos && minusPos == std::string::npos) {
-        cropPos = plusPos;
-      } else if(plusPos == std::string::npos && minusPos != std::string::npos) {
-        cropPos = minusPos;
-      } else if(plusPos != std::string::npos && minusPos != std::string::npos) {
-        cropPos = std::min(plusPos, minusPos);
-      }
+        std::string name;
+        name = _name;
+        size_t plusPos = name.find('+');
+        size_t minusPos = name.find('-');
+        size_t cropPos = 0;
+        if(plusPos == std::string::npos && minusPos == std::string::npos) {
+            cropPos = 0;
+        } else if(plusPos != std::string::npos && minusPos == std::string::npos) {
+            cropPos = plusPos;
+        } else if(plusPos == std::string::npos && minusPos != std::string::npos) {
+            cropPos = minusPos;
+        } else if(plusPos != std::string::npos && minusPos != std::string::npos) {
+            cropPos = std::min(plusPos, minusPos);
+        }
 
-      if(cropPos) {
-        name = std::string(_name,0,cropPos);
-      }
+        if(cropPos) {
+            name = std::string(_name,0,cropPos);
+        }
 
 
 
-      for(int i = 0; i<labelsPerObj.size(); i++) {
+        for(int i = 0; i<labelsPerObj.size(); i++) {
             LabelMap::iterator it = labelsPerObj[i].find(name);
             if(it != labelsPerObj[i].end()) {
                 if(it->second.needImport == 0) {
@@ -203,10 +264,10 @@ public:
                         //dumpLabels();
                         //exit(1);
                     } else {
-						it->second.position = entry.position;
-						it->second.section = entry.section;
-						it->second.needImport = 0;
-					}
+                        it->second.position = entry.position;
+                        it->second.section = entry.section;
+                        it->second.needImport = 0;
+                    }
                 }
             }
         }
@@ -274,8 +335,8 @@ public:
 
         sections.push_back(tVec);
         labelsPerObj.push_back(cLabels);
-//        printf("%s:\ttext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
-/*
+        //        printf("%s:\ttext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
+        /*
         printf("OK\n");
 
         printf("Object props:\n  textSize: %d words\n  dataSize: %d words\n  labelLength: %d\n", textSize, dataSize, labelFullLen);
@@ -316,25 +377,25 @@ public:
     void link() {
         for(int i = 0; i<sections.size(); i++) {
             for(int j = 0; j<0xffff; j++) {
-              for(int cSect = 0; cSect<2; cSect++) {
-                if(sections[i][cSect].labelMap[j]) {
-                    LabelEntry entry;
-                    uint16_t labelUid = sections[i][cSect].code[j];
-                    if(!findLabelByUid(labelUid, labelsPerObj[i], entry)) {
-                        printf("Label with uid %d not found!\n", labelUid);
-                        exit(1);
-                    } else {
-                      //printf("Obj %d uid %d pos %d\n", i, labelUid, entry.position);
-                        if(entry.needImport) {
-                            printf("Unresolved symbol %s in file %s\n", entry.name.c_str(), sections[i][cSect].filename.c_str());
+                for(int cSect = 0; cSect<2; cSect++) {
+                    if(sections[i][cSect].labelMap[j]) {
+                        LabelEntry entry;
+                        uint16_t labelUid = sections[i][cSect].code[j];
+                        if(!findLabelByUid(labelUid, labelsPerObj[i], entry)) {
+                            printf("Label with uid %d not found!\n", labelUid);
                             exit(1);
-                            
-                        } else {                
-                             sections[i][cSect].code[j] = entry.position + entry.shift;
+                        } else {
+                            //printf("Obj %d uid %d pos %d\n", i, labelUid, entry.position);
+                            if(entry.needImport) {
+                                printf("Unresolved symbol %s in file %s\n", entry.name.c_str(), sections[i][cSect].filename.c_str());
+                                exit(1);
+
+                            } else {
+                                sections[i][cSect].code[j] = entry.position + entry.shift;
+                            }
                         }
-		    }
+                    }
                 }
-              }
             }
         }
     }
@@ -363,7 +424,7 @@ public:
             //mode
             *p = 0;   p++;
             *p = mode; p++;
-        
+
             for(int sect = 0; sect < 2; sect++) {//write sizes
                 unsigned int cSize = 0;
                 for(int i = 0; i<sections.size(); i++) {
@@ -390,7 +451,7 @@ public:
         }
         printf("%s: %lu words\n", filename.c_str(), (p - image)/2);
         binarySize = p-image;
-    
+
 
         file.write(image, binarySize);
         file.close();
@@ -405,7 +466,8 @@ int main(int argc, char ** argv) {
     int textOffset = 0;
     int dataOffset = 0;
     int mode = 0;
-/*
+    int strip = 0;
+    /*
     for(int i = 0; i<argc; i++) {
       printf("Arg %d : %s\n", i, argv[i]);
     }
@@ -418,6 +480,8 @@ int main(int argc, char ** argv) {
                 exit(1);
             }
             outFile = std::string(argv[i]);
+        } else if(!strcmp(argv[i], "-strip")) {
+            strip = 1;
         } else if(!strcmp(argv[i], "-text")) {
             i++;
             if(i >= argc) {
@@ -443,7 +507,7 @@ int main(int argc, char ** argv) {
             inFiles.push_back(std::string(argv[i]));
         }
     }
-/*
+    /*
     printf("Linking files:\n");
     for(int i = 0; i<inFiles.size(); i++) {
         printf(" <- %s\n", inFiles[i].c_str());
@@ -457,13 +521,13 @@ int main(int argc, char ** argv) {
     linker.dataOffset = dataOffset;
 
 
-//  printf("Text offset 0x%04x\nData offset 0x%04x\n", textOffset, dataOffset);
+    //  printf("Text offset 0x%04x\nData offset 0x%04x\n", textOffset, dataOffset);
 
     for(int i = 0; i<inFiles.size(); i++) {
         linker.loadFile(inFiles[i]);
     }
 
-
+    if(strip) linker.strip();
 
     //linker.dumpLabels();
     //printf("Compute offsets..\n");
@@ -474,11 +538,11 @@ int main(int argc, char ** argv) {
     //linker.dumpLabels();
     //printf("Linking..\n");
     linker.link();
-//    printf("Writing to %s..\n", outFile.c_str());
+    //    printf("Writing to %s..\n", outFile.c_str());
     linker.writeBin(outFile,0);
-//    printf("Done.\n");
+    //    printf("Done.\n");
 
-//    linker.dumpLabels();
+    //    linker.dumpLabels();
     return 0;
 
 }
