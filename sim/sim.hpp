@@ -10,12 +10,14 @@
 #include <stdlib.h>
 #include <math.h>
 #include "oplist.h"
+#include <SDL2/SDL.h>
 
 #include <unistd.h>
 #include <termios.h>
-
-
+#include <mutex>
+#include <thread>
 #include <pthread.h>
+#define SDL_SUPPORT 1
 
 typedef uint16_t w;
 typedef int16_t ws;
@@ -220,6 +222,139 @@ class HDD : public VMemDevice {
         }
       }
     }
+    return 0;
+  }
+
+};
+
+class LCD : public VMemDevice {
+  
+  std::vector<w> data;
+  w size;
+  w cmdAddr;
+  w dataAddr;
+  w cIdx;
+
+  static const w CMD_SETADDR = 0x01;
+  static const w CMD_CLEAR = 0x02;
+
+  static const uint32_t BG_COLOR = 0x0055ff55;
+  static const uint32_t FG_COLOR = 0x00000000;
+
+  int state{0};
+
+  int width{0};
+  int height{0};
+
+  std::mutex vbufLock;
+#if SDL_SUPPORT
+  SDL_Window* window{NULL};
+  SDL_Surface* screenSurface{NULL};
+  SDL_Renderer* renderer{NULL};
+
+
+  void initSDL() {
+    if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+    {
+        printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
+    }
+    else
+    {
+        //Create window
+        window = SDL_CreateWindow( "LCD", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN );
+//        SDL_CreateWindowAndRenderer(vp->w, vp->h, SDL_WINDOW_SHOWN, &window, &renderer);
+        if( window == NULL )
+        {
+            printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
+        }
+        else
+        {
+            //Get window surface
+            screenSurface = SDL_GetWindowSurface( window );
+
+            //Fill the surface white
+            SDL_FillRect( screenSurface, NULL, SDL_MapRGB( screenSurface->format, 0xFF, 0xFF, 0xFF ) );
+
+            //Update the surface
+            SDL_UpdateWindowSurface( window );
+        }
+    }
+
+  }
+
+  void updateLCD() {
+  //    0x00404040;
+    uint32_t vbuf[width*height];
+    for(int i = 0; i<size; i++) {
+      for(int k = 0; k<16; k++) {
+	vbuf[i*16 + k] = ((data[i] & (1<<(15-k)))?FG_COLOR:BG_COLOR);
+      }
+    }
+    SDL_LockSurface(screenSurface);
+
+    memcpy(screenSurface->pixels, vbuf, width*height*sizeof(uint32_t));
+    SDL_UnlockSurface(screenSurface);
+
+    SDL_UpdateWindowSurface( window );
+
+  }
+
+  void runner() {
+    while(1) {
+      updateLCD();
+      usleep(10*1000);
+    }
+  }
+#endif
+  std::thread updateThread;
+ public:
+  LCD(w _cmdAddr, w _dataAddr, int _width, int _height) {
+    cmdAddr = _cmdAddr;
+    dataAddr = _dataAddr;
+    width = _width;
+    height = _height;
+    size = width * height / 16;
+    data.resize(size, 0x5555);
+    cIdx = 0;
+    printf("LCD: create cmd:0x%04x data:0x%04x width %d height %d\n", cmdAddr, dataAddr, width, height);
+#if SDL_SUPPORT 
+    initSDL();
+    updateThread = std::thread(&LCD::runner, this);
+//    updateLCD();
+#endif
+  }
+  virtual void terminate() {
+  }
+  virtual int canOperate(w addr) {
+    return (addr == cmdAddr) || (addr == dataAddr);
+  }
+  virtual void write(w addr, w val, int seg, int force) {
+    if(canOperate(addr)) {
+      //printf("LCD: port 0x%04x val 0x%04x\n", addr, val);
+      if(addr == cmdAddr) {
+        if(val == CMD_SETADDR) {
+          state = 1;
+	} else if(val == CMD_CLEAR) {
+	  data.clear();
+          data.resize(size, 0);
+	  cIdx = 0;
+        }
+      } else if(addr == dataAddr) {
+        if(state) {
+          state = 0;
+          cIdx = val;
+        } else {
+	  if(cIdx >= size) cIdx = 0;
+	  data[cIdx] = val;
+          cIdx++;
+        }
+      }
+    }
+#if SDL_SUPPORT
+  //  updateLCD();
+#endif
+  }
+  w read(w addr, int seg) {
     return 0;
   }
 

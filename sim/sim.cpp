@@ -46,7 +46,7 @@ Cpu::Cpu() {
 
 
   this->devices.push_back(new RAM(0, 16*1024, 0)); //ROM
-  this->devices.push_back(new RAM(0x4000, 16*1024-16, 0)); //RAM
+  this->devices.push_back(new RAM(0x4000, 16*1024-32, 0)); //RAM
 
 //  this->devices.push_back(new RAM(0x8000, 32*1024-1, 0)); //RAM
   this->devices.push_back(new ExtRAM(0x8000, 32*1024-1, 0x7fde, 0x7fdf, 16)); //ExtRAM
@@ -54,6 +54,7 @@ Cpu::Cpu() {
   this->devices.push_back(new UART(NULL,0,0, 0x7ffe, &std::cin, NULL));
   this->devices.push_back(new PORT(0x7fff, 0, NULL, &std::cout));
 
+  this->devices.push_back(new LCD(0x7fdc, 0x7fdd, 320, 240));
   this->devices.push_back(new HDD(0x7ffc, 0x7ffd, std::string("hdd")));
   this->devices.push_back(new Timer(intCtl, 3, 50000ULL));
   this->devices.push_back(intCtl);

@@ -54,7 +54,7 @@ int kernel_main() {
 
     printf("Press s for builtin shell, any key for init [%s]\n", INIT_PATH);
 
-    if (getc() == 's') {
+    if (0/*getc() == 's'*/) {
         main_sh();
     } else {
         struct Process * initP;
