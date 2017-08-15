@@ -307,6 +307,7 @@ class LCD : public VMemDevice {
   }
 #endif
   std::thread updateThread;
+  bool inited{false};
  public:
   LCD(w _cmdAddr, w _dataAddr, int _width, int _height) {
     cmdAddr = _cmdAddr;
@@ -317,11 +318,6 @@ class LCD : public VMemDevice {
     data.resize(size, 0x5555);
     cIdx = 0;
     printf("LCD: create cmd:0x%04x data:0x%04x width %d height %d\n", cmdAddr, dataAddr, width, height);
-#if SDL_SUPPORT 
-    initSDL();
-    updateThread = std::thread(&LCD::runner, this);
-//    updateLCD();
-#endif
   }
   virtual void terminate() {
   }
@@ -330,6 +326,14 @@ class LCD : public VMemDevice {
   }
   virtual void write(w addr, w val, int seg, int force) {
     if(canOperate(addr)) {
+      if(!inited) {
+#if SDL_SUPPORT 
+        initSDL();
+        updateThread = std::thread(&LCD::runner, this);
+        inited = true;
+#endif
+
+      }
       //printf("LCD: port 0x%04x val 0x%04x\n", addr, val);
       if(addr == cmdAddr) {
         if(val == CMD_SETADDR) {

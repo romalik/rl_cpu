@@ -125,6 +125,8 @@ typedef struct fs_node { blk_t idx; } fs_node_t;
 struct devOpTable {
     unsigned int (*write)(unsigned int minor, const unsigned int * buf, size_t n);
     unsigned int (*read)(unsigned int minor, unsigned int * buf, size_t n);
+    unsigned int (*open)(unsigned int minor);
+    unsigned int (*close)(unsigned int minor);
 };
 
 typedef struct dirent {
@@ -237,9 +239,10 @@ FILE *k_opendir(const void *dirname);
 dirent_t k_readdir(FILE *dir);
 
 int k_mkdir(const void *__path);
+int k_mkfifo(const void *__path);
 int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor);
 
-int k_regDevice(unsigned int major, void *writeFunc, void *readFunc);
+int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc);
 
 int k_unlink(const char * name);
 

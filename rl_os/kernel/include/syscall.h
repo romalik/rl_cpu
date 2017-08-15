@@ -70,6 +70,7 @@
 #define __NR_getpgrp 65
 #define __NR_setsid 66
 #define __NR_clone 67
+#define __NR_mkfifo 68
 
 struct creatSyscall {
     unsigned int id;
@@ -110,6 +111,12 @@ struct mkdirSyscall {
     int res;
 };
 
+struct mkfifoSyscall {
+    unsigned int id;
+    const char *path;
+    int res;
+};
+
 struct unlinkSyscall {
     unsigned int id;
     const char *path;
@@ -121,6 +128,11 @@ struct rmdirSyscall {
     unsigned int id;
     const char *path;
     int res;
+};
+
+struct pipeSyscall {
+    unsigned int id;
+    int pipefd[2];
 };
 
 

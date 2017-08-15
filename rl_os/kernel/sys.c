@@ -42,6 +42,40 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         s->res = k_mkdir(s->path);
 
         return;
+
+    } else if (scall_id == __NR_mkfifo) {
+        struct mkfifoSyscall *s = (struct mkfifoSyscall *)p;
+
+        s->res = k_mkfifo(s->path);
+
+        return;
+    } else if (scall_id == __NR_pipe) {
+        struct pipeSyscall *s = (struct pipeSyscall *)p;
+        int fd;
+        char newPath[100];
+        newPath[0] = 0;
+
+        k_mkfifo(newPath);
+
+        for (fd = 0; fd < MAX_FILES_PER_PROC; fd++) {
+            if (!cProc->openFiles[fd]) {
+                break;
+            }
+        }
+        if (fd != MAX_FILES_PER_PROC) {
+            cProc->openFiles[fd] = k_open(newPath, O_WRONLY);
+            s->pipefd[1] = fd;
+        }
+        for (; fd < MAX_FILES_PER_PROC; fd++) {
+            if (!cProc->openFiles[fd]) {
+                break;
+            }
+        }
+        if (fd != MAX_FILES_PER_PROC) {
+            cProc->openFiles[fd] = k_open(newPath, O_RDONLY);
+            s->pipefd[0] = fd;
+        }
+        return;
     } else if (scall_id == __NR_chdir) {
         struct chdirSyscall *s = (struct chdirSyscall *)p;
         struct stat st;

@@ -115,6 +115,7 @@ int fchdir(int fd);
 int fchmod(int fd, mode_t mode);
 int fchown(int fd, uid_t owner, gid_t group);
 int mkdir(const char *path, mode_t mode);
+int mkfifo(const char *path, mode_t mode);
 int rmdir(const char *path);
 pid_t setpgrp(void);
 pid_t waitpid(pid_t pid, int *status, int options);

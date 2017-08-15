@@ -179,6 +179,7 @@ void do_kernel_task_execve(int i) {
                                 // in first arg in arg space
 
 
+
         do_exec(p, sStruct->filename, sStruct->argv, sStruct->envp);
 
         p->state = PROC_STATE_RUN;
@@ -257,6 +258,7 @@ void do_kernel_task_exit(int i) {
     //printf("Kernel worker: exit!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct exitSyscall *sStruct;
+        int i;
         di();
         DATA_BANK_SEL = p->dataMemBank;
         sStruct = (struct exitSyscall *)(*((size_t *)(p->ap)));
@@ -264,6 +266,15 @@ void do_kernel_task_exit(int i) {
         p->state = PROC_STATE_ZOMBIE;
         //printf("Exit code: %d\n", p->retval);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+        //close files
+        for (i = 0; i < MAX_FILES_PER_PROC; i++) {
+            if (p->openFiles[i]) {
+              k_close(p->openFiles[i]);
+              p->openFiles[i] = 0;
+              //printf("Closing file %d\n", i);
+            }
+        }
+
         if(!p->isThread) {
             mm_freeSegment(p->codeMemBank);
             mm_freeSegment(p->dataMemBank);
@@ -298,6 +309,7 @@ void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
     int i = 0;
 
     //spinlock_lock(&kernelTaskQueueLock);
+
 
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
         if (kernelTaskQueue[i].type == KERNEL_TASK_NONE) {

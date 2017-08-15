@@ -10,6 +10,8 @@
 //#include <vfs.h>
 #include <blk.h>
 #include <tty.h>
+#include <piper.h>
+
 
 extern char __data_end;
 extern char __code_end;
@@ -43,11 +45,13 @@ int kernel_main() {
     mm_init();
     sched_init();
     kernel_worker_init();
+    piper_init();
 
 
 
-    k_regDevice(0, tty_write, tty_read);
-    k_regDevice(1, proc_file_write, proc_file_read);
+    k_regDevice(0, tty_write, tty_read, 0, 0);
+    k_regDevice(1, proc_file_write, proc_file_read, 0, 0);
+    k_regDevice(2, piper_write, piper_read, 0, piper_close);
 
     k_mknod("/tty", 'c', 0, 0);
     k_mknod("/proc", 'c', 1, 0);

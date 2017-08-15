@@ -18,3 +18,4 @@ libc-minix/include/sys
 rootfs/lib/include
 rootfs/lib/include/sys
 app/cmd
+app/ue

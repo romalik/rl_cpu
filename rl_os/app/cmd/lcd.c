@@ -181,37 +181,30 @@ if ((Dx != 0) || (Dy != 0)) // sprawdzamy czy linia sk³ada siê z wiêcej ni¿ jedn
 
 int main() {
   int i =0 ;
+  int x = 50;
+  int y = 50;
+  int delay = 100;
+  int dx = 3;
+  int dy = 1;
+  int radius = 10;
+  
   resetFB();
-  GLCD_Line(10,10,310,230,1);
-  GLCD_Line(47,125,54,82,1);
-  GLCD_Circle(50,180,45,1);
-
-  GLCD_Rectangle(200, 150, 100, 70, 1);
-/*
-  for(i = 0; i<200;i++ ) {
-    GLCD_SetPixel(i,i,1);
-    GLCD_SetPixel(200-i,i,1);
-  }
-
-*/
   drawFB();
 
-/*
 while(1) {
-  for(i = 0; i<20*240; i++) {
-    *(unsigned int *)(LCD_DATA_ADDR) = 0x55;
+  GLCD_Circle(x,y,radius,0);
+  x += dx;
+  y += dy;
+  if(x < radius || x > WIDTH - radius) {
+    dx = -dx;
   }
-  for(i = 0; i<20*240; i++) {
-    *(unsigned int *)(LCD_DATA_ADDR) = 0xaa00;
+  if(y < radius || y > HEIGHT - radius) {
+    dy = -dy;
   }
-  for(i = 0; i<20*240; i++) {
-    *(unsigned int *)(LCD_DATA_ADDR) = 0xffff;
-  }
-  for(i = 0; i<20*240; i++) {
-    *(unsigned int *)(LCD_DATA_ADDR) = 0x0000;
-  }
+  GLCD_Circle(x,y,radius,1);
+  //for(i = 0; i<delay; i++) {}
+  drawFB();
 }
-*/
 
 
   return 0;

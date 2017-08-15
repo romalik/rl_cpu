@@ -634,6 +634,17 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
         fs_reset(node);
     }
 
+    if(S_ISCHR(s.st_mode)) {
+      unsigned int major;
+      unsigned int minor;
+      struct devOpTable *ops;
+      major = (s.st_rdev >> 8);
+      minor = (s.st_rdev & 0xff);
+      ops = &devList[major];
+      if(ops->open) {
+        ops->open(minor);
+      }
+    }
     return &openFiles[fd];
 }
 
@@ -705,7 +716,7 @@ size_t k_write(FILE *fd, const unsigned int *buf, size_t size) {
   size_t written = 0;
   if (S_ISBLK(fd->flags)) {
         return 0;
-    } else if (S_ISCHR(fd->flags)) {
+  } else if (S_ISCHR(fd->flags)) {
         unsigned int major;
         unsigned int minor;
         struct devOpTable *ops;
@@ -809,6 +820,18 @@ void k_close(FILE *fd) {
   //printf("k_close ref %d\n", fd->refcnt);
   fd->refcnt--;
   if(!fd->refcnt) {
+    if(S_ISCHR(fd->flags)) {
+      unsigned int major;
+      unsigned int minor;
+      struct devOpTable *ops;
+      major = (fd->device >> 8);
+      minor = (fd->device & 0xff);
+      ops = &devList[major];
+      if(ops->close) {
+        ops->close(minor);
+      }
+    }
+
     fd->mode = FS_MODE_NONE;
   }
 }
@@ -932,10 +955,21 @@ int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor
     }
 }
 
-int k_regDevice(unsigned int major, void *writeFunc, void *readFunc) {
+int k_mkfifo(const void *__path) {
+  char * path = (char *)__path;
+  static int current_pipe_id = 0;
+  if(path[0] == 0) {
+    sprintf(path, "/tmp/%d.pipe", current_pipe_id);
+  }
+  return k_mknod(path, 'c', 2, current_pipe_id++);
+}
+
+int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc) {
     if (major < MAX_DEVS) {
         devList[major].write = writeFunc;
         devList[major].read = readFunc;
+        devList[major].open = openFunc;
+        devList[major].close = closeFunc;
     }
     return 0;
 }

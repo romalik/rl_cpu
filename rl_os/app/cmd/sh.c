@@ -160,8 +160,18 @@ int main() {
                 int redirIN = -2;
                 int redirOUT = -2;
                 int redirERR = -2;
-                nArgc = sh_getArgs(cmdBuf, nArgv, &redirIN, &redirOUT, &redirERR);
-                i = 0;
+                int pipeStart = -1;
+                int p[2];
+                for(i=0; i<strlen(cmdBuf); i++) {
+                  if(cmdBuf[i] == '|') {
+                    cmdBuf[i] = 0;
+                    printf("Got pipe: left [%s] right [%s]\n", cmdBuf, cmdBuf + i + 1);
+                    pipeStart = i + 1;
+
+                  }
+                }
+
+                  nArgc = sh_getArgs(cmdBuf, nArgv, &redirIN, &redirOUT, &redirERR);
 
                 if(redirIN == -1) goto err;
                 if(redirOUT == -1) goto err;
@@ -169,7 +179,7 @@ int main() {
 
 
 
-
+                i = 0;
                 while (builtinCmds[i][0] != 0) {
                     if (!strcmp(nArgv[0], builtinCmds[i])) {
                         int retval = builtinFuncs[i](nArgc, nArgv);
@@ -178,43 +188,73 @@ int main() {
                     i++;
                 }
                 if (builtinCmds[i][0] == 0) {
+                  if(pipeStart < 0) {
                     unsigned int childPid = fork();
-                    if (!childPid) {
+                      if (!childPid) {
 
-                        if(redirIN > 0) {
-                          close(STDIN_FILENO);
-                          dup(redirIN);
-                          close(redirIN);
-                        }
-                        if(redirOUT > 0) {
-                          close(STDOUT_FILENO);
-                          dup(redirOUT);
-                          close(redirOUT);
-                        }
-                        if(redirERR > 0) {
-                          close(STDERR_FILENO);
-                          dup(redirERR);
-                          close(redirERR);
-                        }
+                          if(redirIN > 0) {
+                            close(STDIN_FILENO);
+                            dup(redirIN);
+                            close(redirIN);
+                          }
+                          if(redirOUT > 0) {
+                            close(STDOUT_FILENO);
+                            dup(redirOUT);
+                            close(redirOUT);
+                          }
+                          if(redirERR > 0) {
+                            close(STDERR_FILENO);
+                            dup(redirERR);
+                            close(redirERR);
+                          }
 
-                        if(nArgv[0][0] == '&') {
-                            execve((void *)nArgv[1], (void *)(&nArgv[1]), 0);
-                            printf("Failed execing %s\n", nArgv[0]);
-                            return 1;
-                        } else {
-                            execve((void *)nArgv[0], (void *)nArgv, 0);
-                            printf("Failed execing %s\n", nArgv[0]);
-                            return 1;
-                        }
-                    } else {
-                        int r = -1;
-			                  int status;
-                        if(nArgv[0][0] == '&') {
-                            bgChildren++;
-                        } else {
-                            r = waitpid(childPid, &status, 0);
-                        }
-                    }
+                          if(nArgv[0][0] == '&') {
+                              execve((void *)nArgv[1], (void *)(&nArgv[1]), 0);
+                              printf("Failed execing %s\n", nArgv[0]);
+                              return 1;
+                          } else {
+                              execve((void *)nArgv[0], (void *)nArgv, 0);
+                              printf("Failed execing %s\n", nArgv[0]);
+                              return 1;
+                          }
+                      } else {
+                          int r = -1;
+                          int status;
+                          if(nArgv[0][0] == '&') {
+                              bgChildren++;
+                          } else {
+                              r = waitpid(childPid, &status, 0);
+                          }
+                      }
+                  } else {
+                      unsigned int pid1;
+                      unsigned int pid2;
+                      int r;
+                      int status;
+                      if(pipe(p) < 0) {
+                        //panic("pipe");
+                      }
+                      if((pid1 = fork()) == 0){
+                        close(1);
+                        dup(p[1]);
+                        close(p[0]);
+                        close(p[1]);
+                        execve((void *)nArgv[0], (void *)nArgv, 0);
+                      }
+                      if((pid2 = fork()) == 0){
+                        nArgc = sh_getArgs(cmdBuf+pipeStart, nArgv, &redirIN, &redirOUT, &redirERR);
+                        close(0);
+                        dup(p[0]);
+                        close(p[0]);
+                        close(p[1]);
+                        execve((void *)nArgv[0], (void *)nArgv, 0);
+                      }
+                      close(p[0]);
+                      close(p[1]);
+                      r = waitpid(pid1, &status, 0);
+                      r = waitpid(pid2, &status, 0);
+                      //break;
+                  }
                 }
 err:
                 if(redirIN > 0) close(redirIN);

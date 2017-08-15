@@ -19,6 +19,12 @@ app/cmd/test.c
 app/cmd/text2wide.c
 app/cmd/writer.c
 app/cmd/xv6sh.c
+app/ue/README
+app/ue/term-ansi.c
+app/ue/term-fuzix.c
+app/ue/term.c
+app/ue/ue.c
+app/ue/ue.h
 app/util-fuzix/banner.c
 app/util-fuzix/basename.c
 app/util-fuzix/bd.c

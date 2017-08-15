@@ -124,6 +124,14 @@ int mkdir(const char *path, mode_t mode) {
     syscall(&s);
     return s.res;
 }
+int mkfifo(const char *path, mode_t mode) {
+    struct mkfifoSyscall s;
+    s.id = __NR_mkfifo;
+    s.path = path;
+
+    syscall(&s);
+    return s.res;
+}
 int open(const char *filename, int flags, ...) {
     struct openSyscall s;
     s.id = __NR_open;
@@ -150,7 +158,11 @@ int pause(void)
 
 
 int pipe(int pipefd[2]) {
-  puts("pipe stub!");
+  struct pipeSyscall s;
+  s.id = __NR_pipe;
+  syscall(&s);
+  pipefd[0] = s.pipefd[0];
+  pipefd[1] = s.pipefd[1];
   return 0;
 }
 
