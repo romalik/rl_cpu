@@ -11,7 +11,7 @@
 
 #define PROC_STATE_NONE 0
 #define PROC_STATE_RUN 1
-#define PROC_STATE_WAIT 2
+#define PROC_STATE_SLEEP 2
 #define PROC_STATE_ZOMBIE 3
 #define PROC_STATE_KWORKER 4
 #define PROC_STATE_NEW 5
@@ -46,6 +46,10 @@ struct Process {
     int signalsPending;
     sighandler_t sigActions[SIGNUM];
 
+
+    void * waitingOn;
+
+
     int isThread;
 };
 
@@ -74,5 +78,8 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
 
 unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n);
 unsigned int proc_file_write(unsigned int minor, const unsigned int * buf, size_t n);
+
+void sleep(struct Process * proc, void * event);
+void wakeup(void * event);
 
 #endif

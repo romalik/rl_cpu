@@ -1,8 +1,8 @@
 #ifndef PIPER_H__
 #define PIPER_H__
 
-#define PIPE_MAX_LENGTH 256
-#define MAX_PIPES 10
+#define PIPE_MAX_LENGTH 1024
+#define MAX_PIPES 3
 
 #include <types.h>
 

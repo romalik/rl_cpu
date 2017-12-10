@@ -7,7 +7,7 @@
 #define SCHED_STACK_SIZE 512
 
 
-#define TIMESLICE 5
+#define TIMESLICE 20
 
 #define STACK_PLACEMENT 0xe000
 
@@ -172,7 +172,7 @@ void resched(struct IntFrame * fr) {
     // now save current task state to its ptab
     // if current task is valid
     if (currentTask < MAXPROC) {
-        if (procs[currentTask].state == PROC_STATE_RUN) {
+        if (procs[currentTask].state == PROC_STATE_RUN || procs[currentTask].state == PROC_STATE_SLEEP ) {
             procs[currentTask].ap = fr->ap;
             procs[currentTask].bp = fr->bp;
             procs[currentTask].sp = fr->sp;
@@ -201,7 +201,7 @@ rescanTable:
         if (procs[nextTask].state == PROC_STATE_NEW)
             break;
 
-        if (procs[nextTask].state == PROC_STATE_WAIT && procs[nextTask].signalsPending)
+        if (procs[nextTask].state == PROC_STATE_SLEEP && procs[nextTask].signalsPending)
             break;
 
         nextTask++;
@@ -413,6 +413,28 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
         return 1;
     }
 }
+
+void sleep(struct Process * proc, void * event) {
+   proc->state = PROC_STATE_SLEEP;
+   proc->waitingOn = event;
+	printf("Sleep process %d\n", proc->pid);
+}
+
+
+void wakeup(void * event) {
+   int i;
+   for(i = 0; i<MAXPROC; i++) {
+      if(procs[i].state == PROC_STATE_SLEEP) {
+         if(procs[i].waitingOn == event) {
+            procs[i].state = PROC_STATE_RUN;
+            procs[i].waitingOn = 0;
+		printf("Wake process %d\n", procs[i].pid);
+         }
+      }
+
+   }
+}
+
 
 
 

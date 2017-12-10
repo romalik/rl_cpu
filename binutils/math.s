@@ -892,5 +892,22 @@ cnst_b 0
 store
 ret
 
+.export __builtin_cmp_EQF2
+.export __builtin_cmp_LTF2
+.export __builtin_cmp_NEF2
+.export __builtin_cmp_LEF2
+.export __builtin_DIVF2
+.export __builtin_MULF2
+.export __builtin_cmp_GEF2
+.export __builtin_cmp_GTF2
 
+.label __builtin_cmp_EQF2
+.label __builtin_cmp_LTF2
+.label __builtin_cmp_NEF2
+.label __builtin_cmp_LEF2
+.label __builtin_DIVF2
+.label __builtin_MULF2
+.label __builtin_cmp_GEF2
+.label __builtin_cmp_GTF2
+ret
 

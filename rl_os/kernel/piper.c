@@ -1,6 +1,6 @@
 #include <piper.h>
 #include <types.h>
-
+#include <sched.h>
 
 
 struct pipefile {
@@ -29,6 +29,7 @@ unsigned int piper_read(unsigned int p, unsigned int * buf, size_t n) {
     while(n) {
         while(pipes[p].rPos >= pipes[p].wPos) {
             if(pipes[p].closed) return alreadyRead;
+	    sleep(cProc, &pipes[p]);
             resched_now();
         }
         readNow = n;
@@ -44,6 +45,7 @@ unsigned int piper_read(unsigned int p, unsigned int * buf, size_t n) {
         if(pipes[p].rPos == pipes[p].wPos) {
             pipes[p].rPos = 0;
             pipes[p].wPos = 0;
+    	    return alreadyRead;
         }
     }
 
@@ -54,6 +56,7 @@ unsigned int piper_write(unsigned int p, const unsigned int * buf, size_t n) {
     //int i;
     size_t alreadyWritten = 0;
     size_t writeNow = 0;
+    wakeup(&pipes[p]);
     while(n) {
          while(pipes[p].wPos >= PIPE_MAX_LENGTH) {
             resched_now();

@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 /* platform */
+#if 0
 int mygetch() {
         char ch;
         int error;
@@ -53,7 +54,14 @@ int mygetch() {
 
             return (error == 1 ? (int) ch : -1 );
 }
+#else
+int mygetch() {
+  int c;
+  read(0, &c, 1);
+  return c;
+}
 
+#endif
 
 /* logic */
 
@@ -91,8 +99,8 @@ void generate_food() {
     printf("gen\n");
 regenerate:
     iterator = 0;
-    food_x = random() & 0b00000111;
-    food_y = random() & 0b00000111;
+    food_x = random() & 0x07;//0b00000111;
+    food_y = random() & 0x07;//0b00000111;
     while(1) {
         if(iterator >= current_length)
             break;        
@@ -285,14 +293,14 @@ void delay() {
 
 
 int main() {
-    self[0] = 0b00000100;
-    self[1] = 0b00000100;
+    self[0] = 0x04;//0b00000100;
+    self[1] = 0x04;//0b00000100;
 
-    self[2] = 0b00000011;
-    self[3] = 0b00000100;
+    self[2] = 0x03;//0b00000011;
+    self[3] = 0x04;//0b00000100;
 
-    self[4] = 0b00000010;
-    self[5] = 0b00000100;
+    self[4] = 0x02;//0b00000010;
+    self[5] = 0x04;//0b00000100;
    /* 
     self[6] = 0b00000001;
     self[7] = 0b00000100;

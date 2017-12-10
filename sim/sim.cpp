@@ -56,7 +56,7 @@ Cpu::Cpu() {
 
   this->devices.push_back(new LCD(0x7fdc, 0x7fdd, 320, 240));
   this->devices.push_back(new HDD(0x7ffc, 0x7ffd, std::string("hdd")));
-  this->devices.push_back(new Timer(intCtl, 3, 50000ULL));
+  this->devices.push_back(new Timer(intCtl, 3, 5000ULL));
   this->devices.push_back(intCtl);
 
 }
@@ -747,6 +747,8 @@ int main(int argc, char ** argv) {
 
     startTime = gettime_ms();
     totalInstr = 0;
+    std::ofstream log("log");
+
     while(1) {
         struct timespec tsStart;
         if(ips) {
@@ -765,7 +767,12 @@ int main(int argc, char ** argv) {
         }
         myCpu.execute();
 
+        //log << gettime_ms() << " " << __current_code_bank << " " << __current_data_bank << " " << myCpu.getPC() << " " << myCpu.getSP() << std::endl;
+
         totalInstr++;
+
+	
+
 
         if(myCpu.getSP() > SP_max) {
             SP_max = myCpu.getSP();
@@ -804,6 +811,6 @@ int main(int argc, char ** argv) {
 
     }
 
-    
+    log.close();
     return 0;
 }
