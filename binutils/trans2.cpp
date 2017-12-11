@@ -128,7 +128,6 @@ void genBuiltinCmp(std::string line, int opSize, std::string argStr) {
     } else if(opSize == 2) {
         output.push_back(RCEntry(0, rc_discard, "3", SIZE_WORD, ARG_CHAR));
         output.push_back(RCEntry(0, rc_cnst, "0", SIZE_WORD, ARG_CHAR));
-        output.push_back(RCEntry(0, rc_nop));
         output.push_back(RCEntry(0, rc_ne, argStr.c_str(), SIZE_WORD, ARG_LINK));
 
     } else {

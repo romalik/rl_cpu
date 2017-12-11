@@ -125,7 +125,6 @@ cnst_b 0
 call0_w __builtin_cmp_EQU2 $20
 discard_b 3
 cnst_b 0
-nop 
 ne_w $20
 addrl_b 0
 addrl_b 0
@@ -160,7 +159,6 @@ cnst_b 0
 call0_w __builtin_cmp_NEU2 $17
 discard_b 3
 cnst_b 0
-nop 
 ne_w $17
 addrl_b 0
 indir2 
@@ -227,7 +225,6 @@ cnst_b 0
 call0_w __builtin_cmp_EQI2 $7
 discard_b 3
 cnst_b 0
-nop 
 ne_w $7
 addrl_b 1
 cnst_b 1
@@ -461,7 +458,6 @@ indir2
 call0_w __builtin_cmp_LEU2 $2_d2
 discard_b 3
 cnst_b 0
-nop 
 ne_w $2_d2
 cnst_b 0
 cnst_b 0
@@ -476,7 +472,6 @@ indir2
 call0_w __builtin_cmp_NEU2 $7_d2
 discard_b 3
 cnst_b 0
-nop 
 ne_w $7_d2
 cnst_b 1
 cnst_b 0
@@ -509,7 +504,6 @@ indir2
 call0_w __builtin_cmp_LEU2 $6_d2
 discard_b 3
 cnst_b 0
-nop 
 ne_w $6_d2
 addrl_b 6
 cnst_b 1
@@ -537,7 +531,6 @@ indir2
 call0_w __builtin_cmp_LTU2 $12_d2
 discard_b 3
 cnst_b 0
-nop 
 ne_w $12_d2
 addrl_b -7
 addrl_b -7
@@ -579,7 +572,6 @@ cnst_b 0
 call0_w __builtin_cmp_NEU2 $9_d2
 discard_b 3
 cnst_b 0
-nop 
 ne_w $9_d2
 addrl_b 4
 indir2 

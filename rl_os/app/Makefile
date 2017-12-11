@@ -9,7 +9,7 @@ AS = asm
 CMD_SOURCES = $(wildcard cmd/*.c)
 LIBS = $(wildcard ../rootfs//lib/*.o)
 UE_SOURCES = ue/ue.c ue/term-ansi.c
-#SH_SOURCES = $(wildcard sh/*.c)
+SH_SOURCES = $(wildcard sh/*.c)
 
 
 BINS = $(CMD_SOURCES:.c=)
