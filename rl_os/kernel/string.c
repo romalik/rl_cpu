@@ -81,6 +81,25 @@ int strcpy(void *dest_, const void *src_) {
     return 0;
 }
 
+char *strncpy(char *d, const char *s, unsigned int l)
+{
+        char *s1 = d;
+        const char *s2 = s;
+
+        while (l) {
+                l--;
+                if ((*s1++ = *s2++) == '\0')
+                        break;
+        }
+
+        /* This _is_ correct strncpy is supposed to zap */
+        while (l-- != 0)
+                *s1++ = '\0';
+        return d;
+}
+
+
+
 int memset(unsigned int *dest, const unsigned int val, int n) {
     int k = n;
     while (k--) {

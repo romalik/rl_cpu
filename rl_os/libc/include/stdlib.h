@@ -62,7 +62,7 @@ int mkstemps(char *__template, int __suffix);
 double strtod(const char *__nptr, char **__endptr);
 #endif
 
-char **environ;
+extern char **environ;
 char *getenv(char *__name);
 int putenv(char *__name);
 int setenv(char *__name, char *__value, int __overwrite);

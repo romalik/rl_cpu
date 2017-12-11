@@ -79,6 +79,9 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
 unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n);
 unsigned int proc_file_write(unsigned int minor, const unsigned int * buf, size_t n);
 
+unsigned int sched_file_read(unsigned int minor, unsigned int * buf, size_t n);
+unsigned int sched_file_write(unsigned int minor, const unsigned int * buf, size_t n);
+
 void sleep(struct Process * proc, void * event);
 void wakeup(void * event);
 

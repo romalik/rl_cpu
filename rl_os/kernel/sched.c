@@ -6,8 +6,15 @@
 #define ARGV_BUFFER_SIZE 256
 #define SCHED_STACK_SIZE 512
 
+#define MAX_ENVP_ENTRIES 5
+#define MAX_ENVP_ENTRY_LENGTH 30
 
-#define TIMESLICE 20
+#define MAX_ARGV_ENTRIES 15
+
+
+unsigned int TIMESLICE = 20;
+
+//#define TIMESLICE 20
 
 #define STACK_PLACEMENT 0xe000
 
@@ -275,7 +282,7 @@ unsigned int findProcByParent(struct Process * pid, struct Process **p) {
     }
     return 0;
 }
-
+/*
 size_t parseArgs(const char **nArgv, unsigned int *buf, size_t off) {
     unsigned int *argc;
     unsigned int *argv;
@@ -302,7 +309,99 @@ size_t parseArgs(const char **nArgv, unsigned int *buf, size_t off) {
     *argv = 0;
     return (size_t)p - (size_t)buf;
 }
+*/
 
+size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, size_t off) {
+/*
+   argc
+   argv **
+   envp **
+   envp[0] *
+   ...
+   envp[n] *
+   envp[0] [maxlen]
+   ...
+   envp[n] [maxlen]
+   argv[0] *
+   ...
+   argv[m] *
+   argv[0]
+   ...
+   argv[m] 
+
+
+*/
+    unsigned int * target_argc;
+    unsigned int * target_argv;
+    unsigned int * target_envp;
+
+    unsigned int * target_envp_ptrs_area;
+    unsigned int * target_envp_entries_area;
+
+    unsigned int * target_argv_ptrs_area;
+    unsigned int * target_argv_entries_area;
+    
+    unsigned int * envPtr_target;
+    unsigned int * envPtr_source;
+    unsigned int nEnv = 0;
+
+    const char ** p;
+    char * t;
+    unsigned int i;
+
+    target_argc = buf;
+    target_argv = buf + 1;
+    target_envp = buf + 2;
+
+    target_envp_ptrs_area = buf + 3;
+    target_envp_entries_area = target_envp_ptrs_area + MAX_ENVP_ENTRIES; 
+    target_argv_ptrs_area = target_envp_entries_area + MAX_ENVP_ENTRIES * MAX_ENVP_ENTRY_LENGTH;
+    target_argv_entries_area = target_argv_ptrs_area + MAX_ARGV_ENTRIES;
+
+    memset(buf, 0, target_argv_entries_area - buf);
+
+    *target_argv = target_argv_ptrs_area - buf + off;
+    *target_envp = target_envp_ptrs_area - buf + off;
+
+    //fill envp pointers
+    for(i = 0; i<MAX_ENVP_ENTRIES; i++) {
+      target_envp_ptrs_area[i] = target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH - buf + off;
+    }
+    p = envp_in;
+    i = 0;
+    // copy envp entries
+    if(envp_in) {
+      while(*p) {
+        strncpy((char *)(target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH), *p, MAX_ENVP_ENTRY_LENGTH);
+        i++;
+        p++;
+      }
+    }
+    target_envp_ptrs_area[i] = 0;
+
+
+    p = argv_in;
+    t = (char *)target_argv_entries_area;
+    i = 0;
+    if(argv_in) {
+      while(*p) {
+        strcpy(t, *p);
+        target_argv_ptrs_area[i] = (size_t)((size_t)t - (size_t)buf + (size_t)off);
+        i++;
+        t += strlen(*p)+1;
+        p++;
+      }
+    }
+    target_argv_ptrs_area[i] = 0;
+    *target_argc = i; 
+
+    for(i = 0; i<30; i++) {
+      printf("%d : 0x%04x\n", i, buf[i]);
+    }
+
+    printf("Ret 0x%04x\n", (size_t)t - (size_t)buf);
+    return (size_t)t - (size_t)buf;
+}
 
 unsigned int do_exec(struct Process * p, const char * filename, const char ** argv, const char ** envp) {
     FILE *fd;
@@ -339,7 +438,7 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
   
     //printf("Loading bin %s header OK mode %d text %d data %d\n", filename, mode, sizeText, sizeData);
 
-    off = parseArgs(argv, argvBuffer, STACK_PLACEMENT);
+    off = parseArgs(argv, envp, argvBuffer, STACK_PLACEMENT);
 
     if(mode == 0) { // One-segment binary
         unsigned int cPos = 0x8000;
@@ -463,3 +562,13 @@ unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n) {
 unsigned int proc_file_write(unsigned int minor, const unsigned int * buf, size_t n) {
   return 0;
 }
+
+unsigned int sched_file_read(unsigned int minor, unsigned int * buf, size_t n) {
+  return 0;
+}
+
+unsigned int sched_file_write(unsigned int minor, const unsigned int * buf, size_t n) {
+  TIMESLICE = *buf;
+  return n;
+}
+

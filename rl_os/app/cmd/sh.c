@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 char cmdBuf[127];
 int cmdBufSize = 127;
@@ -44,11 +45,31 @@ int exit_sh(int argc, char **argv) {
     return 0;
 }
 
+int export_sh(int argc, char **argv) {
+    if(argc > 1) {
+      char *name;
+      char *value;
+      name = argv[1];
+      value = argv[1];
+      while(*value) {
+        if(*value == '=') {
+          *value = 0;
+          value++;
+          setenv(name,value,1);
+          return 0;
+	}
+        value++;
+      }
+    }
+    printf("bad format\n");
+    return 0;
+}
+
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"cls", "cd", "help", "exit", "pwd", ""};
+char builtinCmds[][15] = {"cls", "cd", "help", "exit", "pwd", "export", ""};
 
-int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, exit_sh, pwd};
+int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, exit_sh, pwd, export_sh};
 
 int help(int argc, char **argv) {
     int i = 0;
@@ -146,6 +167,41 @@ int sh_getArgs(char *cmd, char **_argv, int * redirIN, int * redirOUT, int * red
     return argc;
 }
 
+void execWithPathSearch(char * nArgv[]) {
+  char * pathList;
+  char * ep;
+  char fullPath[128];
+  int asis = 0;
+
+  asis = !!(strchr(nArgv[0],'/'));
+  
+  if(asis) {
+    execve((void *)nArgv[0], (void *)nArgv, 0);
+  } else {
+    pathList = getenv("PATH");
+    if(!pathList) {
+      printf("PATH not defined!\n");
+      return;
+    }
+    ep = pathList;
+    while(1) {
+      while(*ep && *ep != ':') {
+        ep++;
+      }
+      memcpy(fullPath, pathList, ep-pathList);
+      fullPath[ep-pathList] = '/';
+      fullPath[ep-pathList+1] = 0;
+      strcat(fullPath, nArgv[0]);
+      execve((void *)fullPath, (void *)nArgv, environ);
+      if(!(*ep)) break;
+      ep++;
+      pathList = ep;
+    }
+  }
+
+
+}
+
 
 int main() {
     int i = 0;
@@ -209,11 +265,13 @@ int main() {
                           }
 
                           if(nArgv[0][0] == '&') {
-                              execve((void *)nArgv[1], (void *)(&nArgv[1]), 0);
+                              //execve((void *)nArgv[1], (void *)(&nArgv[1]), 0);
+  			      execWithPathSearch(&nArgv[1]);
                               printf("Failed execing %s\n", nArgv[0]);
                               return 1;
                           } else {
-                              execve((void *)nArgv[0], (void *)nArgv, 0);
+                              //execve((void *)nArgv[0], (void *)nArgv, 0);
+  			      execWithPathSearch(nArgv);
                               printf("Failed execing %s\n", nArgv[0]);
                               return 1;
                           }
@@ -239,7 +297,8 @@ int main() {
                         dup(p[1]);
                         close(p[0]);
                         close(p[1]);
-                        execve((void *)nArgv[0], (void *)nArgv, 0);
+                        //execve((void *)nArgv[0], (void *)nArgv, 0);
+  			execWithPathSearch(nArgv);
                       }
                       if((pid2 = fork()) == 0){
                         nArgc = sh_getArgs(cmdBuf+pipeStart, nArgv, &redirIN, &redirOUT, &redirERR);
@@ -247,7 +306,8 @@ int main() {
                         dup(p[0]);
                         close(p[0]);
                         close(p[1]);
-                        execve((void *)nArgv[0], (void *)nArgv, 0);
+                        //execve((void *)nArgv[0], (void *)nArgv, 0);
+  			execWithPathSearch(nArgv);
                       }
                       close(p[0]);
                       close(p[1]);

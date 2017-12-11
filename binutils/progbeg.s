@@ -7,6 +7,11 @@
 .export __progbeg
 call0_w malloc_init_auto
 call0_w __io_init_vars 
+
+cnst_w environ
+iaddrl_b 2
+store
+
 call1_w main
 call0_w exit
 .data

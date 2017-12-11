@@ -14,7 +14,7 @@ UE_SOURCES = ue/ue.c ue/term-ansi.c
 
 BINS = $(CMD_SOURCES:.c=)
 BINS += ue/ue
-#BINS += sh/shv7
+#BINS += sh/msh
 
 # Main target
 all: $(BINS)

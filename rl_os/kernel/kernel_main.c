@@ -52,9 +52,11 @@ int kernel_main() {
     k_regDevice(0, tty_write, tty_read, 0, 0);
     k_regDevice(1, proc_file_write, proc_file_read, 0, 0);
     k_regDevice(2, piper_write, piper_read, 0, piper_close);
+    k_regDevice(3, sched_file_write, sched_file_read, 0, 0);
 
     k_mknod("/tty", 'c', 0, 0);
     k_mknod("/proc", 'c', 1, 0);
+    k_mknod("/schedctl", 'c', 3, 0);
 
     printf("Press s for builtin shell, any key for init [%s]\n", INIT_PATH);
 
