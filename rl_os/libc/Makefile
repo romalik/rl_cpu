@@ -9,6 +9,7 @@ AS = asm
 LIB = stdlib
 ASM_SOURCES = $(wildcard s/*.s)
 SOURCES = $(wildcard c/*.c)
+SOURCES += $(wildcard c/curses/*.c)
 OBJECTS = $(SOURCES:.c=.o)
 ASM_OBJECTS = $(ASM_SOURCES:.s=.o)
 # Main target

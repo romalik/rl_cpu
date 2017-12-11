@@ -307,6 +307,10 @@ class HDD : public VMemDevice {
           if(cState == STATE_READING) {
             if(cPos < 512) {
               int dest = cSector*512 + cPos;
+	      if(dest + 1 >= size) {
+                printf("HDD: request out of bounds! cSector %d cPos %d\n", cSector, cPos); 
+                return 0;  
+	      }
               w retval = data[dest];
               retval |= ((data[dest+1])<<8);
               cPos+=2;

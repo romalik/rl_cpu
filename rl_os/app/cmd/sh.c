@@ -206,6 +206,9 @@ void execWithPathSearch(char * nArgv[]) {
 
 int main() {
     int i = 0;
+
+    setenv("PATH","/:/bin/",1);
+
     printf("\n");
     do_pwd();
     printf("# ");
@@ -283,6 +286,8 @@ int main() {
                               bgChildren++;
                           } else {
                               r = waitpid(childPid, &status, 0);
+
+				printf("Returned to shell\n");
                           }
                       }
                   } else {

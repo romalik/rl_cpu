@@ -38,13 +38,16 @@ void put_file(char *name) {
           int dEntryPos = dirEntryIdx * 32 + 35*256 + i;
           image[dEntryPos] = name[i];
         }
-
+#define RESERVE_BLOCKS 100
         fileAddr = ((fileAddr >> 8) + 1) << 8;
         int nodeAddr = fileAddr;
-        fileAddr = ((fileAddr >> 8) + 1) << 8;
+        fileAddr = ((fileAddr >> 8) + RESERVE_BLOCKS) << 8;
 
 
         image[dirEntryIdx * 32 + 35*256 + 31] = nodeAddr >> 8;
+
+
+#define DIRECT_INDEXES_CNT 150
 
 #define M_S_IFMT      0170000
 #define M_S_IFSOCK    0140000     /* Reserved, not used */
@@ -73,14 +76,16 @@ void put_file(char *name) {
         
         image[nodeAddr] = M_S_IFREG;
         {
-          int usedBlock = nodeAddr >> 8;
-          int cBitmap = usedBlock >> 12;
-          int cSect = usedBlock & 0xfff;
-          int idx = cSect >> 4;
-          int pos = usedBlock & 0x0f;
-          image[(cBitmap+1)*256 + idx] |= (1<<pos);
+	   for(int i = 0; i<RESERVE_BLOCKS; i++) {
+             int usedBlock = i + (nodeAddr >> 8);
+             int cBitmap = usedBlock >> 12;
+             int cSect = usedBlock & 0xfff;
+             int idx = cSect >> 4;
+             int pos = usedBlock & 0x0f;
+             image[(cBitmap+1)*256 + idx] |= (1<<pos);
+           }
         }
-        int cBlockOff = 3;
+        int cBlockOff = 0;
         int fileSize = 0;
 
 
@@ -97,8 +102,15 @@ void put_file(char *name) {
           int idx = cSect >> 4;
           int pos = usedBlock & 0x0f;
           image[(cBitmap+1)*256 + idx] |= (1<<pos);
+	  if(cBlockOff < DIRECT_INDEXES_CNT) {
+          	image[nodeAddr + cBlockOff + 3] = fileAddr >> 8;
+	  } else {
+		int metaBlkIdx = (cBlockOff - DIRECT_INDEXES_CNT)/256;
+        	image[nodeAddr + DIRECT_INDEXES_CNT + 3 + metaBlkIdx] = ((nodeAddr >> 8) + metaBlkIdx + 1);
+		int offInMetaBlock = (cBlockOff - DIRECT_INDEXES_CNT)%256; 
+        	image[(((nodeAddr >> 8) + metaBlkIdx + 1) << 8) + offInMetaBlock] = fileAddr >> 8;
 
-          image[nodeAddr + cBlockOff] = fileAddr >> 8;
+	  }
           cBlockOff++;
           for(int i = 0; i<n;i++) {
             image[fileAddr] = (buf[i] >> 8) | ((buf[i]&0xff)<<8);

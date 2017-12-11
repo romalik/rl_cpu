@@ -27,7 +27,7 @@
 #define STDIN_FILENO   0  /* fileno(stdin)  */
 #define STDOUT_FILENO  1  /* fileno(stdout) */
 
-#define BUFFER_SIZE    64
+#define BUFFER_SIZE    64 //4096
 
 static char buff[BUFFER_SIZE];
 
@@ -63,8 +63,9 @@ int output_file(int fd)
 {
     int bytes_read;
 
-    while ((bytes_read = read(fd, buff, BUFFER_SIZE)) > 0)
+    while ((bytes_read = read(fd, buff, BUFFER_SIZE)) > 0) {
 	write(STDOUT_FILENO, buff, bytes_read);
+    }
 
     if (bytes_read < 0)
         perror(filename);

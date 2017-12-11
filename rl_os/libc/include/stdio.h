@@ -4,6 +4,7 @@
 
 #include <features.h>
 #include <sys/types.h>
+#include <stdarg.h>
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -110,6 +111,16 @@ int puts (char*);
 int printf  (const char*, ...);
 int fprintf  (FILE*, const char*, ...);
 int sprintf  (char*, const char*, ...);
+
+int snprintf(char *__str, size_t __size, const char *__fmt, ...);
+
+int vprintf(const char*, va_list __ap);
+int vfprintf(FILE *__stream, const char*, va_list __ap);
+int _vfnprintf(FILE *__stream, size_t __size, const char *__fmt, va_list __ap);
+int vsprintf(char *__str, const char *__fmt, va_list __ap);
+int vsnprintf(char *__str, size_t __size, const char *__fmt, va_list __ap);
+
+
 
 int fread(char * buf, int size, int nelm, FILE * fp);
 int fwrite(char * buf, int size, int nelm, FILE * fp);

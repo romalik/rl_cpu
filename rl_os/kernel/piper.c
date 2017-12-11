@@ -1,12 +1,13 @@
 #include <piper.h>
 #include <types.h>
 #include <sched.h>
-
+#include <lock.h>
 
 struct pipefile {
     off_t wPos;
     off_t rPos;
     int closed;
+    unsigned int mx;
     unsigned int buf[PIPE_MAX_LENGTH];
 };
 
@@ -19,6 +20,7 @@ void piper_init() {
         pipes[i].wPos = 0;
         pipes[i].rPos = 0;
         pipes[i].closed = 0;
+        spinlock_init(&pipes[i].mx);
     }
 }
 
@@ -29,9 +31,10 @@ unsigned int piper_read(unsigned int p, unsigned int * buf, size_t n) {
     while(n) {
         while(pipes[p].rPos >= pipes[p].wPos) {
             if(pipes[p].closed) return alreadyRead;
-	    sleep(cProc, &pipes[p]);
+	    //sleep(cProc, &pipes[p]);
             resched_now();
         }
+	spinlock_lock(&pipes[p].mx);
         readNow = n;
 
         if(readNow > pipes[p].wPos - pipes[p].rPos) {
@@ -45,8 +48,10 @@ unsigned int piper_read(unsigned int p, unsigned int * buf, size_t n) {
         if(pipes[p].rPos == pipes[p].wPos) {
             pipes[p].rPos = 0;
             pipes[p].wPos = 0;
+	    spinlock_unlock(&pipes[p].mx);
     	    return alreadyRead;
         }
+	spinlock_unlock(&pipes[p].mx);
     }
 
     return alreadyRead;
@@ -56,31 +61,28 @@ unsigned int piper_write(unsigned int p, const unsigned int * buf, size_t n) {
     //int i;
     size_t alreadyWritten = 0;
     size_t writeNow = 0;
-    wakeup(&pipes[p]);
     while(n) {
          while(pipes[p].wPos >= PIPE_MAX_LENGTH) {
+            //wakeup(&pipes[p]);
             resched_now();
             if(pipes[p].closed) {
                 return alreadyWritten;
             }
-        }
-        /*
-        printf("Piper write [%d]: ", p);
-        for(i = 0; i<n; i++) {
-            printf("%c", *(buf + i));
-        }
-        printf("\n");
-        */
+         }
+
+	 spinlock_lock(&pipes[p].mx);
          writeNow = n;
          if(writeNow > PIPE_MAX_LENGTH - pipes[p].wPos) {
              writeNow = PIPE_MAX_LENGTH - pipes[p].wPos;
          }
 
-        memcpy(pipes[p].buf + pipes[p].wPos, buf, writeNow);
+         memcpy(pipes[p].buf + pipes[p].wPos, buf, writeNow);
 
-        pipes[p].wPos += writeNow;
-        n-=writeNow;
-        alreadyWritten += writeNow;
+         pipes[p].wPos += writeNow;
+         n-=writeNow;
+         alreadyWritten += writeNow;
+	 spinlock_unlock(&pipes[p].mx);
+         //wakeup(&pipes[p]);
 
     }
     return alreadyWritten;

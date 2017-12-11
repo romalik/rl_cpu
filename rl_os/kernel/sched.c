@@ -1,6 +1,7 @@
 #include <sched.h>
 #include <memmap.h>
 #include <kernel_worker.h>
+#include <lock.h>
 
 #define EXEC_READ_CHUNK 0x1000
 #define ARGV_BUFFER_SIZE 256
@@ -33,8 +34,14 @@ unsigned int currentTask = -1;
 extern unsigned int kernel_worker_stack[];
 extern void kernel_worker_entry();
 
+unsigned int schedMx;
+
+
 void sched_init() {
     int i = 0;
+
+    spinlock_init(&schedMx);
+
     for (i = 0; i < MAXPROC; i++) {
         procs[i].state = PROC_STATE_NONE;
         procs[i].signalsPending = 0;
@@ -62,14 +69,19 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
                                struct Process *p) {
     int i = 0;
     int j;
+
+    spinlock_lock(&schedMx);
+
     for (i = 0; i < MAXPROC; i++) {
         if (procs[i].state == PROC_STATE_NONE) {
             break;
         }
     }
 
-    if (i == MAXPROC)
+    if (i == MAXPROC) {
+        spinlock_unlock(&schedMx);
         return;
+    }
 
     procs[i].pid = pid;
     procs[i].codeMemBank = codeBank;
@@ -135,6 +147,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
     // printf("Proc pid %d entry %d added\n", pid, i);
 
     // ps();
+        spinlock_unlock(&schedMx);
 
     return &procs[i];
 }
@@ -160,10 +173,12 @@ unsigned int getSignalFromMask(unsigned int mask) {
 unsigned int sendSig(unsigned int pid, unsigned int sig) {
     int r;
     struct Process * pt;
+        spinlock_lock(&schedMx);
     r = findProcByPid(pid, &pt);
     if(r) {
         pt->signalsPending |= (1 << sig);
     }
+        spinlock_unlock(&schedMx);
     return 0;
 }
 
@@ -509,14 +524,18 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
 }
 
 void sleep(struct Process * proc, void * event) {
+        spinlock_lock(&schedMx);
    proc->state = PROC_STATE_SLEEP;
    proc->waitingOn = event;
-	printf("Sleep process %d\n", proc->pid);
+	printf("Sleep process %d on 0x%04x\n", proc->pid, (size_t)(event));
+        spinlock_unlock(&schedMx);
 }
 
 
 void wakeup(void * event) {
    int i;
+        spinlock_lock(&schedMx);
+	printf("Try wake on 0x%04x\n", (size_t)(event));
    for(i = 0; i<MAXPROC; i++) {
       if(procs[i].state == PROC_STATE_SLEEP) {
          if(procs[i].waitingOn == event) {
@@ -527,6 +546,7 @@ void wakeup(void * event) {
       }
 
    }
+        spinlock_unlock(&schedMx);
 }
 
 

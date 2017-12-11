@@ -23,6 +23,7 @@
 
 #include <sys/types.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #if defined(__STDC__) && !defined(__FIRST_ARG_IN_AX__)
 #include <stdarg.h>
 #define va_strt      va_start
@@ -202,7 +203,7 @@ register va_list ap;
    int   preci, dpoint, width;
    char  pad, sign, radix, hash;
    register char *ptmp;
-   char  tmp[64], *ltostr(), *ultostr();
+   char  tmp[64];
    int buffer_mode;
 
    /* This speeds things up a bit for unbuffered */
@@ -279,7 +280,7 @@ register va_list ap;
 
 	 case 'd':		/* Signed decimal */
 	 case 'i':
-	    ptmp = ltostr((long) ((lval)
+	    ptmp = __ltostr((long) ((lval)
 			 ? va_arg(ap, long)
 			 : va_arg(ap, short)),
 		 10);
@@ -307,7 +308,7 @@ register va_list ap;
 
 	 case 'u':		/* Unsigned decimal */
 	  usproc:
-	    ptmp = ultostr((unsigned long) ((lval)
+	    ptmp = __ultostr((unsigned long) ((lval)
 				   ? va_arg(ap, unsigned long)
 				   : va_arg(ap, unsigned short)),
 		  radix);

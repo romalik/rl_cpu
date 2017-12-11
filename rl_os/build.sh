@@ -11,6 +11,8 @@ rm rootfs/bin/*
 rm rootfs/lib/*
 
 cp rootfs/add/* rootfs/bin
+./conv.sh
+cp rootfs/text_conv/* rootfs/bin
 #-------------------
 
 
@@ -32,6 +34,8 @@ make -C libc clean
 make -C libc
 cp -rfv libc/include rootfs/lib
 #-------------------
+
+
 
 ####################
 #  prepare apps    #

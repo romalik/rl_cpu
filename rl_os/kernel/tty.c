@@ -1,5 +1,5 @@
 #include <tty.h>
-
+#include <kstdio.h>
 
 unsigned int tty_read(unsigned int minor, unsigned int * buf, size_t n) {
   int to_read = 1;//n;

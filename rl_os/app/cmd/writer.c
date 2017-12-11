@@ -1,8 +1,8 @@
 #include <stdio.h>
 
 int main() {
-	int i;
-	for(i = 0; i<1000; i++) {
+	unsigned int i;
+	for(i = 0; i<30000; i++) {
 		printf("%d\n", i);
 	}
 	return 0;
