@@ -12,6 +12,7 @@ char *nArgv[10];
 int nArgc;
 int bgChildren = 0;
 
+extern char ** environ;
 
 int cls(int argc, char **argv) {
     printf("%c[1J%c[H", 0x1b, 0x1b);

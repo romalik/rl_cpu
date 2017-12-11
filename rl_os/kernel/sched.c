@@ -395,11 +395,6 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
     target_argv_ptrs_area[i] = 0;
     *target_argc = i; 
 
-    for(i = 0; i<30; i++) {
-      printf("%d : 0x%04x\n", i, buf[i]);
-    }
-
-    printf("Ret 0x%04x\n", (size_t)t - (size_t)buf);
     return (size_t)t - (size_t)buf;
 }
 
