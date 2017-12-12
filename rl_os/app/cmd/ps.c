@@ -43,6 +43,6 @@ void readProc(char *name) {
 int main(int argc, char **argv) {
 
   printf("PID\tSTATE\t\tCMD\n");
-  readProc("/proc");
+  readProc("/dev/proc");
     return 0;
 }

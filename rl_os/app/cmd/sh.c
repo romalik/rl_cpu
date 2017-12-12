@@ -46,6 +46,15 @@ int exit_sh(int argc, char **argv) {
     return 0;
 }
 
+void execWithPathSearch(char * nArgv[]);
+
+int exec_sh(int argc, char **argv) {
+    if(argc > 1) {
+	execWithPathSearch(&argv[1]);
+    }
+    return 0;
+}
+
 int export_sh(int argc, char **argv) {
     if(argc > 1) {
       char *name;
@@ -68,9 +77,9 @@ int export_sh(int argc, char **argv) {
 
 int help(int argc, char **argv);
 
-char builtinCmds[][15] = {"cls", "cd", "help", "exit", "pwd", "export", ""};
+char builtinCmds[][15] = {"cls", "cd", "help", "exit", "pwd", "export", "exec", ""};
 
-int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, exit_sh, pwd, export_sh};
+int (*builtinFuncs[])(int argc, char **argv) = {cls, cd, help, exit_sh, pwd, export_sh, exec_sh};
 
 int help(int argc, char **argv) {
     int i = 0;
@@ -204,8 +213,16 @@ void execWithPathSearch(char * nArgv[]) {
 }
 
 
-int main() {
+int main(int argc, char ** argv) {
     int i = 0;
+    int script_mode = 0;
+    int script_fd = 0;
+    if(argc > 1) {
+      script_mode = 1;
+      script_fd = open(argv[1], O_RDONLY);
+      if(!script_fd) { return 0; }
+
+    }
 
     setenv("PATH","/:/bin/",1);
 
@@ -213,10 +230,18 @@ int main() {
     do_pwd();
     printf("# ");
     while (1) {
-        char c = getchar();
+        char c;
+	if(script_mode) {
+	  int a;
+	  if(!read(script_fd, &a, 1)) return 0;
+	  c = a;
+          
+	} else {
+	  c = getchar();
+	}
         putchar(c);
         if (addChar(c)) {
-            if (cmdBuf[0]) {
+            if (cmdBuf[0] && cmdBuf[0] != '#') {
                 int redirIN = -2;
                 int redirOUT = -2;
                 int redirERR = -2;
@@ -286,8 +311,6 @@ int main() {
                               bgChildren++;
                           } else {
                               r = waitpid(childPid, &status, 0);
-
-				printf("Returned to shell\n");
                           }
                       }
                   } else {

@@ -79,6 +79,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
     }
 
     if (i == MAXPROC) {
+	printf("MAXPROC!\n");
         spinlock_unlock(&schedMx);
         return;
     }
@@ -146,7 +147,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
 
     // printf("Proc pid %d entry %d added\n", pid, i);
 
-    // ps();
+     //ps();
         spinlock_unlock(&schedMx);
 
     return &procs[i];
@@ -435,6 +436,25 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
             k_close(fd);
             return 1;
         }
+    }
+
+    if(!memcmp(header, &"#!", 2)) {
+	//this is a script!!
+        char interp[30];
+	char * t_argv[3];
+	int i;
+        t_argv[0] = (char *)filename;
+        t_argv[1] = (char *)filename;
+	t_argv[2] = 0;
+        k_close(fd);
+    	fd = k_open(filename, 'r');
+	k_read(fd, (unsigned int *)(interp), 30);
+	for(i = 0; i<30; i++) {
+	  if(interp[i] == '\n') interp[i] = 0;
+	}
+	return do_exec(p, (interp+2), (const char **)t_argv, envp);
+
+
     }
 
     if(memcmp(header, &"REXE", 4)) {

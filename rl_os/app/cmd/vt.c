@@ -93,8 +93,8 @@ int main() {
 
   ch = (int *)malloc(PIPE_READ_CHUNK);
 
-  mkfifo("/pty", 0777);
-  fd = open("/pty", O_RDONLY);
+  mkfifo("/dev/pty", 0777);
+  fd = open("/dev/pty", O_RDONLY);
 
   while(1) {
     n = read(fd, ch, PIPE_READ_CHUNK);

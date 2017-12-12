@@ -23,7 +23,7 @@ extern void ei();
 #define TIMER_INTERRUPT_ADDR_PORT INT3_vec
 #define SYSTEM_INTERRUPT_ADDR_PORT INT0_vec
 
-#define INIT_PATH "/sh"
+#define INIT_PATH "/init.sh"
 
 void init_interrupts() {
     TIMER_INTERRUPT_ADDR_PORT = (size_t)(__timer_interrupt_vector);
@@ -54,9 +54,11 @@ int kernel_main() {
     k_regDevice(2, piper_write, piper_read, 0, piper_close);
     k_regDevice(3, sched_file_write, sched_file_read, 0, 0);
 
-    k_mknod("/tty", 'c', 0, 0);
-    k_mknod("/proc", 'c', 1, 0);
-    k_mknod("/schedctl", 'c', 3, 0);
+    k_mkdir("/dev");
+
+    k_mknod("/dev/tty", 'c', 0, 0);
+    k_mknod("/dev/proc", 'c', 1, 0);
+    k_mknod("/dev/schedctl", 'c', 3, 0);
 
     printf("Press s for builtin shell, any key for init [%s]\n", INIT_PATH);
 
@@ -79,9 +81,9 @@ int kernel_main() {
             halt();
         }
 
-        procs[initPid].openFiles[0] = k_open("/tty", 'r');
-        procs[initPid].openFiles[1] = k_open("/tty", 'w');
-        procs[initPid].openFiles[2] = k_open("/tty", 'w');
+        procs[initPid].openFiles[0] = k_open("/dev/tty", 'r');
+        procs[initPid].openFiles[1] = k_open("/dev/tty", 'w');
+        procs[initPid].openFiles[2] = k_open("/dev/tty", 'w');
 
         printf("Starting scheduler\n");
         sched_start();

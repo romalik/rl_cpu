@@ -6,13 +6,10 @@
 mkdir -p rootfs
 mkdir -p rootfs/bin
 mkdir -p rootfs/lib
-mkdir -p rootfs/add
 rm rootfs/bin/*
 rm rootfs/lib/*
 
-cp rootfs/add/* rootfs/bin
 ./conv.sh
-cp rootfs/text_conv/* rootfs/bin
 #-------------------
 
 
@@ -44,4 +41,24 @@ make -C app clean
 make -C app
 #-------------------
 
-g++ -o ./tools/make_rootfs ./tools/make_rootfs.cpp && ./tools/make_rootfs hdd 10000000 rootfs/bin
+
+####################
+#  prepare arch    #
+####################
+rm -rf rootfs/bstrap
+mkdir -p rootfs/bstrap
+cd rootfs
+rm -rf scripts
+cp -rfv text_conv scripts
+tar cfv bstrap/bin.tar bin
+tar cfv bstrap/scripts.tar scripts
+cd ..
+cp rootfs/bin/sh rootfs/bstrap
+cp rootfs/bin/tar rootfs/bstrap
+cp rootfs/scripts/install.sh rootfs/bstrap/init.sh
+
+#-------------------
+
+
+
+g++ -o ./tools/make_rootfs ./tools/make_rootfs.cpp && ./tools/make_rootfs hdd 10000000 rootfs/bstrap

@@ -188,6 +188,7 @@ void do_kernel_task_execve(int i) {
         ei();
 
     } else {
+     printf("Kernel worker: execve TROUBLES!\n");
         // hmmm...
     }
 }
@@ -249,13 +250,13 @@ void do_kernel_task_waitpid(int i) {
         ei();
 
     } else {
+     printf("Kernel worker: waitpid TROUBLES!\n");
         // hmmm...
     }
 }
 
 void do_kernel_task_exit(int i) {
     struct Process *p;
-    //printf("Kernel worker: exit!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct exitSyscall *sStruct;
         int i;
@@ -280,6 +281,10 @@ void do_kernel_task_exit(int i) {
             mm_freeSegment(p->dataMemBank);
         }
         ei();
+    } else {
+
+        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+      //printf("Kernel worker: EXIT TROUBLES!!!! double exit??\n");
     }
 }
 void kernel_worker() {
@@ -305,6 +310,14 @@ void kernel_worker() {
     }
 }
 
+void showTasks() {
+  int i =0;
+  for(i = 0; i<MAX_QUEUE_SIZE; i++) {
+    printf("Task type %d caller %d\n", kernelTaskQueue[i].type, kernelTaskQueue[i].callerPid);
+  }
+}
+
+
 void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
     int i = 0;
 
@@ -326,4 +339,7 @@ void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
     kernelTaskQueue[i].callerPid = callerPid;
     kernelTaskQueue[i].args = args;
     //spinlock_unlock(&kernelTaskQueueLock);
+
+//    showTasks();
 }
+
