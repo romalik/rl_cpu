@@ -10,7 +10,7 @@
 int main(int argc, char **argv)
 {
     unsigned int new_timeslice = 20;
-    int fd = open("/schedctl", O_WRONLY);
+    int fd = open("/dev/schedctl", O_WRONLY);
     if(argc > 1) {
       new_timeslice = atoi(argv[1]);
     }

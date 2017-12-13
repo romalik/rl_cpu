@@ -11,12 +11,17 @@
 
 #include "oplist.h"
 
+size_t code_block_size = 8;
+size_t text_space = 0x10000 * code_block_size;
+size_t data_space = 0x10000;
 enum {
     O_MODE_ONESEG = 0,
     O_MODE_TWOSEG = 1,
     O_MODE_RAWBIN = 2
 };
 
+
+        char image[0xffffff];
 
 typedef struct LabelEntry_t {
     LabelEntry_t() {uid = -1; position = -1; needExport = 0; needImport = 0; section = 0; shift = 0;}
@@ -27,13 +32,15 @@ typedef struct LabelEntry_t {
     int needImport;
     int shift;
 
+	std::string filename;
+
     std::string name;
 } LabelEntry;
 
 
 
 typedef struct Section_t {
-    char labelMap[0xffff];
+    std::vector<char> labelMap;
     int offset;
     std::vector<uint16_t> code;
     std::string filename;
@@ -136,7 +143,7 @@ public:
     
 
     void strip() {
-        printf("Strip: %d objs before\n", labelsPerObj.size());
+        //printf("Strip: %d objs before\n", labelsPerObj.size());
         std::vector<int> requiredObjs;
         requiredObjs.push_back(whoProvides("__progbeg"));
 
@@ -157,7 +164,7 @@ public:
                         if(std::find(requiredObjs.begin(), requiredObjs.end(), who) == requiredObjs.end()) {
 //                            printf("%s needs import - found in %d [%s]\n", ll.first.c_str(), who, sections[who][0].filename.c_str());
                             requiredObjs.push_back(who);
-                            printf("%s requested by %s\n", sections[who][0].filename.c_str(), sections[r][0].filename.c_str());
+                            //printf("%s requested by %s\n", sections[who][0].filename.c_str(), sections[r][0].filename.c_str());
 
                         } else {
 //                            printf("File already imported\n");
@@ -178,7 +185,7 @@ public:
         }
         sections = newSects;
         labelsPerObj = newLabelsPerObj;
-        printf("Strip: %d objs after\n", labelsPerObj.size());
+        //printf("Strip: %d objs after\n", labelsPerObj.size());
 
     }
 
@@ -200,7 +207,6 @@ public:
             sections[i][0].offset = cOffset;
             cOffset += sections[i][0].code.size();
         }
-
         if(mode == O_MODE_TWOSEG) cOffset = 0; //reset offset for two-seg mode
 
         for(int i = 0; i<sections.size(); i++) { //concatenate all data sections
@@ -211,7 +217,11 @@ public:
         for(int i = 0; i<labelsPerObj.size(); i++) {
             for(LabelMap::iterator it = labelsPerObj[i].begin(); it != labelsPerObj[i].end(); it++) {
                 if(it->second.needImport != 1) {
+		  if(it->second.section == 0) {
+                    it->second.position += (globalOffset + sections[i][it->second.section].offset)/code_block_size;
+ 		  } else {
                     it->second.position += globalOffset + sections[i][it->second.section].offset;
+		  }
                 }
             }
         }
@@ -284,15 +294,18 @@ public:
         textSection.filename = filename;
         dataSection.filename = filename;
 
+	textSection.labelMap.resize(text_space, 0);
+	dataSection.labelMap.resize(data_space, 0);
 
 
         char header[4];
+        char textSizeSuperHigh;
         char textSizeHigh;
         char textSizeLow;
         char dataSizeHigh;
         char dataSizeLow;
-        char textFull[0xffff * 2];
-        char dataFull[0xffff * 2];
+        char textFull[text_space*2];
+        char dataFull[data_space*2];
         char labelFull[0xffff];
         char labelFullLenH;
         char labelFullLenL;
@@ -305,6 +318,7 @@ public:
             return;
         }
 
+        file.read(&textSizeSuperHigh, 1);
         file.read(&textSizeHigh, 1);
         file.read(&textSizeLow, 1);
         file.read(&dataSizeHigh, 1);
@@ -313,13 +327,13 @@ public:
         file.read(&labelFullLenL, 1);
         int labelFullLen = (((uint8_t)labelFullLenH << 8) | (uint8_t)labelFullLenL);
         file.read(labelFull, labelFullLen);
-        file.read(textSection.labelMap, 0xffff);
-        file.read(textFull, 0xffff*2);
-        file.read(dataSection.labelMap, 0xffff);
-        file.read(dataFull, 0xffff*2);
+        file.read(&textSection.labelMap[0], text_space);
+        file.read(textFull, text_space*2);
+        file.read(&dataSection.labelMap[0], data_space);
+        file.read(dataFull, data_space*2);
         file.close();
 
-        int textSize = (((uint8_t)textSizeHigh << 8) | (uint8_t)textSizeLow);
+        int textSize = (((uint8_t)textSizeSuperHigh << 16) |((uint8_t)textSizeHigh << 8) | (uint8_t)textSizeLow);
         int dataSize = (((uint8_t)dataSizeHigh << 8) | (uint8_t)dataSizeLow);
 
         convert8to16(textFull, textSection.code, textSize);
@@ -335,7 +349,7 @@ public:
 
         sections.push_back(tVec);
         labelsPerObj.push_back(cLabels);
-        //        printf("%s:\ttext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
+                //printf("%s:\ttext: %d\tdata: %d\n", filename.c_str(), textSize, dataSize);
         /*
         printf("OK\n");
 
@@ -376,8 +390,8 @@ public:
 
     void link() {
         for(int i = 0; i<sections.size(); i++) {
-            for(int j = 0; j<0xffff; j++) {
-                for(int cSect = 0; cSect<2; cSect++) {
+            for(int cSect = 0; cSect<2; cSect++) {
+                for(int j = 0; j < (cSect?data_space:text_space); j++) {
                     if(sections[i][cSect].labelMap[j]) {
                         LabelEntry entry;
                         uint16_t labelUid = sections[i][cSect].code[j];
@@ -391,6 +405,10 @@ public:
                                 exit(1);
 
                             } else {
+				if(!entry.section && entry.shift) {
+					printf("Shift for code entry %s %d file %s\n", entry.name.c_str(), entry.shift, sections[i][0].filename.c_str());
+	//				exit(1);
+				}
                                 sections[i][cSect].code[j] = entry.position + entry.shift;
                             }
                         }
@@ -400,16 +418,14 @@ public:
         }
     }
 
-    void writeBin(std::string filename, int fmt) {
+    void writeBin(std::string & filename, int fmt) {
         std::ofstream file;
         file.open(filename.c_str(), std::ios::out | std::ios::binary);
 
-        char image[0xffff*2];
-        memset(image, 0, 0xffff*2);
+        memset(image, 0, 0xffffff);
         char *p = image;
         char *d = image;
         size_t binarySize = 0;
-
         if(mode != O_MODE_RAWBIN) {
             // magic
             *p = 0;   p++;
@@ -430,6 +446,8 @@ public:
                 for(int i = 0; i<sections.size(); i++) {
                     cSize += sections[i][sect].code.size();
                 }
+		*p = 0;			        p++;
+                *p = ((cSize & 0xff0000) >> 16);p++;
                 *p = ((cSize & 0xff00) >> 8);   p++;
                 *p = (cSize & 0xff);            p++;
 
@@ -535,10 +553,10 @@ int main(int argc, char ** argv) {
     //printf("Resolve symbols..\n");
     linker.resolveNames();
 
-    //linker.dumpLabels();
     //printf("Linking..\n");
     linker.link();
-    //    printf("Writing to %s..\n", outFile.c_str());
+       // printf("Writing to %s..\n", outFile.c_str());
+    //linker.dumpLabels();
     linker.writeBin(outFile,0);
     //    printf("Done.\n");
 

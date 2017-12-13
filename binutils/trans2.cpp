@@ -139,12 +139,12 @@ void genRet(int opSize) {
     if(opSize == 0) {
         //do nothing, just ret
     } else if(opSize == 1) {
-        //bp-4
-        output.push_back(RCEntry(0, rc_addrl, "-4", SIZE_WORD, ARG_CHAR));
-        output.push_back(RCEntry(0, rc_rstore, "", SIZE_WORD, ARG_NONE));
-    } else if(opSize == 2) {
         //bp-5
         output.push_back(RCEntry(0, rc_addrl, "-5", SIZE_WORD, ARG_CHAR));
+        output.push_back(RCEntry(0, rc_rstore, "", SIZE_WORD, ARG_NONE));
+    } else if(opSize == 2) {
+        //bp-6
+        output.push_back(RCEntry(0, rc_addrl, "-6", SIZE_WORD, ARG_CHAR));
         output.push_back(RCEntry(0, rc_rstore, "", SIZE_DWORD, ARG_NONE));
     }
     output.push_back(RCEntry(0,rc_ret));

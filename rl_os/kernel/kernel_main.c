@@ -30,15 +30,12 @@ void init_interrupts() {
     SYSTEM_INTERRUPT_ADDR_PORT = (size_t)(__system_interrupt_vector);
     ei();
 }
-
-
+int blah() {return 0;}
 int kernel_main() {
     // malloc_init((size_t)&__data_end, (size_t)(0x3000));
     //  printf("Init interrupts..\n");
 
     init_interrupts();
-
-
     ataInit();
     block_init();
     fs_init();
@@ -46,7 +43,6 @@ int kernel_main() {
     sched_init();
     kernel_worker_init();
     piper_init();
-
 
 
     k_regDevice(0, tty_write, tty_read, 0, 0);

@@ -102,7 +102,7 @@ void Cpu::memWrite(w addr, w val, int seg) {
     for(int i = 0; i<this->devices.size(); i++) {
       if(this->devices[i]->canOperate(addr)) {
         this->devices[i]->write(addr,val,seg);
-        if(flDebug) printf("memWrite [0x%04x] : 0x%04x\n", addr, val);
+        if(0&&flDebug) printf("memWrite [0x%04x] : 0x%04x\n", addr, val);
       }
     }
 }
@@ -150,24 +150,27 @@ void Cpu::execute() {
   if(intEnabled) {
 //    printf("CPU: IRQ Line Status: %d\n", intCtl->irqLineStatus());
     if(intCtl->irqLineStatus()) {
-      //printf("Into int vec!\n");
+//      printf("Into int vec!\n");
       this->push(SP);
-      this->push(PC);
+      this->push(highPC());
+      this->push(mPC());
       this->push(BP);
       this->push(AP);
       this->push(S);
       this->push(D);
       this->userMode = 0;
-      //printf("Try get vec..");
-      PC = intCtl->getIrqVector();
-      //printf(" 0x%04x\n", PC);
+//      printf("Try get vec..");
+      set_highPC(intCtl->getIrqVector());
+      reset_mPC();
+//      printf(" 0x%04x\n", PC);
     }
   }
 
 
   this->IR = this->memRead(PC, C_SEG_CODE);
   if(flDebug /* || (IR&0xff) == ret2|| (IR&0xff) == le_w|| (IR&0xff) == lt_w */) {
-
+      printf("PC: 0x%04X, SP: 0x%04X, IR: 0x%04X ('%s') ARG: 0x%04X\n", PC, SP, IR, oplist[IR&0xff],this->memRead(PC+1, C_SEG_CODE));
+/*
       printf("PC: 0x%04X, IR: 0x%04X ('%s')\n", PC, IR, oplist[IR&0xff]);
       printf("Stack: ");
       for(int i = 0; i<10; i++) {
@@ -175,6 +178,7 @@ void Cpu::execute() {
          printf("0x%04X(%c) ", val, (val > 32 && val < 127)?(char)val:'-');
       }
       printf("\n");
+*/
   }
 
   this->PC++;
@@ -355,7 +359,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 == v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == ge_w) {
@@ -364,7 +369,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 >= v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == gt_w) {
@@ -373,7 +379,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 > v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == le_w) {
@@ -382,7 +389,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 <= v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == lt_w) {
@@ -391,7 +399,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 < v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == ne_w) {
@@ -400,7 +409,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 != v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == uge_w) {
@@ -409,7 +419,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 >= v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == ugt_w) {
@@ -418,7 +429,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 > v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == ule_w) {
@@ -427,7 +439,8 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 <= v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == ult_w) {
@@ -436,83 +449,99 @@ void Cpu::execute() {
     w addr = this->memRead(PC, C_SEG_CODE);
     PC++;
     if(v1 < v2) {
-        PC = addr;
+        set_highPC(addr);
+	reset_mPC();
     }
 
   } else if(op == call0) {
     w target = pop();
-    push(PC);
+    push(highPC());
+    push(mPC());
     push(AP);
     push(BP);
     AP = BP;
     BP = SP;
-    PC = target;
+    set_highPC(target);
+    reset_mPC();
 
   } else if(op == call0_w) {
     w target = memRead(PC, C_SEG_CODE);
     PC++;
-    push(PC);
+    push(highPC());
+    push(mPC());
     push(AP);
     push(BP);
     AP = BP;
     BP = SP;
-    PC = target;
+    set_highPC(target);
+    reset_mPC();
 
   } else if(op == call1) {
     w target = pop();
     SP++;
-    push(PC);
+    push(highPC());
+    push(mPC());
     push(AP);
     push(BP);
     AP = BP;
     BP = SP;
-    PC = target;
+    set_highPC(target);
+    reset_mPC();
 
   } else if(op == call1_w) {
     w target = memRead(PC, C_SEG_CODE);
     PC++;
     SP++;
-    push(PC);
+    push(highPC());
+    push(mPC());
     push(AP);
     push(BP);
     AP = BP;
     BP = SP;
-    PC = target;
+    set_highPC(target);
+    reset_mPC();
 
   } else if(op == call2) {
     w target = pop();
     SP++;
     SP++;
-    push(PC);
+    push(highPC());
+    push(mPC());
     push(AP);
     push(BP);
     AP = BP;
     BP = SP;
-    PC = target;
+    set_highPC(target);
+    reset_mPC();
 
   } else if(op == call2_w) {
     w target = memRead(PC, C_SEG_CODE);
     PC++;
     SP++;
     SP++;
-    push(PC);
+    push(highPC());
+    push(mPC());
     push(AP);
     push(BP);
     AP = BP;
     BP = SP;
-    PC = target;
+    set_highPC(target);
+    reset_mPC();
 
   } else if(op == ret) {
     SP = BP;
     BP = pop();
     AP = pop();
-    PC = pop();
+    set_mPC(pop());
+    set_highPC(pop());
   } else if(op == jump_w) {
       w target = memRead(PC, C_SEG_CODE);
-      PC = target;
+    set_highPC(target);
+    reset_mPC();
   } else if(op == jump) {
       w target = pop();
-      PC = target;
+    set_highPC(target);
+    reset_mPC();
   } else if(op == discard_b) {
       SP -= IRHigh();
   } else if(op == discard_w) {
@@ -589,7 +618,8 @@ void Cpu::execute() {
     S = pop();
     AP = pop();
     BP = pop();
-    PC = pop();
+    set_mPC(pop());
+    set_highPC(pop());
     SP = pop();
 
   } else if(op == swp_b) {
@@ -711,6 +741,9 @@ int main(int argc, char ** argv) {
         if(!strcmp(argv[2], "-d")) {
             //debug = 1;
             ips = atol(argv[3]);
+        }
+        if(!strcmp(argv[2], "-a")) {
+	    debug = 1;
         }
     }
 

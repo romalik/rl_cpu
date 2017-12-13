@@ -39,7 +39,6 @@ void kernel_worker_init() {
     struct Process p;
     size_t off;
     //spinlock_init(&kernelTaskQueueLock);
-
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
     }
@@ -50,6 +49,7 @@ void kernel_worker_init() {
     p.state = PROC_STATE_NEW;
     p.ap = p.bp = p.sp = (unsigned int)(kernel_worker_stack);
     p.pc = (unsigned int)kernel_worker_entry;
+    p.mpc = 0;
     p.codeMemBank = 0;
     p.dataMemBank = 0;
     p.mode = 0;
@@ -155,6 +155,7 @@ void do_kernel_task_clone(int i) {
         newProcess->ap = (unsigned int)sStruct->stack;
         newProcess->bp = newProcess->sp = ((unsigned int)sStruct->stack + 1);
         newProcess->pc = (unsigned int)(sStruct->fn);
+	newProcess->mpc = 0;
         newProcess->isThread = 1;
         newProcess->state = PROC_STATE_NEW;
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;

@@ -197,6 +197,7 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
+        cProc->mpc = fr->mpc;
 
         cProc->s = fr->s;
         cProc->d = fr->d;
@@ -214,6 +215,7 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
+        cProc->mpc = fr->mpc;
 
         cProc->s = fr->s;
         cProc->d = fr->d;
@@ -230,6 +232,7 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
+        cProc->mpc = fr->mpc;
         cProc->s = fr->s;
         cProc->d = fr->d;
         cProc->state = PROC_STATE_KWORKER;
@@ -244,6 +247,7 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
+        cProc->mpc = fr->mpc;
         cProc->s = fr->s;
         cProc->d = fr->d;
         cProc->state = PROC_STATE_KWORKER;
@@ -258,6 +262,7 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
         cProc->pc = fr->pc;
+        cProc->mpc = fr->mpc;
         cProc->s = fr->s;
         cProc->d = fr->d;
         cProc->state = PROC_STATE_KWORKER;

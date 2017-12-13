@@ -6,17 +6,17 @@ jump_w halt
 
 .label __builtin_memcpy
 .export __builtin_memcpy
-; bp-4 : n [addrl_b -4]
-; bp-5 : src [addrl_b -5]
-; bp-6 : dest [addrl_b -6]
+; bp-5 : n [addrl_b -5]
+; bp-6 : src [addrl_b -6]
+; bp-7 : dest [addrl_b -7]
 
-iaddrl_b -5   ;load src ptr
+iaddrl_b -6   ;load src ptr
 dup           
 pops          ;store in S
-iaddrl_b -4   ;load n
+iaddrl_b -5   ;load n
 add           ;find end
 
-iaddrl_b -6   ;load dst ptr
+iaddrl_b -7   ;load dst ptr
 popd          ;store in D
 
 .label _builtin_memcpy_loop

@@ -154,7 +154,6 @@ static int print(char **out, int *varg) {
     int pc = 0;
     char *format = (char *)(*varg++);
     char scr[2];
-
     for (; *format != 0; ++format) {
         if (*format == '%') {
             ++format;

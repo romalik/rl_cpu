@@ -19,6 +19,8 @@
 #include <pthread.h>
 #define SDL_SUPPORT 1
 
+const int code_block_size = 8;
+const int mPcMask = code_block_size-1;
 typedef uint16_t w;
 typedef int16_t ws;
 
@@ -892,7 +894,7 @@ class Timer : public VMemDevice {
 class Cpu {
   w RA, RB;
   w AP, BP, SP, T;
-  w PC;
+  size_t PC;
   w IR;
   w ML;
 
@@ -909,6 +911,33 @@ class Cpu {
   InterruptController * intCtl;
 public:
 
+  w lowPC() { //bits 0-15
+	return (PC&0xffff);
+  }
+
+  w mPC() {   //bits 0-(#code_block_size-1)
+	return (PC&mPcMask);
+  }
+  w highPC() {//bits #code_block_size-(16+(#code_block_size-1))
+	size_t res = PC;
+	res = res / code_block_size;
+	return res;
+  }
+  w selPC() {  //bits 16-(16+(#code_block_size-1))
+	return PC>>16;
+  }
+
+  void set_mPC(w val) {
+	PC = PC&(0xffff*code_block_size); 
+	PC |= (val & mPcMask);
+  }
+
+  void set_highPC(w val) {
+	PC = ((PC & mPcMask) | ((size_t)val * code_block_size));
+  }
+  void reset_mPC() {
+	PC = PC&(0xffff * code_block_size);
+  }
 
   Cpu();
   ~Cpu();

@@ -50,15 +50,15 @@ gt_w __tiwrapper_exit
 
 
 cnst_w sched_stack
-addrl_b -9
-cnst_b 6
+addrl_b -11
+cnst_b 7
 call0_w __builtin_memcpy
 
 
 
-loadsp_w sched_stack+6
+loadsp_w sched_stack+7
 
-cnst_w sched_stack+6
+cnst_w sched_stack+7
 popbp
 
 cnst_w sched_stack
@@ -75,7 +75,7 @@ ret
 .label  __system_interrupt_vector
 ;di
 iaddrf_b 0 ;pointer to syscall struct
-addrs_b -7 ; ->SP PC BP AP S D [ptr to scall]
+addrs_b -9 ; ->SP PC pcm BP AP S D [ptr to scall]
 call0_w system_interrupt
 ;ei
 discard_b 2

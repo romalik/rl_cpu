@@ -24,6 +24,7 @@ struct Process {
     unsigned int bp;
     unsigned int sp;
     unsigned int pc;
+    unsigned int mpc;
 
     unsigned int s;
     unsigned int d;
@@ -59,6 +60,7 @@ extern struct Process procs[MAXPROC];
 struct IntFrame {
     unsigned int sp;
     unsigned int pc;
+    unsigned int mpc;
     unsigned int bp;
     unsigned int ap;
     unsigned int s;

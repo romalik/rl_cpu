@@ -69,7 +69,6 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
                                struct Process *p) {
     int i = 0;
     int j;
-
     spinlock_lock(&schedMx);
 
     for (i = 0; i < MAXPROC; i++) {
@@ -81,7 +80,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
     if (i == MAXPROC) {
 	printf("MAXPROC!\n");
         spinlock_unlock(&schedMx);
-        return;
+        return 0;
     }
 
     procs[i].pid = pid;
@@ -92,7 +91,8 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
         procs[i].ap = STACK_PLACEMENT;
         procs[i].bp = STACK_PLACEMENT;
         procs[i].sp = STACK_PLACEMENT;
-        procs[i].pc = 0x8000;
+        procs[i].pc = 0x1000;
+	procs[i].mpc = 0;
         procs[i].state = PROC_STATE_NEW;
         if(codeBank == dataBank) {
             procs[i].mode = 0;
@@ -116,6 +116,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
         procs[i].bp = p->bp;
         procs[i].sp = p->sp;
         procs[i].pc = p->pc;
+        procs[i].mpc = p->mpc;
 
         procs[i].s = p->s;
         procs[i].d = p->d;
@@ -145,7 +146,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
                32);
     }
 
-    // printf("Proc pid %d entry %d added\n", pid, i);
+    //printf("Proc pid %d entry %d pc 0x%04X added\n", pid, i, procs[i].pc);
 
      //ps();
         spinlock_unlock(&schedMx);
@@ -196,10 +197,12 @@ void resched(struct IntFrame * fr) {
     // if current task is valid
     if (currentTask < MAXPROC) {
         if (procs[currentTask].state == PROC_STATE_RUN || procs[currentTask].state == PROC_STATE_SLEEP ) {
+	//	printf("Switching from %d pc 0x%04X mpc 0x%04X\n", currentTask, fr->pc, fr->mpc);
             procs[currentTask].ap = fr->ap;
             procs[currentTask].bp = fr->bp;
             procs[currentTask].sp = fr->sp;
             procs[currentTask].pc = fr->pc;
+            procs[currentTask].mpc = fr->mpc;
             procs[currentTask].s = fr->s;
             procs[currentTask].d = fr->d;
         }
@@ -262,13 +265,14 @@ rescanTable:
     fr->bp = procs[nextTask].bp;
     fr->sp = procs[nextTask].sp;
     fr->pc = procs[nextTask].pc;
+    fr->mpc = procs[nextTask].mpc;
     fr->s = procs[nextTask].s;
     fr->d = procs[nextTask].d;
 
     CODE_BANK_SEL = procs[nextTask].codeMemBank;
     DATA_BANK_SEL = procs[nextTask].dataMemBank;
-//    printf("Sched switch %d -> %d\n", currentTask, nextTask);
-//    printf("Switch to PC 0x%04x\n", fr->pc);
+    //printf("Sched switch %d -> %d\n", currentTask, nextTask);
+    //printf("Switch to PC 0x%04x\n", fr->pc);
     currentTask = nextTask;
     cProc = &(procs[nextTask]);
     ticksToSwitch = TIMESLICE;
@@ -416,7 +420,7 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
 
 unsigned int do_exec(struct Process * p, const char * filename, const char ** argv, const char ** envp) {
     FILE *fd;
-    unsigned int header[7];
+    unsigned int header[9];
     unsigned int cnt = 0;
     unsigned int mode;
     unsigned int sizeText;
@@ -430,8 +434,8 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
         return 1;
     }
 
-    while(cnt != 7) {
-        cnt += k_read(fd, header, (7-cnt));
+    while(cnt != 9) {
+        cnt += k_read(fd, header+cnt, (9-cnt));
         if(k_isEOF(fd)) {
             k_close(fd);
             return 1;
@@ -463,8 +467,9 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
     }
 
     mode = header[4];
-    sizeText = header[5];
-    sizeData = header[6];
+    printf("TextSuperSize %d\n", header[5]);
+    sizeText = header[6];
+    sizeData = header[8];
   
     //printf("Loading bin %s header OK mode %d text %d data %d\n", filename, mode, sizeText, sizeData);
 
@@ -487,7 +492,8 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
         CODE_BANK_SEL = bank;
         DATA_BANK_SEL = bank;
         memcpy((void *)STACK_PLACEMENT, argvBuffer, off);
-        p->pc = 0x8000;
+        p->pc = 0x1000;
+	p->mpc = 0;
         p->sp = STACK_PLACEMENT + off;
         p->bp = p->ap = STACK_PLACEMENT;
         p->mode = mode;
@@ -530,7 +536,8 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
         k_close(fd);
         DATA_BANK_SEL = dSeg;
         memcpy((void *)STACK_PLACEMENT, argvBuffer, off);
-        p->pc = 0x8000;
+        p->pc = 0x1000;
+        p->mpc = 0;
         p->sp = STACK_PLACEMENT + off;
         p->bp = p->ap = STACK_PLACEMENT;
         p->mode = mode;

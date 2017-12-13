@@ -10,6 +10,11 @@
 #include <map>
 #include <sstream>
 
+const size_t code_block_size = 8;
+const size_t text_space = 0x10000 * code_block_size;
+const size_t data_space = 0x10000;
+
+
 
 typedef struct LabelEntry_t {
     LabelEntry_t() {uid = -1; position = -1; needExport = 0; needImport = 0; section = 0;used = 0;}
@@ -24,7 +29,8 @@ typedef struct LabelEntry_t {
 
 
 typedef struct Section_t {
-    char labelMap[0xffff];
+
+    std::vector<char> labelMap;
 
     std::vector<uint16_t> code;
 } Section;
@@ -34,8 +40,8 @@ public:
     Assembly() {
         cSection = 0;
         labelUid = 0;
-        memset(sections[0].labelMap, 0, 0xffff);
-        memset(sections[1].labelMap, 0, 0xffff);
+	sections[0].labelMap.resize(text_space, 0);
+	sections[1].labelMap.resize(data_space, 0);
     }
     //code & data
     Section sections[2];
@@ -64,7 +70,11 @@ public:
             //new Label
             labels[name].uid = generateLabelUid();
         }
-        labels[name].position = sections[cSection].code.size();
+	if(cSection == 0) {
+        	labels[name].position = (sections[cSection].code.size() / code_block_size);
+	} else {
+        	labels[name].position = (sections[cSection].code.size());
+	}
         labels[name].section = cSection;
     }
 
@@ -92,6 +102,13 @@ public:
 
     void output(int val) {
         sections[cSection].code.push_back(val);
+    }
+
+    void align() {
+	if(cSection == 0) {
+        	while(sections[cSection].code.size() % code_block_size) sections[cSection].code.push_back(0);
+	} else {
+	}
     }
 
 
@@ -156,15 +173,16 @@ public:
         std::ofstream file;
         file.open(filename.c_str(), std::ios::out | std::ios::binary);
         char header[] = "ROBJ";
+        char textSizeSuperHigh = ((sections[0].code.size() & 0xff0000) >> 16);
         char textSizeHigh = ((sections[0].code.size() & 0xff00) >> 8);
         char textSizeLow = (sections[0].code.size() & 0xff);
         char dataSizeHigh = ((sections[1].code.size() & 0xff00) >> 8);
         char dataSizeLow = (sections[1].code.size() & 0xff);
-        char textFull[0xffff * 2];
-        char dataFull[0xffff * 2];
+        static char textFull[text_space * 2];
+        static char dataFull[data_space * 2];
         char labelFull[0xffff];
-        memset(textFull, 0, 0xffff*2);
-        memset(dataFull, 0, 0xffff*2);
+        memset(textFull, 0, text_space*2);
+        memset(dataFull, 0, data_space*2);
         memset(labelFull, 0, 0xffff);
         convert16to8(sections[0].code, textFull);
         convert16to8(sections[1].code, dataFull);
@@ -172,6 +190,7 @@ public:
         char labelFullLenH = ((labelFullLen & 0xff00) >> 8);
         char labelFullLenL = (labelFullLen & 0xff);
         file.write(header, 4);
+        file.write(&textSizeSuperHigh, 1);
         file.write(&textSizeHigh, 1);
         file.write(&textSizeLow, 1);
         file.write(&dataSizeHigh, 1);
@@ -179,16 +198,12 @@ public:
         file.write(&labelFullLenH, 1);
         file.write(&labelFullLenL, 1);
         file.write(labelFull, labelFullLen);
-        file.write(sections[0].labelMap, 0xffff);
-        file.write(textFull, 0xffff*2);
-        file.write(sections[1].labelMap, 0xffff);
-        file.write(dataFull, 0xffff*2);
+        file.write(&sections[0].labelMap[0], text_space);
+        file.write(textFull, text_space*2);
+        file.write(&sections[1].labelMap[0], data_space);
+        file.write(dataFull, data_space*2);
         file.close();
 
-
-        int textSize = ((int)((int)textSizeHigh << 8) | (int)textSizeLow);
-        int dataSize = ((int)((int)dataSizeHigh << 8) | (int)dataSizeLow);
-        //printf("%s:\n  textSize: %zu words\n  dataSize: %zu words\n  labelLength: %d\n", filename.c_str(), sections[0].code.size(), sections[1].code.size(), labelFullLen);
 
 
     }
@@ -263,6 +278,7 @@ int main(int argc, char ** argv) {
         } else if(word[0] == '.') {
             if(word == ".label") {
                 ss >> word;
+		assembly.align();
                 assembly.regLabel(word);
             } else if(word == ".import") {
                 ss >> word;
@@ -300,6 +316,8 @@ int main(int argc, char ** argv) {
               assembly.markLabelPosition();
               assembly.output(labelUid);
 	      assembly.labels[word].used = 1;
+
+		//printf("ADDRESS %s cSect %d\n", word.c_str(), assembly.cSection);
             }
         } else {
             //printf("Opcode: [%s]\n", word.c_str());
@@ -335,6 +353,8 @@ int main(int argc, char ** argv) {
                         assembly.output(opcode);
                         assembly.output(argNumU&0xffff);
                     }
+			//printf("EVALUATE %s %s\n", word.c_str(), arg.c_str());
+			
                 } else {
                     //here we have a label
                     if(argType == 1) {
@@ -353,30 +373,11 @@ int main(int argc, char ** argv) {
 
 
     }
-/*
-    printf("Labels:\n");
-    for(std::map<std::string, LabelEntry>::iterator it = assembly.labels.begin(); it!= assembly.labels.end(); it++) {
-        std::string labelName = it->first;
-        LabelEntry entry = it->second;
 
-        printf("%s uid: %d pos: %d import: %d export: %d, section: %d\n", labelName.c_str(), entry.uid, entry.position, entry.needImport, entry.needExport, entry.section);
-    }
-    printf("\n");
-    */
-
-/*
-    for(int sect = 0; sect < 2; sect++) {
-        printf("Section %d:\n", sect);
-        for(int i = 0; i<assembly.sections[sect].code.size(); i++) {
-            if(i%4 == 0)
-                printf("\n%04X:\t", i);
-            int hasLabel = 0;
-            hasLabel = assembly.sections[sect].labelMap[i];
-            printf("%s%04X%s\t", hasLabel?"_":"", assembly.sections[sect].code[i], hasLabel?"_":"");
-        }
-        printf("\n\n");
-    }
-*/
+    assembly.cSection = 0;
+    assembly.align();
+    assembly.cSection = 1;
+    assembly.align();
 
     if(argc > 2) {
         assembly.writeToFile(argv[2]);
