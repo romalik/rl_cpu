@@ -35,6 +35,13 @@ struct termios old_tio, new_tio;
 int oldf;
 
 
+VMemDevice::VMemDevice(Cpu * _cpu) : cpu(_cpu) {
+}
+
+void VMemDevice::regInCPU(std::function<bool(size_t)> selectFn, std::function<size_t(size_t)> transformFn) {
+    myCpu.regDevice(this, selectFn, transformFn);
+}
+
 Cpu::Cpu() {
 
     flDebug = 0;
@@ -98,16 +105,64 @@ void Cpu::terminate() {
   }
 
 }
-void Cpu::memWrite(w addr, w val, int seg) {
+void Cpu::memWrite(size_t addr, w val, int seg) {
+//construct effective address
+//       20    19 18 17 16 15 14 ... 1 0
+//data:  priv  0  0  0  0  __data_addr__
+//code:  priv  1  ______code_addr_______
+
+    size_t effAddr = 0;
+    if(seg == C_SEG_DATA) {
+	effAddr |= (addr&0xffff);
+    } else {
+        effAddr |= ((addr&0x7ffff) | (1 << 19));
+    }
+//    if(userMode) {
+//        effAddr |= (1<<20);
+//    }
+
+    this->demux.memWrite(effAddr, val);
+
+/*
     for(int i = 0; i<this->devices.size(); i++) {
       if(this->devices[i]->canOperate(addr)) {
         this->devices[i]->write(addr,val,seg);
         if(0&&flDebug) printf("memWrite [0x%04x] : 0x%04x\n", addr, val);
       }
     }
+*/
 }
 
-w Cpu::memRead(w addr, int seg) {
+w Cpu::memRead(size_t addr, int seg) { 
+
+//construct effective address
+//       20    19 18 17 16 15 14 ... 1 0
+//data:  priv  0  0  0  0  __data_addr__
+//code:  priv  1  ______code_addr_______
+
+    size_t effAddr = 0;
+    if(seg == C_SEG_DATA) {
+	effAddr |= (addr&0xffff);
+    } else {
+        effAddr |= ((addr&0x7ffff) | (1 << 19));
+    }
+//    if(userMode) {
+//        effAddr |= (1<<20);
+//    }
+
+    return this->demux.memRead(effAddr);
+/*
+    if(seg == C_SEG_DATA) {
+	//cut bits higher than 15 for data path
+	addr = addr & 0xffff;
+    }
+    if(addr > 0xffff) {
+	printf("SIM: try access 0x%08X\n", addr);
+
+	dumpRegs();
+	terminate();
+	exit(1);
+    }
     for(int i = 0; i<this->devices.size(); i++) {
       if(this->devices[i]->canOperate(addr)) {
           w res = this->devices[i]->read(addr,seg);
@@ -115,6 +170,7 @@ w Cpu::memRead(w addr, int seg) {
           return res;
       }
     }
+*/
 }
 
 void Cpu::tick() {
@@ -169,7 +225,7 @@ void Cpu::execute() {
 
   this->IR = this->memRead(PC, C_SEG_CODE);
   if(flDebug /* || (IR&0xff) == ret2|| (IR&0xff) == le_w|| (IR&0xff) == lt_w */) {
-      printf("PC: 0x%04X, SP: 0x%04X, IR: 0x%04X ('%s') ARG: 0x%04X\n", PC, SP, IR, oplist[IR&0xff],this->memRead(PC+1, C_SEG_CODE));
+      printf("PC: 0x%08X, SP: 0x%04X, IR: 0x%04X ('%s') ARG: 0x%04X\n", PC, SP, IR, oplist[IR&0xff],this->memRead(PC+1, C_SEG_CODE));
 /*
       printf("PC: 0x%04X, IR: 0x%04X ('%s')\n", PC, IR, oplist[IR&0xff]);
       printf("Stack: ");
@@ -180,6 +236,7 @@ void Cpu::execute() {
       printf("\n");
 */
   }
+
 
   this->PC++;
 

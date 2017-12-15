@@ -11,6 +11,7 @@
 #include <math.h>
 #include "oplist.h"
 #include <SDL2/SDL.h>
+#include <functional>
 
 #include <unistd.h>
 #include <termios.h>
@@ -123,21 +124,23 @@ static const unsigned char Font5x7[] = {
 	0x08, 0x1C, 0x2A, 0x08, 0x08 // <-
 };
 
-class VMemDevice {
-public:
-  VMemDevice() {};
-  virtual ~VMemDevice() {};
+class Cpu; //forward
 
-  virtual int canOperate(w addr) = 0;
-  virtual void write(w addr, w val, int seg, int force = 0) = 0;
-  virtual w read(w addr, int seg) = 0;
+class VMemDevice {
+  Cpu * cpu;
+public:
+  VMemDevice(Cpu * _cpu = NULL);
+  virtual ~VMemDevice() {};
+  void regInCPU(std::function<bool(size_t)>, std::function<size_t(size_t)>);
+  virtual void write(size_t addr, w val, int seg, int force = 0) = 0;
+  virtual w read(size_t addr, int seg) = 0;
   virtual void terminate() {};
 };
 
 class InterruptController : public VMemDevice {
   int currentInterrupt;
   w pendingInterrupts;
-  w addrStart;
+  size_t addrStart;
   int nIRQs;
   std::vector<w> intVectors;
  public:
@@ -147,25 +150,30 @@ class InterruptController : public VMemDevice {
      intVectors.resize(nIRQs, 0);
      currentInterrupt = 0;
      pendingInterrupts = 0;
+
+    auto selectFn = [this](size_t a) -> bool {
+       //0x7ffff - full addr w/o code/data selector
+       size_t fullAddr = a & 0x7ffff;
+
+       return ((fullAddr >= addrStart) && (fullAddr < addrStart + nIRQs));
+    };
+
+    auto transformFn = [this](size_t a) -> size_t {
+       return ((a&0x7ffff) - addrStart);
+    };
+    regInCPU(selectFn, transformFn);
+
   }
   ~InterruptController() {}
 
-  virtual int canOperate(w addr) {
-    return ((addr >= addrStart)&&(addr < addrStart + nIRQs));
+
+  virtual void write(size_t addr, w val, int seg, int force = 0) {
+	printf("Write to int vector 0x%08X\n", addr);
+      intVectors[addr] = val;
   }
 
-  virtual void write(w addr, w val, int seg, int force = 0) {
-    if(canOperate(addr)) {
-      intVectors[addr - addrStart] = val;
-    }
-  }
-
-  virtual w read(w addr, int seg) {
-    if(canOperate(addr)) {
-      return intVectors[addr - addrStart];
-    } else {
-      return 0;
-    }
+  virtual w read(size_t addr, int seg) {
+      return intVectors[addr];
   }
 
   void request(int irq) {
@@ -244,19 +252,27 @@ class HDD : public VMemDevice {
     cmdAddr = _cmdAddr;
     dataAddr = _dataAddr;
     printf("HDD: create cmd:0x%04x data:0x%04x\n", cmdAddr, dataAddr);
+    auto selectFn = [this](size_t a) -> bool {
+       //0x7ffff - full addr w/o code/data selector
+       size_t fullAddr = a & 0x7ffff;
+
+       return ((fullAddr == cmdAddr) || (fullAddr == dataAddr));
+    };
+
+    auto transformFn = [this](size_t a) -> size_t {
+       size_t fullAddr = a & 0x7ffff;
+       return (fullAddr==cmdAddr)?0:1;
+    };
+    regInCPU(selectFn, transformFn);
+
   }
   virtual void terminate() {
     std::ofstream os(image_path.c_str(), std::ofstream::binary);
     os.write((char *)data, size);
     os.close();
   }
-  virtual int canOperate(w addr) {
-    return (addr == cmdAddr) || (addr == dataAddr);
-  }
-  virtual void write(w addr, w val, int seg, int force) {
-    if(canOperate(addr)) {
-//      printf("HDD: port 0x%04x val 0x%04x\n", addr, val);
-      if(addr == cmdAddr) {
+  virtual void write(size_t addr, w val, int seg, int force) {
+      if(addr == 0) {
         if(val == CMD_READ) {
           cState = -STATE_READING;
           cPos = 0;
@@ -269,7 +285,7 @@ class HDD : public VMemDevice {
           cSector = 0;
           cPos = 0;
         }
-      } else if(addr == dataAddr) {
+      } else if(addr == 1) {
         if(cState < 0) {
           if(cPos == 0) {
             cSector = ((int)val) << 16;
@@ -296,13 +312,11 @@ class HDD : public VMemDevice {
 
         }
       }
-    }
   }
-  w read(w addr, int seg) {
-    if(canOperate(addr)) {
-      if(addr == cmdAddr) {
+  w read(size_t addr, int seg) {
+      if(addr == 0) {
         return 0;
-      } else if(addr == dataAddr) {
+      } else if(addr == 1) {
         if(cState < 0) {
           return 0;
         } else {
@@ -325,7 +339,6 @@ class HDD : public VMemDevice {
 
         }
       }
-    }
     return 0;
   }
 
@@ -481,6 +494,18 @@ class LCD : public VMemDevice {
     data.resize(size, 0x0000);
     cIdx = 0;
     printf("LCD: create cmd:0x%04x data:0x%04x width %d height %d\n", cmdAddr, dataAddr, width, height);
+    auto selectFn = [this](size_t a) -> bool {
+       //0x7ffff - full addr w/o code/data selector
+       size_t fullAddr = a & 0x7ffff;
+
+       return ((fullAddr == cmdAddr) || (fullAddr == dataAddr));
+    };
+
+    auto transformFn = [this](size_t a) -> size_t {
+       size_t fullAddr = a & 0x7ffff;
+       return (fullAddr==cmdAddr)?0:1;
+    };
+    regInCPU(selectFn, transformFn);
     
     data[textStart] = 'a';
         initSDL();
@@ -490,13 +515,9 @@ class LCD : public VMemDevice {
   }
   virtual void terminate() {
   }
-  virtual int canOperate(w addr) {
-    return (addr == cmdAddr) || (addr == dataAddr);
-  }
-  virtual void write(w addr, w val, int seg, int force) {
-    if(canOperate(addr)) {
+  virtual void write(size_t addr, w val, int seg, int force) {
       //printf("LCD: port 0x%04x val 0x%04x\n", addr, val);
-      if(addr == cmdAddr) {
+      if(addr == 0) {
         if(val == CMD_SETADDR) {
           state = 1;
 	} else if(val == CMD_SETCURSOR) {
@@ -506,7 +527,7 @@ class LCD : public VMemDevice {
           data.resize(size, 0);
 	  cIdx = 0;
         }
-      } else if(addr == dataAddr) {
+      } else if(addr == 1) {
         if(state == 1) {
           state = 0;
           cIdx = val;
@@ -522,12 +543,11 @@ class LCD : public VMemDevice {
           cIdx++;
         }
       }
-    }
 #if SDL_SUPPORT
   //  updateLCD();
 #endif
   }
-  w read(w addr, int seg) {
+  w read(size_t addr, int seg) {
     return 0;
   }
 
@@ -544,7 +564,7 @@ class UART : public VMemDevice {
 
 public:
 
-  w addr;
+  size_t addr;
 
   int rxIrq;
   int txIrq;
@@ -565,6 +585,17 @@ public:
     txIrq = _txIrq;
 
     running = true;
+    auto selectFn = [this](size_t a) -> bool {
+       //0x7ffff - full addr w/o code/data selector
+       size_t fullAddr = a & 0x7ffff;
+
+       return (fullAddr == addr);
+    };
+
+    auto transformFn = [](size_t a) -> size_t {
+       return 0;
+    };
+    regInCPU(selectFn, transformFn);
 
     //start thread here
     pthread_create(&worker_tid, NULL, UART::worker_thread, this);
@@ -595,19 +626,13 @@ public:
       inBuffer.push_back(c);
   }
 
-  virtual int canOperate(w _addr) {
-    return (_addr == addr);
-  }
-  virtual void write(w addr, w val, int seg, int force) {
-    if(canOperate(addr)) {
+  virtual void write(size_t addr, w val, int seg, int force) {
       if(out) {
         (*out) << (char)((char)val & 0xff);
         (*out).flush();
       }
-    }
   }
-  virtual w read(w addr, int seg) {
-    if(canOperate(addr)) {
+  virtual w read(size_t addr, int seg) {
         if(!inBuffer.empty()) {
             w r = inBuffer.front();
             inBuffer.pop_front();
@@ -615,14 +640,13 @@ public:
         } else {
             return 0;
         }
-    }
   }
 };
 
 
 class PORT : public VMemDevice {
 public:
-  w addr;
+  size_t addr;
 
   std::istream * in;
   std::ostream * out;
@@ -633,21 +657,26 @@ public:
     readonly = _readonly;
     in = _in;
     out = _out;
+    auto selectFn = [this](size_t a) -> bool {
+       //0x7ffff - full addr w/o code/data selector
+       size_t fullAddr = a & 0x7ffff;
+
+       return (fullAddr == addr);
+    };
+
+    auto transformFn = [](size_t a) -> size_t {
+       return 0;
+    };
+    regInCPU(selectFn, transformFn);
   }
 
-  virtual int canOperate(w _addr) {
-    return (_addr == addr);
-  }
-  virtual void write(w addr, w val, int seg, int force) {
-    if(canOperate(addr)) {
+  virtual void write(size_t addr, w val, int seg, int force) {
       if(out) {
         (*out) << (char)((char)val & 0xff);
         (*out).flush();
       }
-    }
   }
-  virtual w read(w addr, int seg) {
-    if(canOperate(addr)) {
+  virtual w read(size_t addr, int seg) {
       int c = 0;
       if(in) {
 
@@ -664,7 +693,6 @@ public:
       }
       w val = (w)(c);
       return val;
-    }
   }
 };
 
@@ -684,24 +712,29 @@ public:
     size = _sz;
     storage = (w *)malloc(_sz * sizeof(w));
     readonly = _readonly;
+    auto selectFn = [this](size_t a) -> bool {
+	//00000000 00000111 10000000 00000000 = 0x78000
+       bool isInLowerHalf = !(a & 0x78000);
+       size_t actualAddr = a&0x7fff;
+       bool isInBounds = ((actualAddr >= begin) && (actualAddr < end));
+       return isInLowerHalf && isInBounds;
+    };
+
+    auto transformFn = [](size_t a) -> size_t {
+       return a&0x7fff;
+    };
+    regInCPU(selectFn, transformFn);
   }
   ~RAM() { free(storage); }
 
-  virtual int canOperate(w addr) { return ((addr >= begin)&&(addr<end)); }
-  virtual void write(w addr, w val, int seg, int force = 0) {
-    if(canOperate(addr)) {\
+  virtual void write(size_t addr, w val, int seg, int force = 0) {
       if(!readonly || force) {
 	     storage[addr - begin] = val;
       }
-    }
   }
 
-  virtual w read(w addr, int seg) {
-    if(canOperate(addr)) {
+  virtual w read(size_t addr, int seg) {
       return storage[addr - begin];
-    } else {
-      return (rand() % 0xffff);
-    }
   }
 };
 
@@ -737,6 +770,31 @@ public:
     for(int i = 0; i<nBanks; i++) {
       storage.push_back((w *)malloc(_sz * sizeof(w)));
     }
+
+
+    auto selectFn = [](size_t a) -> bool {
+	//00000000 00000111 10000000 00000000 = 0x78000
+       bool isInHigherHalf = (a & 0x78000);
+       return isInHigherHalf;
+    };
+
+    auto transformFn = [](size_t a) -> size_t {
+       return a;
+    };
+    regInCPU(selectFn, transformFn);
+
+    auto ctlSelectFn = [this](size_t a) -> bool {
+       //0x7ffff - full addr w/o code/data selector
+       size_t fullAddr = a & 0x7ffff;
+
+       return ((fullAddr == codeBankSelector) || (fullAddr == dataBankSelector));
+    };
+
+    auto ctlTransformFn = [](size_t a) -> size_t {
+       return a&0x7ffff;
+    };
+    regInCPU(ctlSelectFn, ctlTransformFn);
+
   }
   ~ExtRAM() {
     for(int i = 0; i<nBanks; i++) {
@@ -744,16 +802,18 @@ public:
     }
   }
 
-  virtual int canOperate(w addr) { return (((addr >= begin)&&(addr<end))|| (addr == codeBankSelector) || (addr == dataBankSelector)); }
-  virtual void write(w addr, w val, int seg, int force = 0) {
-    if(canOperate(addr)) {
+  virtual void write(size_t addr, w val, int seg, int force = 0) {
       if(addr == codeBankSelector) {
         cBank = val;
 	__current_code_bank = cBank;
+//	printf("ExtRAM : set cbank %d\n", cBank);
       } else if(addr == dataBankSelector) {
         dBank = val;
 	__current_data_bank = dBank;
+//	printf("ExtRAM : set dbank %d\n", dBank);
       } else {
+	int seg = (addr&0x80000)?0:1;
+        addr = addr & 0x7ffff;
         //printf("ExtRAM write 0x%04x\n", val);
             if(seg) {
                 storage[dBank][addr - begin] = val;
@@ -762,28 +822,29 @@ public:
             }
 
       }
-    }
   }
 
-  virtual w read(w addr, int seg) {
-    if(canOperate(addr)) {
+  virtual w read(size_t addr, int seg) {
       if(addr == codeBankSelector) {
         return cBank;
       } else if(addr == dataBankSelector) {
         return dBank;
       } else {
+	int seg = (addr&0x80000)?0:1;
+        addr = addr & 0x7ffff;
           if(seg) {
+	//	printf("ExtRAM read dBank %d addr 0x%08X\n", dBank, addr - begin);
             return storage[dBank][addr - begin];
           } else {
+	//	printf("ExtRAM read cBank %d addr 0x%08X\n", cBank, addr - begin);
             return storage[cBank][addr - begin];
           }
 
       }
-    }
   }
 };
 
-
+#if 0
 class ExtSegRAM : public VMemDevice {
   w begin;
   w size;
@@ -815,8 +876,7 @@ public:
     }
   }
 
-  virtual int canOperate(w addr) { return (((addr >= begin)&&(addr<end))|| 0/* addr == bankSelector */); }
-  virtual void write(w addr, w val, int seg, int force = 0) {
+  virtual void write(size_t addr, w val, int seg, int force = 0) {
     if(canOperate(addr)) {
 
         std::map<w, int>::iterator it = cBanks.find(addr);
@@ -829,7 +889,7 @@ public:
     }
   }
 
-  virtual w read(w addr, int seg) {
+  virtual w read(size_t addr, int seg) {
     if(canOperate(addr)) {
 return 0;
         if(0/*addr == bankSelector*/) {
@@ -841,7 +901,7 @@ return 0;
   }
 };
 
-
+#endif
 
 
 class Timer : public VMemDevice {
@@ -880,14 +940,50 @@ class Timer : public VMemDevice {
     return NULL;
   }
 
-  virtual int canOperate(w addr) {return 0;}
-  virtual void write(w addr, w val, int seg, int force = 0) {};
-  virtual w read(w addr, int seg) {return 0;}
+  virtual void write(size_t addr, w val, int seg, int force = 0) {};
+  virtual w read(size_t addr, int seg) {return 0;}
 
   void tick() {
       intCtl->request(irqLine);
-  }
+   }
 
+};
+
+struct DemuxEntry {
+  DemuxEntry(VMemDevice * _dev, std::function<bool(size_t)> _selectFunc, std::function<size_t(size_t)> _transformFunc) : dev(_dev), selectFunc(_selectFunc), transformFunc(_transformFunc) {};
+
+  VMemDevice * dev;
+  std::function<bool(size_t)> selectFunc;
+  std::function<size_t(size_t)> transformFunc;
+
+  bool operator()(size_t a) const { return selectFunc(a); }
+};
+
+class Demux {
+  std::vector<DemuxEntry> devs;
+public:
+  Demux() {};
+  void regDevice(VMemDevice * dev, std::function<bool(size_t)> selectFunc, std::function<size_t(size_t)> transformFunc) {
+    devs.push_back(DemuxEntry(dev, selectFunc, transformFunc));
+  }
+  void memWrite(size_t effAddr, w val) {
+    for(const auto & dev : devs) {
+      if(dev(effAddr)) {
+	dev.dev->write(dev.transformFunc(effAddr), val, 0, 0);
+//	return;
+      }
+    }
+    //printf("WRITE: Device for address 0x%08X not found!\n", effAddr);
+  }
+  w memRead(size_t effAddr) {
+    for(const auto & dev : devs) {
+      if(dev(effAddr)) {
+	return dev.dev->read(dev.transformFunc(effAddr), 0);
+      }
+    }
+    printf("READ: Device for address 0x%08X not found!\n", effAddr);
+    return 0;
+  }
 };
 
 
@@ -908,8 +1004,20 @@ class Cpu {
 
   std::vector<VMemDevice *> devices;
 
+
   InterruptController * intCtl;
 public:
+
+  Demux demux;
+
+  void regDevice(VMemDevice * dev, std::function<bool(size_t)> selectFunc, std::function<size_t(size_t)> transformFunc) {
+	printf("Reg device in demux\n");
+	demux.regDevice(dev, selectFunc, transformFunc);
+  }
+
+  void dumpRegs() {
+    printf("PC 0x%08X\nRA 0x%08X\nRB 0x%08X\nAP 0x%08X\nBP 0x%08X\nSP 0x%08X\nT 0x%08X\nIR 0x%08X\nML 0x%08X\nS 0x%08X\nD 0x%08X\bint %d\nuser %d\n", PC, RA, RB, AP, BP, SP, T, IR, ML, S, D, intEnabled, userMode);
+  }
 
   w lowPC() { //bits 0-15
 	return (PC&0xffff);
@@ -941,8 +1049,8 @@ public:
 
   Cpu();
   ~Cpu();
-  void memWrite(w addr, w val, int seg);
-  w memRead(w addr, int seg);
+  void memWrite(size_t addr, w val, int seg);
+  w memRead(size_t addr, int seg);
   void tick();
   void execute();
   void push(w val);
@@ -950,7 +1058,7 @@ public:
   w IRHigh();
 
   w seqWriterPos;
-  void setSeqWriterPos(w addr) {seqWriterPos = addr;}
+  void setSeqWriterPos(size_t addr) {seqWriterPos = addr;}
   void writeSeq(w val);
   void setSP(w _sp) { SP = _sp; }
   void setAP(w _ap) { AP = _ap; }
