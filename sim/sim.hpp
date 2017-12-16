@@ -743,33 +743,26 @@ int __current_data_bank = 0;
 
 
 class ExtRAM : public VMemDevice {
-  w begin;
-  w size;
-  w end;
+  w bankSelectorArea;
+  int selectorsN;  
 
-  w codeBankSelector;
-  w dataBankSelector;
 
-  int cBank;
-  int dBank;
+  std::vector<int> cBank;
   int nBanks;
   std::vector<w *> storage;
 
 
 
 public:
-  ExtRAM(w _begin, w _sz, w _codeBankSelector, w _dataBankSelector, int _nBanks) {
-    begin = _begin;
-    end = _begin + _sz;
-    size = _sz;
-    codeBankSelector = _codeBankSelector;
-    dataBankSelector = _dataBankSelector;
+  ExtRAM(w _bankSelectorArea, w _selectorsN, int _nBanks) {
     nBanks = _nBanks;
-    cBank = 0;
-    dBank = 0;
+    bankSelectorArea = _bankSelectorArea;
+    selectorsN = _selectorsN;  
+    cBank.resize(selectorsN, 0);
     for(int i = 0; i<nBanks; i++) {
-      storage.push_back((w *)malloc(_sz * sizeof(w)));
+      storage.push_back((w *)malloc(0x8000 * sizeof(w)));
     }
+
 
 
     auto selectFn = [](size_t a) -> bool {
@@ -787,11 +780,11 @@ public:
        //0x7ffff - full addr w/o code/data selector
        size_t fullAddr = a & 0x7ffff;
 
-       return ((fullAddr == codeBankSelector) || (fullAddr == dataBankSelector));
+       return ((fullAddr >= bankSelectorArea) && (fullAddr < bankSelectorArea + selectorsN));
     };
 
-    auto ctlTransformFn = [](size_t a) -> size_t {
-       return a&0x7ffff;
+    auto ctlTransformFn = [this](size_t a) -> size_t {
+       return (a&0x7ffff - bankSelectorArea) | (1 << 22); //mark as selector
     };
     regInCPU(ctlSelectFn, ctlTransformFn);
 
@@ -803,44 +796,52 @@ public:
   }
 
   virtual void write(size_t addr, w val, int seg, int force = 0) {
-      if(addr == codeBankSelector) {
-        cBank = val;
-	__current_code_bank = cBank;
-//	printf("ExtRAM : set cbank %d\n", cBank);
-      } else if(addr == dataBankSelector) {
-        dBank = val;
-	__current_data_bank = dBank;
-//	printf("ExtRAM : set dbank %d\n", dBank);
-      } else {
-	int seg = (addr&0x80000)?0:1;
-        addr = addr & 0x7ffff;
-        //printf("ExtRAM write 0x%04x\n", val);
-            if(seg) {
-                storage[dBank][addr - begin] = val;
-            } else {
-                storage[cBank][addr - begin] = val;
-            }
+	if(addr & (1<<22)) { //writing to selector
+		int selIdx = addr & 0xff;
+		cBank[selIdx] = val;
+		printf("ExtRAM : set bank %d to %d\n", selIdx, cBank[selIdx]);
 
-      }
+
+	} else {
+		//write to memory
+		//determine bank
+		int bankIdx = -1;
+		if(addr & (1<<19)) { //we are in code section!
+			bankIdx = ((addr & 0x78000) >> 15);
+		} else { //data section, should be lower 0xffff!
+			int actualAddr = addr & 0x7ffff;
+			if((addr&0x7ffff) > 0xffff) {
+				printf("Ext mem : try to access data higher than 0xffff on write! Address : 0x%08X\nExiting.\n", addr);
+				exit(1);
+			}
+			bankIdx = 0;
+		}
+		size_t addrInBank = addr & 0x7fff;
+		storage[cBank[bankIdx]][addrInBank] = val;
+	}
   }
 
   virtual w read(size_t addr, int seg) {
-      if(addr == codeBankSelector) {
-        return cBank;
-      } else if(addr == dataBankSelector) {
-        return dBank;
-      } else {
-	int seg = (addr&0x80000)?0:1;
-        addr = addr & 0x7ffff;
-          if(seg) {
-	//	printf("ExtRAM read dBank %d addr 0x%08X\n", dBank, addr - begin);
-            return storage[dBank][addr - begin];
-          } else {
-	//	printf("ExtRAM read cBank %d addr 0x%08X\n", cBank, addr - begin);
-            return storage[cBank][addr - begin];
-          }
-
-      }
+	if(addr & (1<<22)) { //writing to selector
+		int selIdx = addr & 0xff;
+		return cBank[selIdx];
+	} else {
+		//write to memory
+		//determine bank
+		int bankIdx = -1;
+		if(addr & (1<<19)) { //we are in code section!
+			bankIdx = ((addr & 0x78000) >> 15);
+		} else { //data section, should be lower 0xffff!
+			int actualAddr = addr & 0x7ffff;
+			if((addr&0x7ffff) > 0xffff) {
+				printf("Ext mem : try to access data higher than 0xffff on read! Address : 0x%08X\nExiting.\n", addr);
+				exit(1);
+			}
+			bankIdx = 0;
+		}
+		size_t addrInBank = addr & 0x7fff;
+		return storage[cBank[bankIdx]][addrInBank];
+	}
   }
 };
 
