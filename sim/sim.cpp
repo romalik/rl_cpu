@@ -26,7 +26,8 @@ long long gettime_ms() {
 
 enum {
     C_SEG_CODE = 0,
-    C_SEG_DATA
+    C_SEG_DATA,
+    C_SEG_IO
 };
 
 
@@ -41,6 +42,9 @@ VMemDevice::VMemDevice(Cpu * _cpu) : cpu(_cpu) {
 void VMemDevice::regInCPU(std::function<bool(size_t)> selectFn, std::function<size_t(size_t)> transformFn) {
     myCpu.regDevice(this, selectFn, transformFn);
 }
+void VMemDevice::regRamInCPU(std::function<bool(size_t)> selectFn, std::function<size_t(size_t)> transformFn) {
+    myCpu.regRam(this, selectFn, transformFn);
+}
 
 Cpu::Cpu() {
 
@@ -49,20 +53,17 @@ Cpu::Cpu() {
   intEnabled = 0;
   userMode = 0;
 
-  intCtl = new InterruptController(0x7fea, 8);
+  intCtl = new InterruptController(8);
 
 
-  this->devices.push_back(new RAM(0, 16*1024, 0)); //ROM
-  this->devices.push_back(new RAM(0x4000, 16*1024-32, 0)); //RAM
+  this->devices.push_back(new RAM(0, 1024*1024)); //ROM
 
-//  this->devices.push_back(new RAM(0x8000, 32*1024-1, 0)); //RAM
-  this->devices.push_back(new ExtRAM(0x7fde, 5, 32)); //ExtRAM
 
-  this->devices.push_back(new UART(NULL,0,0, 0x7ffe, &std::cin, NULL));
-  this->devices.push_back(new PORT(0x7fff, 0, NULL, &std::cout));
+  this->devices.push_back(new UART(NULL,0,0, &std::cin, NULL));
+  this->devices.push_back(new PORT(0, NULL, &std::cout));
 
-  this->devices.push_back(new LCD(0x7fdc, 0x7fdd, 320, 240));
-  this->devices.push_back(new HDD(0x7ffc, 0x7ffd, std::string("hdd")));
+  this->devices.push_back(new LCD(320, 240));
+  this->devices.push_back(new HDD(std::string("hdd")));
   this->devices.push_back(new Timer(intCtl, 3, 5000ULL));
   this->devices.push_back(intCtl);
 
@@ -110,13 +111,18 @@ void Cpu::memWrite(size_t addr, w val, int seg) {
 //       20    19 18 17 16 15 14 ... 1 0
 //data:  priv  0  0  0  0  __data_addr__
 //code:  priv  1  ______code_addr_______
-
     size_t effAddr = 0;
     if(seg == C_SEG_DATA) {
 	effAddr |= (addr&0xffff);
-    } else {
+    } else if(seg == C_SEG_CODE) {
         effAddr |= ((addr&0x7ffff) | (1 << 19));
+    } else if(seg == C_SEG_IO) {
+        effAddr |= ((addr&0x7ffff) | (1 << 20));
+
+    } else {
+        printf("Try access unknown .seg %d\nexiting\n", seg);
     }
+
 //    if(userMode) {
 //        effAddr |= (1<<20);
 //    }
@@ -137,40 +143,26 @@ w Cpu::memRead(size_t addr, int seg) {
 
 //construct effective address
 //       20    19 18 17 16 15 14 ... 1 0
-//data:  priv  0  0  0  0  __data_addr__
-//code:  priv  1  ______code_addr_______
+//data:   0    0  0  0  0  __data_addr__
+//code:   0    1  ______code_addr_______
+//io  :   1    0  ________io_addr_______
 
     size_t effAddr = 0;
     if(seg == C_SEG_DATA) {
 	effAddr |= (addr&0xffff);
-    } else {
+    } else if(seg == C_SEG_CODE) {
         effAddr |= ((addr&0x7ffff) | (1 << 19));
+    } else if(seg == C_SEG_IO) {
+        effAddr |= ((addr&0x7ffff) | (1 << 20));
+
+    } else {
+        printf("Try access unknown .seg %d\nexiting\n", seg);
     }
 //    if(userMode) {
 //        effAddr |= (1<<20);
 //    }
 
     return this->demux.memRead(effAddr);
-/*
-    if(seg == C_SEG_DATA) {
-	//cut bits higher than 15 for data path
-	addr = addr & 0xffff;
-    }
-    if(addr > 0xffff) {
-	printf("SIM: try access 0x%08X\n", addr);
-
-	dumpRegs();
-	terminate();
-	exit(1);
-    }
-    for(int i = 0; i<this->devices.size(); i++) {
-      if(this->devices[i]->canOperate(addr)) {
-          w res = this->devices[i]->read(addr,seg);
-          //if(flDebug) printf("memRead [0x%04x] : 0x%04x\n", addr, res);
-          return res;
-      }
-    }
-*/
 }
 
 void Cpu::tick() {
@@ -743,7 +735,36 @@ void Cpu::execute() {
     this->memWrite(D, RA, C_SEG_DATA);
     S++;
     D++;
-    
+  
+/*
+	IO SPACE OPS
+
+    iostore,
+    iorstore,
+    iostore_b,
+    ioread,
+    ioread_b
+
+*/
+
+  } else if(op == iostore) {
+      w val = pop();
+      w target = pop();
+      memWrite(target, val, C_SEG_IO);
+  } else if(op == iorstore) {
+      w target = pop();
+      w val = pop();
+      memWrite(target, val, C_SEG_IO);
+  } else if(op == iostore_b) {
+      w target = IRHigh();
+      w val = pop();
+      memWrite(target, val, C_SEG_IO);
+  } else if(op == ioread) {
+    this->push(memRead(this->pop(), C_SEG_IO));
+  } else if(op == ioread_b) {
+    this->push(memRead(IRHigh(), C_SEG_IO));
+  
+
 
   } else {
       printf("op not implemented! %d\n", op);
@@ -801,6 +822,13 @@ int main(int argc, char ** argv) {
         }
         if(!strcmp(argv[2], "-a")) {
 	    debug = 1;
+        }
+        if(!strcmp(argv[2], "-t")) {
+	    myCpu.memWrite(0xA0, 'a' ,C_SEG_IO);
+	    myCpu.memWrite(0xA0, 'b' ,C_SEG_IO);
+	    myCpu.memWrite(0xA0, 'c' ,C_SEG_IO);
+	    myCpu.memWrite(0xA0, 'd' ,C_SEG_IO);
+		exit(1);
         }
     }
 

@@ -161,9 +161,10 @@ int loadBin(int argc, char **argv) {
 }
 
 extern int runBin(int argc, char **argv);
-
+extern unsigned int ticks;
 int uptime(int argc, char **argv) {
     printf("%u ticks\n", gettime());
+    printf("%u ticks\n", ticks);
     return 0;
 }
 

@@ -6,7 +6,7 @@ unsigned int tty_read(unsigned int minor, unsigned int * buf, size_t n) {
   int got = 0;
   while(to_read) {
     int c;
-    while ((c = UART) == 0) {
+    while ((c = inb(UART)) == 0) {
     }
     *buf = c;
     buf++;
@@ -20,7 +20,7 @@ unsigned int tty_write(unsigned int minor, const unsigned int * buf, size_t n) {
   int to_write = n;
   while(to_write) {
 
-    PORT_OUT = *buf;
+    outb(PORT_OUT, *buf);
     buf++;
     to_write--;
   }

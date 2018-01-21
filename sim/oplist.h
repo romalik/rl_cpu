@@ -129,7 +129,15 @@ enum opname {
     decd,
 
     sdm,
-    sdmi
+    sdmi,
+
+    iostore,
+    iorstore,
+    iostore_b,
+    
+
+    ioread,
+    ioread_b
 
 };
 
@@ -262,7 +270,15 @@ char oplist[][16] = {
     "decd",
 
     "sdm",
-    "sdmi"
+    "sdmi",
+
+    "iostore",
+    "iorstore",
+    "iostore_b",
+    
+
+    "ioread",
+    "ioread_b",
     ""
 
 };

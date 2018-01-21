@@ -26,12 +26,14 @@ extern void ei();
 #define INIT_PATH "/init.sh"
 
 void init_interrupts() {
-    TIMER_INTERRUPT_ADDR_PORT = (size_t)(__timer_interrupt_vector);
-    SYSTEM_INTERRUPT_ADDR_PORT = (size_t)(__system_interrupt_vector);
+    outb(TIMER_INTERRUPT_ADDR_PORT, (size_t)(__timer_interrupt_vector));
+    outb(SYSTEM_INTERRUPT_ADDR_PORT, (size_t)(__system_interrupt_vector));
     ei();
 }
 int blah() {return 0;}
 int kernel_main() {
+
+
     // malloc_init((size_t)&__data_end, (size_t)(0x3000));
     //  printf("Init interrupts..\n");
 
@@ -58,7 +60,7 @@ int kernel_main() {
 
     printf("Press s for builtin shell, any key for init [%s]\n", INIT_PATH);
 
-    if (0/*getc() == 's'*/) {
+    if (getc() == 's') {
         main_sh();
     } else {
         struct Process * initP;

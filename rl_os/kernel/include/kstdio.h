@@ -3,6 +3,10 @@
 
 #include "string.h"
 
+void outb(int port, int value);
+int inb(int port);
+
+
 int putc(char c);
 int puts(char *s);
 void putDigit(int a);

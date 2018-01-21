@@ -16,15 +16,37 @@ unsigned int gettime() {
     return s.c;
 }
 
+void outb(int port, int value) {
+//push target
+//push val
+//iostore
+	asm("iaddrf_b 0");
+	asm("iaddrf_b 1");
+	asm("iostore");
+}
+
+int inb(int port) {
+//push target
+//push val
+//iostore
+	asm("addrl_b -5");
+	asm("iaddrf_b 0");
+	asm("ioread");
+	asm("store");
+	asm("ret");
+}
+
 int getc() {
     int c;
-    while ((c = UART) == 0) {
+    while ((c = inb(UART)) == 0) {
     }
     return c;
 }
 
+
 int putc(char c) {
-    PORT_OUT = c;
+    //PORT_OUT = c;
+    outb(0xA0, c);
     return 0;
 }
 

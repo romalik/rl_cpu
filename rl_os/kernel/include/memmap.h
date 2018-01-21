@@ -1,24 +1,24 @@
 #ifndef __MEMMAP_H
 #define __MEMMAP_H
 
-#define ATA_CONTROL_PORT (*(unsigned int *)(0x7ffc))
-#define ATA_DATA_PORT (*(unsigned int *)(0x7ffd))
+#define ATA_CONTROL_PORT (0x60)
+#define ATA_DATA_PORT (0x61)
 
-#define PORT_OUT (*(unsigned int *)(0x7fff))
-#define UART (*(unsigned int *)(0x7ffe))
+#define PORT_OUT (0xA0)
+#define UART (0x40)
 
-#define INT0_vec (*(unsigned int *)(0x7fea))
-#define INT1_vec (*(unsigned int *)(0x7feb))
-#define INT2_vec (*(unsigned int *)(0x7fec))
-#define INT3_vec (*(unsigned int *)(0x7fed))
-#define INT4_vec (*(unsigned int *)(0x7fee))
-#define INT5_vec (*(unsigned int *)(0x7fef))
-#define INT6_vec (*(unsigned int *)(0x7ffa))
-#define INT7_vec (*(unsigned int *)(0x7ffb))
+#define INT0_vec (0x20)
+#define INT1_vec (0x21)
+#define INT2_vec (0x22)
+#define INT3_vec (0x23)
+#define INT4_vec (0x24)
+#define INT5_vec (0x25)
+#define INT6_vec (0x26)
+#define INT7_vec (0x27)
 
 //#define BANK_SEL (*(unsigned int *)(0x7fdf)) = (*(unsigned int *)(0x7fde))
-#define CODE_BANK_SEL (*(unsigned int *)(0x7fde))
-#define DATA_BANK_SEL (*(unsigned int *)(0x7fdf))
+#define CODE_BANK_SEL (*(unsigned int *)(0x7fdf))
+#define DATA_BANK_SEL (*(unsigned int *)(0x7fde))
 
 
 #endif
