@@ -29,7 +29,7 @@ typedef int16_t ws;
 #define ADDR_IO_FLAG (1 << 20)
 
 #define ADDR_PAGE_OFFSET_MASK (0xfff)
-#define ADDR_PAGE_NUM_MASK (0xff000)
+#define ADDR_PAGE_NUM_MASK (0x7f000)
 #define ADDR_PAGE_NUM_SHIFT (12)
 
 #define MMU_PROCESS_ENTRY_SIZE (8)
@@ -165,6 +165,7 @@ public:
   VMemDevice(Cpu * _cpu = NULL);
   virtual ~VMemDevice() {};
   void regInCPU(std::function<bool(size_t)>, std::function<size_t(size_t)>);
+  void regMMUTableInCPU();
   void regRamInCPU(std::function<bool(size_t)>, std::function<size_t(size_t)>);
   virtual void write(size_t addr, w val, int seg, int force = 0) = 0;
   virtual w read(size_t addr, int seg) = 0;
@@ -580,19 +581,26 @@ class LCD : public VMemDevice {
 };
 
 class MMUTable : public VMemDevice {
-  size_t begin;
   size_t size;
 public:
 
   std::vector<size_t> table;
 
 
-  MMUTable(size_t _begin, size_t _size) {
-    begin = _begin;
-    size = _size;
+  MMUTable() {
+    size = 32768;
 
-    table.resize(size, 0);
+    table.resize(size, 0xDEADDEAD);
 
+/*
+	for(size_t i = 0; i<16; i++) {
+		table[i] = i;
+		table[i|(1<<12)] = i;
+
+		printf("init MMU 0x%08X : 0x%08X\n", i, i);
+		printf("init MMU 0x%08X : 0x%08X\n", i|(1<<12), i);
+	}
+*/
     auto selectFn = [this](size_t a) -> bool {
        return (a & MMU_TABLE_SELECT_BIT);
     };
@@ -601,7 +609,7 @@ public:
        return a & (MMU_TABLE_SELECT_BIT-1);
     };
     regInCPU(selectFn, transformFn);
-
+    regMMUTableInCPU();
   }
   ~MMUTable() {
   }
@@ -609,17 +617,21 @@ public:
 
   virtual void write(size_t addr, w val, int seg, int force) {
     table[addr] = val;
+//	printf("MMUTable write 0x%08X : 0x%08X\n", addr, val);
   }
   virtual w read(size_t addr, int seg) {
     return 0;
   }
 
   size_t getRealAddress(size_t a, w processSelector) {
-    size_t page_entry_address = (((a & ADDR_PAGE_NUM_MASK) >> (ADDR_PAGE_NUM_SHIFT)) | ((size_t)processSelector << MMU_PROCESS_ENTRY_SIZE));
+    size_t page_entry_address = (((a & ADDR_PAGE_NUM_MASK) >> (ADDR_PAGE_NUM_SHIFT)) | ((size_t)processSelector << MMU_PROCESS_ENTRY_SIZE) | (((a & ADDR_CODE_FLAG)?1:0) << 12));
     if(page_entry_address < size) {
-
+	size_t res = ((a & ADDR_PAGE_OFFSET_MASK) | (table[page_entry_address] << ADDR_PAGE_NUM_SHIFT));
+	
+//	printf("MMU selector %d entryAddress 0x%08X : 0x%08X -> 0x%08X\n", processSelector, page_entry_address, a, res);
+	return res;
     } else {
-      printf("MMU FAULT! Request address 0x%08X, processSelector 0x%08X\nExiting.\n", a, (size_t)processSelector);
+      printf("MMU FAULT! Request address 0x%08X, processSelector 0x%08X\nExiting.\n", a, (size_t)processSelector); exit(1);
     }
   }
 };
@@ -858,22 +870,29 @@ struct DemuxEntry {
 class Demux {
   std::vector<DemuxEntry> devs;
   std::vector<DemuxEntry> rams;
+  MMUTable * mmuTable;
 public:
   Demux() {};
+  void regMMUTable(MMUTable * tab) {
+    mmuTable = tab;
+  }
   void regDevice(VMemDevice * dev, std::function<bool(size_t)> selectFunc, std::function<size_t(size_t)> transformFunc) {
     devs.push_back(DemuxEntry(dev, selectFunc, transformFunc));
   }
   void regRam(VMemDevice * dev, std::function<bool(size_t)> selectFunc, std::function<size_t(size_t)> transformFunc) {
     rams.push_back(DemuxEntry(dev, selectFunc, transformFunc));
   }
-  void memWrite(size_t effAddr, w val) {
+  void memWrite(size_t effAddr, w val, w mmuSelector, w mmuEnabled) {
     if(effAddr & (1<<20)) { //this is io or mmu
       if(effAddr & (1<<14)) { //this is mmu
-	effAddr &= 0x3fff;
+      effAddr &= 0x3fff;
+
 	//write pagetable here
+	mmuTable->table[effAddr] = val;
+//	printf("write mmu table 0x%08X : 0x%08X\n\n", effAddr, val);
       } else { //this is io
         //write io here
-	effAddr &= 0x1ff;
+	  effAddr &= 0x1ff;
         for(const auto & dev : devs) {
           if(dev(effAddr)) {
 	    return dev.dev->write(dev.transformFunc(effAddr), val, 0, 0);
@@ -884,7 +903,12 @@ public:
     } else { //this is ram
 	size_t realAddr = 0x00; //get real address from mmu process selector->pagetable
 	//write realaddress to ram here
-	effAddr &= 0xffff;
+	if(!mmuEnabled) {
+	  effAddr &= 0xffff;
+        } else {
+	  effAddr = mmuTable->getRealAddress(effAddr, mmuSelector);
+	  //get real address
+	}
         for(const auto & ram : rams) {	  
           if(ram(effAddr)) {
 	    return ram.dev->write(ram.transformFunc(effAddr), val, 0, 0);
@@ -894,11 +918,12 @@ public:
 
     //printf("WRITE: Device for address 0x%08X not found!\n", effAddr);
   }
-  w memRead(size_t effAddr) {
+  w memRead(size_t effAddr, w mmuSelector, w mmuEnabled) {
     if(effAddr & (1<<20)) { //this is io or mmu
       if(effAddr & (1<<14)) { //this is mmu
 	effAddr &= 0x3fff;
-	//write pagetable here
+	//fuck it, cannot read from mmuTable
+	return 0;
       } else { //this is io
         //write io here
 	effAddr &= 0x1ff;
@@ -911,7 +936,12 @@ public:
       }
     } else { //this is ram
 	size_t realAddr = 0x00; //get real address from mmu process selector->pagetable
-	effAddr &= 0xffff;
+	if(!mmuEnabled) {
+	  effAddr &= 0xffff;
+        } else {
+	  //get real address
+	  effAddr = mmuTable->getRealAddress(effAddr, mmuSelector);
+	}
 	//write realaddress to ram here
         for(const auto & ram : rams) {
           if(ram(effAddr)) {
@@ -938,6 +968,8 @@ class Cpu {
   w intEnabled;
   w userMode;
 
+  w MMUEnabled;
+
   w MMUEntrySelector;
 
   int flDebug;
@@ -961,9 +993,31 @@ public:
 
 
   void dumpRegs() {
-    printf("PC 0x%08X\nRA 0x%08X\nRB 0x%08X\nAP 0x%08X\nBP 0x%08X\nSP 0x%08X\nT 0x%08X\nIR 0x%08X\nML 0x%08X\nS 0x%08X\nD 0x%08X\bint %d\nuser %d\n", PC, RA, RB, AP, BP, SP, T, IR, ML, S, D, intEnabled, userMode);
+    printf("PC 0x%08X\nRA 0x%08X\nRB 0x%08X\nAP 0x%08X\nBP 0x%08X\nSP 0x%08X\nT 0x%08X\nIR 0x%08X\nML 0x%08X\nS 0x%08X\nD 0x%08X\bint %d\nuser %d\nMMU %d\n", PC, RA, RB, AP, BP, SP, T, IR, ML, S, D, intEnabled, userMode, MMUEnabled);
   }
 
+  w SW() {
+    //15 14    13    12     11 10 09 08 07 06 05 04 03 02 01 00
+    //-- MMUEn User  IntEn  ----mPC---- ------mmuSelector------
+
+	w res = 0;
+	res |= (MMUEntrySelector & 0xff);
+	res |= ((mPC()) << 8);
+//	res |= (intEnabled << 12);
+	res |= (userMode << 13);
+//	res |= (MMUEnabled << 14);
+	return res;
+  }
+
+
+  void set_SW(w sw) {
+//    MMUEnabled = sw & (1<<14);
+    userMode   = sw & (1<<13);
+//    intEnabled = sw & (1<<12);
+    set_mPC((sw & (mPcMask<<8)) >> 8);
+    MMUEntrySelector = sw & 0xff;
+
+  }
   w lowPC() { //bits 0-15
 	return (PC&0xffff);
   }

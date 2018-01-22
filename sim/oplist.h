@@ -137,7 +137,10 @@ enum opname {
     
 
     ioread,
-    ioread_b
+    ioread_b,
+
+    mmuon,
+    mmuoff
 
 };
 
@@ -279,6 +282,9 @@ char oplist[][16] = {
 
     "ioread",
     "ioread_b",
+
+    "mmuon",
+    "mmuoff",
     ""
 
 };

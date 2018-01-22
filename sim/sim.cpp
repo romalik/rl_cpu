@@ -42,6 +42,9 @@ VMemDevice::VMemDevice(Cpu * _cpu) : cpu(_cpu) {
 void VMemDevice::regInCPU(std::function<bool(size_t)> selectFn, std::function<size_t(size_t)> transformFn) {
     myCpu.regDevice(this, selectFn, transformFn);
 }
+void VMemDevice::regMMUTableInCPU() {
+    myCpu.demux.regMMUTable(reinterpret_cast<MMUTable *> (this));
+}
 void VMemDevice::regRamInCPU(std::function<bool(size_t)> selectFn, std::function<size_t(size_t)> transformFn) {
     myCpu.regRam(this, selectFn, transformFn);
 }
@@ -52,6 +55,11 @@ Cpu::Cpu() {
 
   intEnabled = 0;
   userMode = 0;
+
+  MMUEnabled = 0;
+
+  MMUEntrySelector = 0;
+
 
   intCtl = new InterruptController(8);
 
@@ -65,6 +73,7 @@ Cpu::Cpu() {
   this->devices.push_back(new LCD(320, 240));
   this->devices.push_back(new HDD(std::string("hdd")));
   this->devices.push_back(new Timer(intCtl, 3, 5000ULL));
+  this->devices.push_back(new MMUTable());
   this->devices.push_back(intCtl);
 
 }
@@ -127,7 +136,7 @@ void Cpu::memWrite(size_t addr, w val, int seg) {
 //        effAddr |= (1<<20);
 //    }
 
-    this->demux.memWrite(effAddr, val);
+    this->demux.memWrite(effAddr, val, MMUEntrySelector, MMUEnabled);
 
 /*
     for(int i = 0; i<this->devices.size(); i++) {
@@ -162,7 +171,7 @@ w Cpu::memRead(size_t addr, int seg) {
 //        effAddr |= (1<<20);
 //    }
 
-    return this->demux.memRead(effAddr);
+    return this->demux.memRead(effAddr, MMUEntrySelector, MMUEnabled);
 }
 
 void Cpu::tick() {
@@ -201,7 +210,7 @@ void Cpu::execute() {
 //      printf("Into int vec!\n");
       this->push(SP);
       this->push(highPC());
-      this->push(mPC());
+      this->push(SW());
       this->push(BP);
       this->push(AP);
       this->push(S);
@@ -218,6 +227,7 @@ void Cpu::execute() {
   this->IR = this->memRead(PC, C_SEG_CODE);
   if(flDebug /* || (IR&0xff) == ret2|| (IR&0xff) == le_w|| (IR&0xff) == lt_w */) {
       printf("PC: 0x%08X, SP: 0x%04X, IR: 0x%04X ('%s') ARG: 0x%04X\n", PC, SP, IR, oplist[IR&0xff],this->memRead(PC+1, C_SEG_CODE));
+	dumpRegs();
 /*
       printf("PC: 0x%04X, IR: 0x%04X ('%s')\n", PC, IR, oplist[IR&0xff]);
       printf("Stack: ");
@@ -667,7 +677,7 @@ void Cpu::execute() {
     S = pop();
     AP = pop();
     BP = pop();
-    set_mPC(pop());
+    set_SW(pop());
     set_highPC(pop());
     SP = pop();
 
@@ -764,8 +774,11 @@ void Cpu::execute() {
   } else if(op == ioread_b) {
     this->push(memRead(IRHigh(), C_SEG_IO));
   
-
-
+  } else if(op == mmuon) {
+	MMUEnabled = 1;
+	printf("Enable MMU!\n");
+  } else if(op == mmuoff) {
+	MMUEnabled = 0;
   } else {
       printf("op not implemented! %d\n", op);
       printf("op not implemented! %s\n", oplist[op]);
