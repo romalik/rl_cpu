@@ -32,32 +32,6 @@ void init_interrupts() {
 }
 int blah() {return 0;}
 
-void mmu_write_table(size_t process, size_t pageno, size_t s_code, size_t entry) {
-  size_t target_io_addr = (process << 8) | (s_code << 12) | (pageno & 0xff);
-
-  target_io_addr |= (1<<14); //select mmu from io devs
-//  asm("iaddrf_b 3"); //load entry
-//  asm("iaddrl_b 0"); //load target_io_addr
-//  asm("iorstore");
-outb(target_io_addr, entry);
-}
-
-size_t mmu_on() {
-        asm("mmuon");
-	asm("ret");
-}
-
-
-void mmu_init() {
-	int i = 0;
-
-	for(i = 0; i<16; i++) {
-	  mmu_write_table(0, i, 0, i);
-	  mmu_write_table(0, i, 1, i);
-	}
-
-	mmu_on();
-}
 
 int kernel_main() {
 

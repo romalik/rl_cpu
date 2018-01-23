@@ -884,22 +884,23 @@ public:
   }
   void memWrite(size_t effAddr, w val, w mmuSelector, w mmuEnabled) {
     if(effAddr & (1<<20)) { //this is io or mmu
-      if(effAddr & (1<<14)) { //this is mmu
-      effAddr &= 0x3fff;
+//      if(effAddr & (1<<14)) { //this is mmu
+//      effAddr &= 0x3fff;
 
 	//write pagetable here
-	mmuTable->table[effAddr] = val;
+//	mmuTable->table[effAddr] = val;
 //	printf("write mmu table 0x%08X : 0x%08X\n\n", effAddr, val);
-      } else { //this is io
+//      } else { //this is io
         //write io here
-	  effAddr &= 0x1ff;
+//	  effAddr &= 0x1ff;
+	  effAddr &= 0xffff;
         for(const auto & dev : devs) {
           if(dev(effAddr)) {
 	    return dev.dev->write(dev.transformFunc(effAddr), val, 0, 0);
           }
         }
 	
-      }
+//      }
     } else { //this is ram
 	size_t realAddr = 0x00; //get real address from mmu process selector->pagetable
 	//write realaddress to ram here
@@ -920,20 +921,20 @@ public:
   }
   w memRead(size_t effAddr, w mmuSelector, w mmuEnabled) {
     if(effAddr & (1<<20)) { //this is io or mmu
-      if(effAddr & (1<<14)) { //this is mmu
-	effAddr &= 0x3fff;
-	//fuck it, cannot read from mmuTable
-	return 0;
-      } else { //this is io
+//      if(effAddr & (1<<14)) { //this is mmu
+//	effAddr &= 0x3fff;
+//	return mmuTable->table[effAddr];
+ //     } else { //this is io
         //write io here
-	effAddr &= 0x1ff;
+//	effAddr &= 0x1ff;
+	effAddr &= 0xffff;
         for(const auto & dev : devs) {
           if(dev(effAddr)) {
 	    return dev.dev->read(dev.transformFunc(effAddr), 0);
           }
         }
 	
-      }
+//      }
     } else { //this is ram
 	size_t realAddr = 0x00; //get real address from mmu process selector->pagetable
 	if(!mmuEnabled) {
