@@ -15,6 +15,8 @@
 #define PROC_STATE_ZOMBIE 3
 #define PROC_STATE_KWORKER 4
 #define PROC_STATE_NEW 5
+#define PROC_STATE_CONSTRUCT 6
+
 extern unsigned int ticks;
 
 struct Process {
@@ -31,8 +33,7 @@ struct Process {
 
     int mode;
 
-    unsigned int codeMemBank;
-    unsigned int dataMemBank;
+    unsigned int mmuSelector;
 
     struct fs_node cwd;
 
@@ -46,11 +47,7 @@ struct Process {
     char cmd[32];
     int signalsPending;
     sighandler_t sigActions[SIGNUM];
-
-
     void * waitingOn;
-
-
     int isThread;
 };
 
@@ -67,10 +64,14 @@ struct IntFrame {
     unsigned int d;
 };
 
+struct Process *get_free_proc();
+void run_proc(struct Process * p);
+
+
 unsigned int sendSig(unsigned int pid, unsigned int sig);
 
 unsigned int findProcByPid(unsigned int pid, struct Process **p);
-struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned int dataBank,
+struct Process *sched_add_proc(unsigned int pid, unsigned int mmuSelector,
                                struct Process *p);
 unsigned int sched_genPid();
 

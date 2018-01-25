@@ -36,6 +36,16 @@ extern void kernel_worker_entry();
 
 unsigned int schedMx;
 
+void resched();
+
+
+void timer_interrupt() {
+    ticks++;
+    if(ticksToSwitch) {
+        ticksToSwitch--;
+        if(ticksToSwitch == 0) resched();
+    }
+}
 
 void sched_init() {
     int i = 0;
@@ -57,16 +67,16 @@ void ps() {
     int i;
     printf("Processes:\n");
     for (i = 0; i < MAXPROC; i++) {
-        printf("Entry %d: state %d pid %d bank %d %d ap 0x%04x bp 0x%04x sp "
+
+        printf("Entry %d: state %d pid %d ap 0x%04x bp 0x%04x sp "
                "0x%04x pc 0x%04x cmd %s\n",
-               i, procs[i].state, procs[i].pid, procs[i].codeMemBank, procs[i].dataMemBank, procs[i].ap,
+               i, procs[i].state, procs[i].pid, procs[i].ap,
                procs[i].bp, procs[i].sp, procs[i].pc, procs[i].cmd);
     }
     printf("\n");
 }
 
-struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned int dataBank,
-                               struct Process *p) {
+struct Process *get_free_proc() {
     int i = 0;
     int j;
     spinlock_lock(&schedMx);
@@ -78,27 +88,48 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
     }
 
     if (i == MAXPROC) {
-	printf("MAXPROC!\n");
+        printf("MAXPROC!\n");
+        spinlock_unlock(&schedMx);
+        return 0;
+    }
+    procs[i].state = PROC_STATE_CONSTRUCT;
+    spinlock_unlock(&schedMx);
+    return &procs[i];
+}
+
+void run_proc(struct Process * p) {
+    p->state = PROC_STATE_NEW;
+}
+
+struct Process *sched_add_proc(unsigned int pid, unsigned int mmuSelector, struct Process *p) {
+    int i = 0;
+    int j;
+    spinlock_lock(&schedMx);
+
+    for (i = 0; i < MAXPROC; i++) {
+        if (procs[i].state == PROC_STATE_NONE) {
+            break;
+        }
+    }
+
+    if (i == MAXPROC) {
+        printf("MAXPROC!\n");
         spinlock_unlock(&schedMx);
         return 0;
     }
 
     procs[i].pid = pid;
-    procs[i].codeMemBank = codeBank;
-    procs[i].dataMemBank = dataBank;
+    procs[i].mmuSelector = mmuSelector;
+    
     procs[i].isThread = 0;
+    procs[i].mode = 1;
     if (!p) {
         procs[i].ap = STACK_PLACEMENT;
         procs[i].bp = STACK_PLACEMENT;
         procs[i].sp = STACK_PLACEMENT;
-        procs[i].pc = 0x1000;
-	procs[i].mpc = 0;
+        procs[i].pc = 0x0000;
+        procs[i].mpc = 0;
         procs[i].state = PROC_STATE_NEW;
-        if(codeBank == dataBank) {
-            procs[i].mode = 0;
-        } else {
-            procs[i].mode = 1;
-        }
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&fs_root),
                sizeof(struct fs_node));
 
@@ -123,7 +154,6 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
 
         procs[i].state = p->state;
         
-        procs[i].mode = p->mode;
 
 
         memcpy((unsigned int *)(&procs[i].cwd), (unsigned int *)(&p->cwd),
@@ -137,7 +167,7 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
                sizeof(FILE *) * MAX_FILES_PER_PROC);
 
         for(j = 0; j<MAX_FILES_PER_PROC; j++) {
-          procs[i].openFiles[j]->refcnt++;
+            procs[i].openFiles[j]->refcnt++;
         }
 
 
@@ -148,8 +178,8 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int codeBank, unsigned
 
     //printf("Proc pid %d entry %d pc 0x%04X added\n", pid, i, procs[i].pc);
 
-     //ps();
-        spinlock_unlock(&schedMx);
+    //ps();
+    spinlock_unlock(&schedMx);
 
     return &procs[i];
 }
@@ -175,17 +205,18 @@ unsigned int getSignalFromMask(unsigned int mask) {
 unsigned int sendSig(unsigned int pid, unsigned int sig) {
     int r;
     struct Process * pt;
-        spinlock_lock(&schedMx);
+    spinlock_lock(&schedMx);
     r = findProcByPid(pid, &pt);
     if(r) {
         pt->signalsPending |= (1 << sig);
     }
-        spinlock_unlock(&schedMx);
+    spinlock_unlock(&schedMx);
     return 0;
 }
 
 
-void resched(struct IntFrame * fr) {
+void resched() {
+    struct IntFrame * fr;
     int nextTask;
 
     // check if we have any pending tasks
@@ -197,7 +228,7 @@ void resched(struct IntFrame * fr) {
     // if current task is valid
     if (currentTask < MAXPROC) {
         if (procs[currentTask].state == PROC_STATE_RUN || procs[currentTask].state == PROC_STATE_SLEEP ) {
-	//	printf("Switching from %d pc 0x%04X mpc 0x%04X\n", currentTask, fr->pc, fr->mpc);
+            //	printf("Switching from %d pc 0x%04X mpc 0x%04X\n", currentTask, fr->pc, fr->mpc);
             procs[currentTask].ap = fr->ap;
             procs[currentTask].bp = fr->bp;
             procs[currentTask].sp = fr->sp;
@@ -244,11 +275,11 @@ rescanTable:
         int sig = getSignalFromMask(procs[nextTask].signalsPending);
         //printf("Found signal %d while waking process %d. Mask = 0x%04x\n", sig, procs[nextTask].pid, procs[nextTask].signalsPending);
         if(sig == SIGKILL) {
-          //printf("SIGKILL! killing pid %d\n", procs[nextTask].pid);
-          addKernelTask(KERNEL_TASK_EXIT, procs[nextTask].pid, NULL);
-          procs[nextTask].state = PROC_STATE_KWORKER;
-          nextTask++;
-          goto rescanTable;
+            //printf("SIGKILL! killing pid %d\n", procs[nextTask].pid);
+            addKernelTask(KERNEL_TASK_EXIT, procs[nextTask].pid, NULL);
+            procs[nextTask].state = PROC_STATE_KWORKER;
+            nextTask++;
+            goto rescanTable;
         }
     }
 
@@ -268,9 +299,10 @@ rescanTable:
     fr->mpc = procs[nextTask].mpc;
     fr->s = procs[nextTask].s;
     fr->d = procs[nextTask].d;
-
+/*
     CODE_BANK_SEL = procs[nextTask].codeMemBank;
     DATA_BANK_SEL = procs[nextTask].dataMemBank;
+*/
     //printf("Sched switch %d -> %d\n", currentTask, nextTask);
     //printf("Switch to PC 0x%04x\n", fr->pc);
     currentTask = nextTask;
@@ -332,7 +364,7 @@ size_t parseArgs(const char **nArgv, unsigned int *buf, size_t off) {
 */
 
 size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, size_t off) {
-/*
+    /*
    argc
    argv **
    envp **
@@ -347,7 +379,7 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
    argv[m] *
    argv[0]
    ...
-   argv[m] 
+   argv[m]
 
 
 */
@@ -374,7 +406,7 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
     target_envp = buf + 2;
 
     target_envp_ptrs_area = buf + 3;
-    target_envp_entries_area = target_envp_ptrs_area + MAX_ENVP_ENTRIES; 
+    target_envp_entries_area = target_envp_ptrs_area + MAX_ENVP_ENTRIES;
     target_argv_ptrs_area = target_envp_entries_area + MAX_ENVP_ENTRIES * MAX_ENVP_ENTRY_LENGTH;
     target_argv_entries_area = target_argv_ptrs_area + MAX_ARGV_ENTRIES;
 
@@ -385,17 +417,17 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
 
     //fill envp pointers
     for(i = 0; i<MAX_ENVP_ENTRIES; i++) {
-      target_envp_ptrs_area[i] = target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH - buf + off;
+        target_envp_ptrs_area[i] = target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH - buf + off;
     }
     p = envp_in;
     i = 0;
     // copy envp entries
     if(envp_in) {
-      while(*p) {
-        strncpy((char *)(target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH), *p, MAX_ENVP_ENTRY_LENGTH);
-        i++;
-        p++;
-      }
+        while(*p) {
+            strncpy((char *)(target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH), *p, MAX_ENVP_ENTRY_LENGTH);
+            i++;
+            p++;
+        }
     }
     target_envp_ptrs_area[i] = 0;
 
@@ -404,16 +436,16 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
     t = (char *)target_argv_entries_area;
     i = 0;
     if(argv_in) {
-      while(*p) {
-        strcpy(t, *p);
-        target_argv_ptrs_area[i] = (size_t)((size_t)t - (size_t)buf + (size_t)off);
-        i++;
-        t += strlen(*p)+1;
-        p++;
-      }
+        while(*p) {
+            strcpy(t, *p);
+            target_argv_ptrs_area[i] = (size_t)((size_t)t - (size_t)buf + (size_t)off);
+            i++;
+            t += strlen(*p)+1;
+            p++;
+        }
     }
     target_argv_ptrs_area[i] = 0;
-    *target_argc = i; 
+    *target_argc = i;
 
     return (size_t)t - (size_t)buf;
 }
@@ -443,20 +475,20 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
     }
 
     if(!memcmp(header, &"#!", 2)) {
-	//this is a script!!
+        //this is a script!!
         char interp[30];
-	char * t_argv[3];
-	int i;
+        char * t_argv[3];
+        int i;
         t_argv[0] = (char *)filename;
         t_argv[1] = (char *)filename;
-	t_argv[2] = 0;
+        t_argv[2] = 0;
         k_close(fd);
-    	fd = k_open(filename, 'r');
-	k_read(fd, (unsigned int *)(interp), 30);
-	for(i = 0; i<30; i++) {
-	  if(interp[i] == '\n') interp[i] = 0;
-	}
-	return do_exec(p, (interp+2), (const char **)t_argv, envp);
+        fd = k_open(filename, 'r');
+        k_read(fd, (unsigned int *)(interp), 30);
+        for(i = 0; i<30; i++) {
+            if(interp[i] == '\n') interp[i] = 0;
+        }
+        return do_exec(p, (interp+2), (const char **)t_argv, envp);
 
 
     }
@@ -470,7 +502,7 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
     printf("TextSuperSize %d\n", header[5]);
     sizeText = header[6];
     sizeData = header[8];
-  
+
     //printf("Loading bin %s header OK mode %d text %d data %d\n", filename, mode, sizeText, sizeData);
 
     off = parseArgs(argv, envp, argvBuffer, STACK_PLACEMENT);
@@ -478,22 +510,22 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
     if(mode == 0) { // One-segment binary
         unsigned int cPos = 0x8000;
         if(p->mode != 0) {
-            mm_freeSegment(p->dataMemBank);
-            p->dataMemBank = p->codeMemBank;
+//            mm_freeSegment(p->dataMemBank);
+//            p->dataMemBank = p->codeMemBank;
         }
-        bank = p->codeMemBank;
+//        bank = p->codeMemBank;
         cnt = 0;
         while(cnt < sizeText + sizeData) {
-            DATA_BANK_SEL = bank;
+//            DATA_BANK_SEL = bank;
             cnt += k_read(fd, (unsigned int *)cPos, EXEC_READ_CHUNK);
             cPos = 0x8000 + cnt;
         }
         k_close(fd);
-        CODE_BANK_SEL = bank;
-        DATA_BANK_SEL = bank;
+//        CODE_BANK_SEL = bank;
+//        DATA_BANK_SEL = bank;
         memcpy((void *)STACK_PLACEMENT, argvBuffer, off);
         p->pc = 0x1000;
-	p->mpc = 0;
+        p->mpc = 0;
         p->sp = STACK_PLACEMENT + off;
         p->bp = p->ap = STACK_PLACEMENT;
         p->mode = mode;
@@ -507,11 +539,11 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
         unsigned int cSeg;
         if(p->mode != 1) {
             mm_allocSegment(&dSeg);
-            p->dataMemBank = dSeg;
+//            p->dataMemBank = dSeg;
         } else {
-            dSeg = p->dataMemBank;
+//            dSeg = p->dataMemBank;
         }
-        cSeg = p->codeMemBank;
+//        cSeg = p->codeMemBank;
         cnt = 0;
         while(cnt < sizeText) {
             size_t to_read = EXEC_READ_CHUNK;
@@ -529,12 +561,12 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
             if(sizeData - cnt < EXEC_READ_CHUNK) {
                 to_read = sizeData - cnt;
             }
-            DATA_BANK_SEL = dSeg;
+//            DATA_BANK_SEL = dSeg;
             cnt += k_read(fd, (unsigned int *)cPos, to_read);
             cPos = 0x8000 + cnt;
         }
         k_close(fd);
-        DATA_BANK_SEL = dSeg;
+//        DATA_BANK_SEL = dSeg;
         memcpy((void *)STACK_PLACEMENT, argvBuffer, off);
         p->pc = 0x1000;
         p->mpc = 0;
@@ -551,29 +583,29 @@ unsigned int do_exec(struct Process * p, const char * filename, const char ** ar
 }
 
 void sleep(struct Process * proc, void * event) {
-        spinlock_lock(&schedMx);
-   proc->state = PROC_STATE_SLEEP;
-   proc->waitingOn = event;
-	printf("Sleep process %d on 0x%04x\n", proc->pid, (size_t)(event));
-        spinlock_unlock(&schedMx);
+    spinlock_lock(&schedMx);
+    proc->state = PROC_STATE_SLEEP;
+    proc->waitingOn = event;
+    printf("Sleep process %d on 0x%04x\n", proc->pid, (size_t)(event));
+    spinlock_unlock(&schedMx);
 }
 
 
 void wakeup(void * event) {
-   int i;
-        spinlock_lock(&schedMx);
-	printf("Try wake on 0x%04x\n", (size_t)(event));
-   for(i = 0; i<MAXPROC; i++) {
-      if(procs[i].state == PROC_STATE_SLEEP) {
-         if(procs[i].waitingOn == event) {
-            procs[i].state = PROC_STATE_RUN;
-            procs[i].waitingOn = 0;
-		printf("Wake process %d\n", procs[i].pid);
-         }
-      }
+    int i;
+    spinlock_lock(&schedMx);
+    printf("Try wake on 0x%04x\n", (size_t)(event));
+    for(i = 0; i<MAXPROC; i++) {
+        if(procs[i].state == PROC_STATE_SLEEP) {
+            if(procs[i].waitingOn == event) {
+                procs[i].state = PROC_STATE_RUN;
+                procs[i].waitingOn = 0;
+                printf("Wake process %d\n", procs[i].pid);
+            }
+        }
 
-   }
-        spinlock_unlock(&schedMx);
+    }
+    spinlock_unlock(&schedMx);
 }
 
 
@@ -581,36 +613,36 @@ void wakeup(void * event) {
 
 
 unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n) {
-  int i;
-  unsigned int * b = buf;
-  //printf("procfs read\n");
-  for(i = 0; i<MAXPROC; i++) {
-    if(procs[i].state != PROC_STATE_NONE) {
+    int i;
+    unsigned int * b = buf;
+    //printf("procfs read\n");
+    for(i = 0; i<MAXPROC; i++) {
+        if(procs[i].state != PROC_STATE_NONE) {
 
-        *b = procs[i].pid;
-        b++;
-        *b = procs[i].state;
-        b++;
-        memcpy((unsigned int *)b, (unsigned int *)procs[i].cmd, 32);
-        b += 32;
+            *b = procs[i].pid;
+            b++;
+            *b = procs[i].state;
+            b++;
+            memcpy((unsigned int *)b, (unsigned int *)procs[i].cmd, 32);
+            b += 32;
+        }
     }
-  }
-  *b = 0;
+    *b = 0;
 
-  return (unsigned int)b - (unsigned int)buf + 1;
+    return (unsigned int)b - (unsigned int)buf + 1;
 }
 
 
 unsigned int proc_file_write(unsigned int minor, const unsigned int * buf, size_t n) {
-  return 0;
+    return 0;
 }
 
 unsigned int sched_file_read(unsigned int minor, unsigned int * buf, size_t n) {
-  return 0;
+    return 0;
 }
 
 unsigned int sched_file_write(unsigned int minor, const unsigned int * buf, size_t n) {
-  TIMESLICE = *buf;
-  return n;
+    TIMESLICE = *buf;
+    return n;
 }
 

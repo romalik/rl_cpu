@@ -8,7 +8,14 @@
 
 #define NBANKS 16
 
+#define FREE_PAGE_MARK 0xffff
+
+
+void mmu_mark_selector(size_t selector, int flag);
+size_t mmu_get_free_selector();
+
 void mmu_write_table(size_t process, size_t pageno, size_t s_code, size_t entry);
+size_t mmu_read_table(size_t process, size_t pageno, size_t s_code);
 void mmu_mark_page(size_t pageno, int flag);
 size_t mmu_get_free_page();
 void mmu_copy_pages(size_t p_src, size_t p_dst, int processToMap, int whereToMapSrc, int whereToMapDst);

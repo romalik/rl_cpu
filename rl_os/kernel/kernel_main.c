@@ -23,7 +23,7 @@ extern void ei();
 #define TIMER_INTERRUPT_ADDR_PORT INT3_vec
 #define SYSTEM_INTERRUPT_ADDR_PORT INT0_vec
 
-#define INIT_PATH "/init.sh"
+char init_path[] = "/sh";
 
 void init_interrupts() {
     outb(TIMER_INTERRUPT_ADDR_PORT, (size_t)(__timer_interrupt_vector));
@@ -46,7 +46,6 @@ int kernel_main() {
     mm_init();
     mmu_init();
     sched_init();
-    kernel_worker_init();
     piper_init();
 
 
@@ -61,10 +60,21 @@ int kernel_main() {
     k_mknod("/dev/proc", 'c', 1, 0);
     k_mknod("/dev/schedctl", 'c', 3, 0);
 
-    printf("Press s for builtin shell, any key for init [%s]\n", INIT_PATH);
+    printf("Press s for builtin shell, any key for init [%s]\n", init_path);
     if (getc() == 's') {
         main_sh();
     } else {
+        struct execSyscall initExecRequest;
+        initExecRequest.id = __NR_execve;
+        initExecRequest.filename = (void *)init_path;
+        initExecRequest.argv = (void *)init_path;
+        initExecRequest.envp = NULL;
+        kernel_worker_init();
+        addKernelTask(KERNEL_TASK_FORK, 0, 0); //will fork to pids 0 & 1
+        addKernelTask(KERNEL_TASK_EXECVE, 1, (void *)(&initExecRequest));
+        //	sched_start();
+        kernel_worker();
+        /*
         struct Process * initP;
         unsigned int b;
         unsigned int c;
@@ -89,6 +99,7 @@ int kernel_main() {
         sched_start();
         while (1) {
         }
+*/
     }
 
     printf("System halted\n");

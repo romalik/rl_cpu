@@ -9,7 +9,7 @@
 #include <syscall.h>
 
 
-
+unsigned int system_interrupt_stack[512];
 
 
 extern unsigned int ticks;
