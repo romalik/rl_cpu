@@ -5,6 +5,6 @@
 #include <types.h>
 
 
-int do_fork(struct Process * p);
+struct Process * do_fork(struct Process * p, int clone);
 
 #endif

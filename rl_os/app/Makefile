@@ -21,16 +21,16 @@ all: $(BINS)
 	cp $(BINS) ../rootfs/bin
 
 ue/ue:
-	$(CC) -Wl"-text" -Wl"0x8000" -Wl"-mode" -Wl"1"  -Wl"-data" -Wl"0x8000"  -Wl"-strip"  $(CC_FLAGS) $(LIBS) $(UE_SOURCES) -o ue/ue
+	$(CC) -Wl"-text" -Wl"0x0000" -Wl"-mode" -Wl"1"  -Wl"-data" -Wl"0x0000"  -Wl"-strip"  $(CC_FLAGS) $(LIBS) $(UE_SOURCES) -o ue/ue
 
 
 sh/msh:
-	$(CC) -Wl"-text" -Wl"0x8000" -Wl"-mode" -Wl"1"  -Wl"-data" -Wl"0x8000"  -Wl"-strip"  $(CC_FLAGS) $(LIBS) $(SH_SOURCES) -o sh/msh
+	$(CC) -Wl"-text" -Wl"0x0000" -Wl"-mode" -Wl"1"  -Wl"-data" -Wl"0x0000"  -Wl"-strip"  $(CC_FLAGS) $(LIBS) $(SH_SOURCES) -o sh/msh
 
 
 # To obtain object files
 %: %.c
-	$(CC) -Wl"-text" -Wl"0x8000" -Wl"-mode" -Wl"1"  -Wl"-data" -Wl"0x8000"  -Wl"-strip"  $(CC_FLAGS) $(LIBS) $< -o $@
+	$(CC) -Wl"-text" -Wl"0x0000" -Wl"-mode" -Wl"1"  -Wl"-data" -Wl"0x0000"  -Wl"-strip"  $(CC_FLAGS) $(LIBS) $< -o $@
 
 # To remove generated files
 clean:

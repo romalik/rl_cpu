@@ -2,15 +2,11 @@
 #include <memmap.h>
 #include <kernel_worker.h>
 #include <lock.h>
+#include <mm.h>
 
-#define EXEC_READ_CHUNK 0x1000
-#define ARGV_BUFFER_SIZE 256
+
 #define SCHED_STACK_SIZE 512
 
-#define MAX_ENVP_ENTRIES 5
-#define MAX_ENVP_ENTRY_LENGTH 30
-
-#define MAX_ARGV_ENTRIES 15
 
 
 unsigned int TIMESLICE = 20;
@@ -19,7 +15,6 @@ unsigned int TIMESLICE = 20;
 
 #define STACK_PLACEMENT 0xe000
 
-unsigned int argvBuffer[ARGV_BUFFER_SIZE];
 unsigned int sched_stack[SCHED_STACK_SIZE];
 unsigned sched_active = 0;
 unsigned int ticks = 0;
@@ -29,7 +24,7 @@ unsigned int nr_ready = 1;
 unsigned int ticksToSwitch = 0;
 
 struct Process procs[MAXPROC];
-unsigned int currentTask = -1;
+unsigned int currentTask = 0;
 
 extern unsigned int kernel_worker_stack[];
 extern void kernel_worker_entry();
@@ -40,6 +35,7 @@ void resched();
 
 
 void timer_interrupt() {
+  sched_stack[0] =  cProc->mmuSelector;
     ticks++;
     if(ticksToSwitch) {
         ticksToSwitch--;
@@ -59,6 +55,18 @@ void sched_init() {
     }
 }
 
+void printProcess(struct Process * p) {
+    int i = 0;
+    printf("Process: ptr 0x%04x\npid: %d\nmmu: %d\nsp: 0x%04X\nstate: %d\n", p, p->pid, p->mmuSelector, p->sp, p->state);
+
+    for(i = 0; i<20; i++) {
+        printf("code page %d : 0x%04X\n", i, mmu_read_table(p->mmuSelector, i, 1));
+    }
+    for(i = 0; i<16; i++) {
+        printf("data page %d : 0x%04X\n", i, mmu_read_table(p->mmuSelector, i, 0));
+    }
+}
+
 unsigned int sched_genPid() {
     nextPid++;
     return nextPid;
@@ -68,10 +76,9 @@ void ps() {
     printf("Processes:\n");
     for (i = 0; i < MAXPROC; i++) {
 
-        printf("Entry %d: state %d pid %d ap 0x%04x bp 0x%04x sp "
-               "0x%04x pc 0x%04x cmd %s\n",
-               i, procs[i].state, procs[i].pid, procs[i].ap,
-               procs[i].bp, procs[i].sp, procs[i].pc, procs[i].cmd);
+        printf("Entry %d: state %d pid %d sp "
+               "0x%04x cmd %s\n",
+               i, procs[i].state, procs[i].pid, procs[i].sp, procs[i].cmd);
     }
     printf("\n");
 }
@@ -94,13 +101,15 @@ struct Process *get_free_proc() {
     }
     procs[i].state = PROC_STATE_CONSTRUCT;
     spinlock_unlock(&schedMx);
+
+//    printf("Get free proc [%d] 0x%04X\n", i, &procs[i]);
     return &procs[i];
 }
 
 void run_proc(struct Process * p) {
     p->state = PROC_STATE_NEW;
 }
-
+/*
 struct Process *sched_add_proc(unsigned int pid, unsigned int mmuSelector, struct Process *p) {
     int i = 0;
     int j;
@@ -183,6 +192,8 @@ struct Process *sched_add_proc(unsigned int pid, unsigned int mmuSelector, struc
 
     return &procs[i];
 }
+*/
+
 
 void sched_start() {
     ticksToSwitch = TIMESLICE;
@@ -214,10 +225,13 @@ unsigned int sendSig(unsigned int pid, unsigned int sig) {
     return 0;
 }
 
-
+extern size_t __sp_before_int;
 void resched() {
-    struct IntFrame * fr;
     int nextTask;
+
+//    printf("__sp_before_int 0x%04X, addr = 0x%04X\n", __sp_before_int, &__sp_before_int);
+
+
 
     // check if we have any pending tasks
     //if(nr_ready < 2) { //nowhere to switch
@@ -229,6 +243,7 @@ void resched() {
     if (currentTask < MAXPROC) {
         if (procs[currentTask].state == PROC_STATE_RUN || procs[currentTask].state == PROC_STATE_SLEEP ) {
             //	printf("Switching from %d pc 0x%04X mpc 0x%04X\n", currentTask, fr->pc, fr->mpc);
+/*
             procs[currentTask].ap = fr->ap;
             procs[currentTask].bp = fr->bp;
             procs[currentTask].sp = fr->sp;
@@ -236,6 +251,10 @@ void resched() {
             procs[currentTask].mpc = fr->mpc;
             procs[currentTask].s = fr->s;
             procs[currentTask].d = fr->d;
+            */
+
+            procs[currentTask].sp = __sp_before_int;
+
         }
     }
 
@@ -266,6 +285,10 @@ rescanTable:
 
     if(nextTask == currentTask) {
         // hmmm.. if we asserted nr_ready > 1 we should never get here
+
+        sched_stack[0] = procs[nextTask].mmuSelector;
+        sched_stack[1] = procs[nextTask].sp;
+
         return;
     }
 
@@ -291,23 +314,29 @@ rescanTable:
     }
 
 
+    //sched_stack[0] - mmuSelector
+    //sched_stack[1] - sp
+
     // restore process
-    fr->ap = procs[nextTask].ap;
-    fr->bp = procs[nextTask].bp;
-    fr->sp = procs[nextTask].sp;
-    fr->pc = procs[nextTask].pc;
-    fr->mpc = procs[nextTask].mpc;
-    fr->s = procs[nextTask].s;
-    fr->d = procs[nextTask].d;
+    sched_stack[0] = procs[nextTask].mmuSelector;
+    sched_stack[1] = procs[nextTask].sp;
 /*
     CODE_BANK_SEL = procs[nextTask].codeMemBank;
     DATA_BANK_SEL = procs[nextTask].dataMemBank;
 */
     //printf("Sched switch %d -> %d\n", currentTask, nextTask);
     //printf("Switch to PC 0x%04x\n", fr->pc);
+
+//    printf("Switch\npid %d -> %d\nmmuSel %d -> %d\nsp %d -> %d\n", procs[currentTask].pid, procs[nextTask].pid, procs[currentTask].mmuSelector, procs[nextTask].mmuSelector, procs[currentTask].sp, procs[nextTask].sp);
+
+//    printf("Curr proc: "); printProcess(&procs[currentTask]);
+//    printf("Next proc: "); printProcess(&procs[nextTask]);
+
+
     currentTask = nextTask;
     cProc = &(procs[nextTask]);
     ticksToSwitch = TIMESLICE;
+
 
 
 }
@@ -363,224 +392,6 @@ size_t parseArgs(const char **nArgv, unsigned int *buf, size_t off) {
 }
 */
 
-size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, size_t off) {
-    /*
-   argc
-   argv **
-   envp **
-   envp[0] *
-   ...
-   envp[n] *
-   envp[0] [maxlen]
-   ...
-   envp[n] [maxlen]
-   argv[0] *
-   ...
-   argv[m] *
-   argv[0]
-   ...
-   argv[m]
-
-
-*/
-    unsigned int * target_argc;
-    unsigned int * target_argv;
-    unsigned int * target_envp;
-
-    unsigned int * target_envp_ptrs_area;
-    unsigned int * target_envp_entries_area;
-
-    unsigned int * target_argv_ptrs_area;
-    unsigned int * target_argv_entries_area;
-    
-    unsigned int * envPtr_target;
-    unsigned int * envPtr_source;
-    unsigned int nEnv = 0;
-
-    const char ** p;
-    char * t;
-    unsigned int i;
-
-    target_argc = buf;
-    target_argv = buf + 1;
-    target_envp = buf + 2;
-
-    target_envp_ptrs_area = buf + 3;
-    target_envp_entries_area = target_envp_ptrs_area + MAX_ENVP_ENTRIES;
-    target_argv_ptrs_area = target_envp_entries_area + MAX_ENVP_ENTRIES * MAX_ENVP_ENTRY_LENGTH;
-    target_argv_entries_area = target_argv_ptrs_area + MAX_ARGV_ENTRIES;
-
-    memset(buf, 0, target_argv_entries_area - buf);
-
-    *target_argv = target_argv_ptrs_area - buf + off;
-    *target_envp = target_envp_ptrs_area - buf + off;
-
-    //fill envp pointers
-    for(i = 0; i<MAX_ENVP_ENTRIES; i++) {
-        target_envp_ptrs_area[i] = target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH - buf + off;
-    }
-    p = envp_in;
-    i = 0;
-    // copy envp entries
-    if(envp_in) {
-        while(*p) {
-            strncpy((char *)(target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH), *p, MAX_ENVP_ENTRY_LENGTH);
-            i++;
-            p++;
-        }
-    }
-    target_envp_ptrs_area[i] = 0;
-
-
-    p = argv_in;
-    t = (char *)target_argv_entries_area;
-    i = 0;
-    if(argv_in) {
-        while(*p) {
-            strcpy(t, *p);
-            target_argv_ptrs_area[i] = (size_t)((size_t)t - (size_t)buf + (size_t)off);
-            i++;
-            t += strlen(*p)+1;
-            p++;
-        }
-    }
-    target_argv_ptrs_area[i] = 0;
-    *target_argc = i;
-
-    return (size_t)t - (size_t)buf;
-}
-
-unsigned int do_exec(struct Process * p, const char * filename, const char ** argv, const char ** envp) {
-    FILE *fd;
-    unsigned int header[9];
-    unsigned int cnt = 0;
-    unsigned int mode;
-    unsigned int sizeText;
-    unsigned int sizeData;
-    int bank;
-    size_t off;
-
-
-    fd = k_open(filename, 'r');
-    if(!fd) {
-        return 1;
-    }
-
-    while(cnt != 9) {
-        cnt += k_read(fd, header+cnt, (9-cnt));
-        if(k_isEOF(fd)) {
-            k_close(fd);
-            return 1;
-        }
-    }
-
-    if(!memcmp(header, &"#!", 2)) {
-        //this is a script!!
-        char interp[30];
-        char * t_argv[3];
-        int i;
-        t_argv[0] = (char *)filename;
-        t_argv[1] = (char *)filename;
-        t_argv[2] = 0;
-        k_close(fd);
-        fd = k_open(filename, 'r');
-        k_read(fd, (unsigned int *)(interp), 30);
-        for(i = 0; i<30; i++) {
-            if(interp[i] == '\n') interp[i] = 0;
-        }
-        return do_exec(p, (interp+2), (const char **)t_argv, envp);
-
-
-    }
-
-    if(memcmp(header, &"REXE", 4)) {
-        k_close(fd);
-        return 1;
-    }
-
-    mode = header[4];
-    printf("TextSuperSize %d\n", header[5]);
-    sizeText = header[6];
-    sizeData = header[8];
-
-    //printf("Loading bin %s header OK mode %d text %d data %d\n", filename, mode, sizeText, sizeData);
-
-    off = parseArgs(argv, envp, argvBuffer, STACK_PLACEMENT);
-
-    if(mode == 0) { // One-segment binary
-        unsigned int cPos = 0x8000;
-        if(p->mode != 0) {
-//            mm_freeSegment(p->dataMemBank);
-//            p->dataMemBank = p->codeMemBank;
-        }
-//        bank = p->codeMemBank;
-        cnt = 0;
-        while(cnt < sizeText + sizeData) {
-//            DATA_BANK_SEL = bank;
-            cnt += k_read(fd, (unsigned int *)cPos, EXEC_READ_CHUNK);
-            cPos = 0x8000 + cnt;
-        }
-        k_close(fd);
-//        CODE_BANK_SEL = bank;
-//        DATA_BANK_SEL = bank;
-        memcpy((void *)STACK_PLACEMENT, argvBuffer, off);
-        p->pc = 0x1000;
-        p->mpc = 0;
-        p->sp = STACK_PLACEMENT + off;
-        p->bp = p->ap = STACK_PLACEMENT;
-        p->mode = mode;
-
-        memcpy((unsigned int *)p->cmd, (unsigned int *)filename, 32);
-        return 0;
-
-    } else if(mode == 1) {
-        unsigned int cPos = 0x8000;
-        unsigned int dSeg;
-        unsigned int cSeg;
-        if(p->mode != 1) {
-            mm_allocSegment(&dSeg);
-//            p->dataMemBank = dSeg;
-        } else {
-//            dSeg = p->dataMemBank;
-        }
-//        cSeg = p->codeMemBank;
-        cnt = 0;
-        while(cnt < sizeText) {
-            size_t to_read = EXEC_READ_CHUNK;
-            if(sizeText - cnt < EXEC_READ_CHUNK) {
-                to_read = sizeText - cnt;
-            }
-            DATA_BANK_SEL = cSeg;
-            cnt += k_read(fd, (unsigned int *)cPos, to_read);
-            cPos = 0x8000 + cnt;
-        }
-        cPos = 0x8000;
-        cnt = 0;
-        while(cnt < sizeData) {
-            size_t to_read = EXEC_READ_CHUNK;
-            if(sizeData - cnt < EXEC_READ_CHUNK) {
-                to_read = sizeData - cnt;
-            }
-//            DATA_BANK_SEL = dSeg;
-            cnt += k_read(fd, (unsigned int *)cPos, to_read);
-            cPos = 0x8000 + cnt;
-        }
-        k_close(fd);
-//        DATA_BANK_SEL = dSeg;
-        memcpy((void *)STACK_PLACEMENT, argvBuffer, off);
-        p->pc = 0x1000;
-        p->mpc = 0;
-        p->sp = STACK_PLACEMENT + off;
-        p->bp = p->ap = STACK_PLACEMENT;
-        p->mode = mode;
-
-        memcpy((unsigned int *)p->cmd, (unsigned int *)filename, 32);
-        return 0;
-
-    } else {
-        return 1;
-    }
-}
 
 void sleep(struct Process * proc, void * event) {
     spinlock_lock(&schedMx);

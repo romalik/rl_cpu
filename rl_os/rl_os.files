@@ -120,6 +120,7 @@ kernel/ata.c
 kernel/blk.c
 kernel/blk.c
 kernel/exec.c
+kernel/execve.c
 kernel/fork.c
 kernel/include/ata.h
 kernel/include/ata.h
@@ -128,6 +129,7 @@ kernel/include/blk.h
 kernel/include/errno.h
 kernel/include/errno.h
 kernel/include/exec.h
+kernel/include/execve.h
 kernel/include/fork.h
 kernel/include/kernel_worker.h
 kernel/include/kernel_worker.h

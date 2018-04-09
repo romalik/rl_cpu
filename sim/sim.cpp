@@ -14,7 +14,8 @@
 
 std::map<int, int> freqs;
 
-void onSignal(int signal);
+unsigned int blinkCnt = 0;
+
 
 long long gettime_ms() {
     struct timeval te;
@@ -100,6 +101,7 @@ void Cpu::terminate() {
 
     printf("CPU terminating\n");
 
+    dumpRegs();
 
     for(int i = 0; i<this->devices.size(); i++) {
         this->devices[i]->terminate();
@@ -114,6 +116,7 @@ void Cpu::terminate() {
         ++it;
     }
 
+    printf("Blinked %d times\n", blinkCnt);
 }
 void Cpu::memWrite(size_t addr, w val, int seg) {
     //construct effective address
@@ -204,6 +207,13 @@ w Cpu::IRHigh() {
 }
 
 void Cpu::execute() {
+/*
+	static int __pre_int_en = intEnabled;
+	if(__pre_int_en != intEnabled) {
+		__pre_int_en = intEnabled;
+		printf("IntEnable switch! %d\n", intEnabled);
+	}
+*/
     if(intEnabled) {
         //    printf("CPU: IRQ Line Status: %d\n", intCtl->irqLineStatus());
         if(intCtl->irqLineStatus()) {
@@ -216,6 +226,7 @@ void Cpu::execute() {
             this->push(SW());
             this->userMode = 0;
             this->intEnabled = 0;
+            this->MMUEntrySelector = 0;
             //printf("Try get vec..");
             set_highPC(intCtl->getIrqVector());
             reset_mPC();
@@ -669,12 +680,16 @@ void Cpu::execute() {
         RA = this->memRead(PC, C_SEG_CODE);
         PC++;
         this->memWrite(RA, SP, C_SEG_DATA);
+
+	//printf("Store SP: 0x%04X -> 0x%04X\n", SP, RA);
+
     } else if(op == syscall_op) {
         intCtl->request(0);
 
     } else if(op == reti) {
         RA = pop(); //SP
         MMUEntrySelector = pop();
+        //printf("RETI : restore sel %d\n", MMUEntrySelector);
         SP = RA;
         set_SW(pop());
         D = pop();
@@ -682,6 +697,12 @@ void Cpu::execute() {
         AP = pop();
         BP = pop();
         set_highPC(pop());
+        //printf("RETI : restore PC 0x%08X\n", PC);
+        if(PC == 0) {
+          //flDebug = 1;
+          //intEnabled = 0;
+        }
+
 
     } else if(op == swp_b) {
         // sp--
@@ -781,6 +802,12 @@ void Cpu::execute() {
         printf("Enable MMU!\n");
     } else if(op == mmuoff) {
         MMUEnabled = 0;
+
+
+    } else if(op == blink) {
+        printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ BLINK! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+        blinkCnt++;
+
     } else {
         printf("op not implemented! %d\n", op);
         printf("op not implemented! %s\n", oplist[op]);
@@ -807,7 +834,7 @@ void Cpu::loadBin(w addr, std::string filename) {
     char image[0xffff*2];
     file.read(image, 0xffff*2);
     setSeqWriterPos(addr);
-    for(int i = 0; i<=0xffff; i+=2) {
+    for(int i = 0; i<0xffff*2; i+=2) {
         writeSeq(((w)((uint8_t)image[i]) << 8) | (uint8_t)image[i + 1] );
     }
 }

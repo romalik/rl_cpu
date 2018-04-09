@@ -39,15 +39,19 @@ int kernel_main() {
     // malloc_init((size_t)&__data_end, (size_t)(0x3000));
     //  printf("Init interrupts..\n");
 
-    init_interrupts();
     ataInit();
     block_init();
     fs_init();
-    mm_init();
+
+
+    mmu_test();
+    //while(1) {};
+
     mmu_init();
     sched_init();
     piper_init();
 
+    kernel_worker_init();
 
     k_regDevice(0, tty_write, tty_read, 0, 0);
     k_regDevice(1, proc_file_write, proc_file_read, 0, 0);
@@ -61,6 +65,10 @@ int kernel_main() {
     k_mknod("/dev/schedctl", 'c', 3, 0);
 
     printf("Press s for builtin shell, any key for init [%s]\n", init_path);
+
+    init_interrupts();
+
+
     if (getc() == 's') {
         main_sh();
     } else {
@@ -69,10 +77,12 @@ int kernel_main() {
         initExecRequest.filename = (void *)init_path;
         initExecRequest.argv = (void *)init_path;
         initExecRequest.envp = NULL;
-        kernel_worker_init();
         addKernelTask(KERNEL_TASK_FORK, 0, 0); //will fork to pids 0 & 1
         addKernelTask(KERNEL_TASK_EXECVE, 1, (void *)(&initExecRequest));
-        //	sched_start();
+        procs[0].openFiles[0] = k_open("/dev/tty", 'r');
+        procs[0].openFiles[1] = k_open("/dev/tty", 'w');
+        procs[0].openFiles[2] = k_open("/dev/tty", 'w');
+        sched_start();
         kernel_worker();
         /*
         struct Process * initP;
@@ -91,9 +101,6 @@ int kernel_main() {
             halt();
         }
 
-        procs[initPid].openFiles[0] = k_open("/dev/tty", 'r');
-        procs[initPid].openFiles[1] = k_open("/dev/tty", 'w');
-        procs[initPid].openFiles[2] = k_open("/dev/tty", 'w');
 
         printf("Starting scheduler\n");
         sched_start();

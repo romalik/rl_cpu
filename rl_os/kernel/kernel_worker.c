@@ -4,6 +4,7 @@
 #include <lock.h>
 #include <wait.h>
 #include <fork.h>
+#include <execve.h>
 
 unsigned int kernelTaskQueueLock;
 struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
@@ -54,19 +55,35 @@ void kernel_worker_init() {
     p->state = PROC_STATE_RUN;
     p->mmuSelector = 0;
     p->cwd = fs_root;
+    cProc = p;
+
 }
 
 extern void ps();
 
+#define offsetof(st, m) ((size_t)&(((st *)0)->m))
+
 void do_kernel_task_fork(int i) {
     struct Process *p;
+    struct Process *new_p;
     printf("Kernel worker: forking!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+        size_t parentSyscallStructAddr;
+        new_p = do_fork(p, 0);
+        printf("Kernel worker: new_p 0x%04X\n", new_p);
+        //fill parent info, child's should be zeroed by library!!
 
+
+        //parentSyscallStructAddr = ugetc(p, p->sp + (offsetof(struct InterruptFrame, AP) - offsetof(struct InterruptFrame, __sp_ptr)), 0, 0xe);
+        //uputc(p, parentSyscallStructAddr + offsetof(struct forkSyscall, pid), 0, 0xe, new_p->pid);
+
+        printf("New pid %d, mmuSelector %d\n", new_p->pid, new_p->mmuSelector);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-    }
-    while(1) {}
+        p->state = PROC_STATE_RUN;
 
+    }
+
+    printf("Forked!\n");
     /*
         struct forkSyscall *sStruct;
         struct Process *newProcess;
@@ -132,9 +149,28 @@ void do_kernel_task_fork(int i) {
 }
 
 void do_kernel_task_clone(int i) {
-    printf("CLONE\n");
+    struct Process *p;
+    struct Process *new_p;
+    printf("Kernel worker: cloning!\nSTUB\n");
     while(1) {}
-    /*
+/*
+    if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+        size_t parentSyscallStructAddr;
+        new_p = do_fork(p, 1);
+        //fill parent info, child's should be zeroed by library!!
+
+        parentSyscallStructAddr = ugetc(p, p->ap, 0, 0xe);
+        uputc(p, parentSyscallStructAddr + offsetof(struct forkSyscall, pid), 0, 0xe, new_p->pid);
+
+        printf("New pid %d, mmuSelector %d\n", new_p->pid, new_p->mmuSelector);
+        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+        run_proc(p);
+
+    }
+
+    printf("Cloned!\n");
+  */
+  /*
     struct Process *p;
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct cloneSyscall *sStruct;
@@ -178,9 +214,21 @@ void do_kernel_task_clone(int i) {
 
 
 
-void do_kernel_task_execve(int i) {
+void do_kernel_task_execve(int i, void * args) {
+    struct Process *p;
+    struct execSyscall *sStruct = args;
     printf("EXECVE\n");
-    while(1) {}
+    if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+
+      printf("EXECVE for pid %d\n", p->pid);
+
+      di();
+        do_execve(p, sStruct->filename, sStruct->argv, sStruct->envp);
+      ei();
+        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+        run_proc(p);
+    }
+    //while(1) {}
     /*
     struct Process *p;
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
@@ -318,7 +366,7 @@ void kernel_worker() {
                 if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
                     do_kernel_task_fork(i);
                 } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXECVE) {
-                    do_kernel_task_execve(i);
+                    do_kernel_task_execve(i, kernelTaskQueue[i].args);
                 } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXIT) {
                     do_kernel_task_exit(i);
                 } else if (kernelTaskQueue[i].type == KERNEL_TASK_WAITPID) {

@@ -19,9 +19,49 @@
 
 extern unsigned int ticks;
 
+/*
+ Interrupt:
+            this->push(highPC());
+            this->push(BP);
+            this->push(AP);
+            this->push(S);
+            this->push(D);
+            this->push(SW());
+
+ */
+
+/*
+ Status word:
+        //15 14    13    12     11 10 09 08 07 06 05 04 03 02 01 00
+        //-- MMUEn User  IntEn  ----mPC---- ------mmuSelector------
+
+        w res = 0;
+        res |= (MMUEntrySelector & 0xff);
+        res |= ((mPC()) << 8);
+        res |= (intEnabled << 12);
+        res |= (userMode << 13);
+*/
+
+
+#define SW_MMU_ENABLE (1<<14)
+#define SW_INT_ENABLE (1<<12)
+#define SW_USER_MODE  (1<<13)
+
+
+struct InterruptFrame { //userspace
+    size_t highPC;
+    size_t BP;
+    size_t AP;
+    size_t S;
+    size_t D;
+    size_t SW;
+    size_t __sp_ptr;
+};
+
 struct Process {
     unsigned int pid;
     unsigned int state;
+/*
     unsigned int ap;
     unsigned int bp;
     unsigned int sp;
@@ -30,7 +70,9 @@ struct Process {
 
     unsigned int s;
     unsigned int d;
+*/
 
+    unsigned int sp;
     int mode;
 
     unsigned int mmuSelector;
@@ -51,9 +93,13 @@ struct Process {
     int isThread;
 };
 
+
+void printProcess(struct Process *p);
+
 extern struct Process *cProc;
 extern struct Process procs[MAXPROC];
 
+/*
 struct IntFrame {
     unsigned int sp;
     unsigned int pc;
@@ -63,6 +109,8 @@ struct IntFrame {
     unsigned int s;
     unsigned int d;
 };
+*/
+
 
 struct Process *get_free_proc();
 void run_proc(struct Process * p);
@@ -71,13 +119,11 @@ void run_proc(struct Process * p);
 unsigned int sendSig(unsigned int pid, unsigned int sig);
 
 unsigned int findProcByPid(unsigned int pid, struct Process **p);
-struct Process *sched_add_proc(unsigned int pid, unsigned int mmuSelector,
-                               struct Process *p);
+//struct Process *sched_add_proc(unsigned int pid, unsigned int mmuSelector,
+//                               struct Process *p);
 unsigned int sched_genPid();
 
 void resched_now();
-
-unsigned int do_exec(struct Process * p, const char * filename, const char ** argv, const char ** envp);
 
 unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n);
 unsigned int proc_file_write(unsigned int minor, const unsigned int * buf, size_t n);

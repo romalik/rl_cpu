@@ -7,23 +7,40 @@
 #include <kernel_worker.h>
 #include <memmap.h>
 #include <syscall.h>
-
+#include <mm.h>
 
 unsigned int system_interrupt_stack[512];
-
+unsigned int iobuf[1024];
 
 extern unsigned int ticks;
 
-void system_interrupt(void *p, struct IntFrame *fr) {
-    int scall_id;
-    scall_id = *(unsigned int *)p;
+void system_interrupt(/*, struct IntFrame *fr*/) {
+  void *p;
+  void * scallStructPtr;
+  int scall_id;
+    //scall_id = *(unsigned int *)p;
+size_t pp;
+    pp = system_interrupt_stack[2];
+    scallStructPtr = (void *)ugetc(cProc, (size_t)pp, 0, 14);
+    scall_id = ugetc(cProc, (size_t)scallStructPtr, 0, 14);
+
+
+    system_interrupt_stack[0] = cProc->mmuSelector;
+
+
+    printf("SYS : inside system_interrupt() cProc->pid = %d pp = 0x%04X scallStructPtr = 0x%04X scall_id = %d\n", cProc->pid, pp, scallStructPtr, scall_id);
+    asm("blink");
 
     if (scall_id == __NR_write) {
         int sz_write = 0;
-        struct writeSyscall *s = (struct writeSyscall *)p;
-        sz_write = k_write(cProc->openFiles[s->fd], s->buf, s->size);
-        //printf("KERNEL: write %d/%d words to %d\n", sz_write, s->size,  s->fd);
-        s->size = sz_write;
+        struct writeSyscall s;
+        ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct writeSyscall), 0, (unsigned int *)&s);
+        ugets(cProc, (size_t)s.buf, 0, 14, s.size, 0, iobuf);
+        asm("blink");
+        printf("SYS : write\n");
+        sz_write = k_write(cProc->openFiles[s.fd], iobuf, s.size);
+        printf("KERNEL: write %d/%d words to %d from 0x%04X\n>>>%s\n", sz_write, s.size,  s.fd, s.buf, iobuf);
+        s.size = sz_write;
         return;
     } else if (scall_id == __NR_read) {
         int sz_read = 0;
@@ -190,9 +207,8 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         return;
 
     } else if (scall_id == __NR_fork) {
-        di();
         addKernelTask(KERNEL_TASK_FORK, cProc->pid, 0);
-
+/*
         cProc->ap = fr->ap;
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
@@ -201,16 +217,14 @@ void system_interrupt(void *p, struct IntFrame *fr) {
 
         cProc->s = fr->s;
         cProc->d = fr->d;
-
+*/
         cProc->state = PROC_STATE_KWORKER;
-        ei();
         resched_now();
         while (1) {
         } // wait for context switch
     } else if (scall_id == __NR_clone) {
-        di();
         addKernelTask(KERNEL_TASK_CLONE, cProc->pid, 0);
-
+/*
         cProc->ap = fr->ap;
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
@@ -219,15 +233,14 @@ void system_interrupt(void *p, struct IntFrame *fr) {
 
         cProc->s = fr->s;
         cProc->d = fr->d;
-        
+  */
         cProc->state = PROC_STATE_KWORKER;
-        ei();
         resched_now();
         while (1) {
         } // wait for context switch
     } else if (scall_id == __NR_execve) {
-        di();
         addKernelTask(KERNEL_TASK_EXECVE, cProc->pid, p);
+/*
         cProc->ap = fr->ap;
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
@@ -235,14 +248,14 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->mpc = fr->mpc;
         cProc->s = fr->s;
         cProc->d = fr->d;
+*/
         cProc->state = PROC_STATE_KWORKER;
-        ei();
         resched_now();
         while (1) {
         } // wait for context switch
     } else if (scall_id == __NR_waitpid) {
-        di();
         addKernelTask(KERNEL_TASK_WAITPID, cProc->pid, p);
+/*
         cProc->ap = fr->ap;
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
@@ -250,14 +263,14 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->mpc = fr->mpc;
         cProc->s = fr->s;
         cProc->d = fr->d;
+*/
         cProc->state = PROC_STATE_KWORKER;
-        ei();
         resched_now();
         while (1) {
         } // wait for context switch
     } else if (scall_id == __NR_exit) {
-        di();
         addKernelTask(KERNEL_TASK_EXIT, cProc->pid, p);
+/*
         cProc->ap = fr->ap;
         cProc->bp = fr->bp;
         cProc->sp = fr->sp;
@@ -265,8 +278,8 @@ void system_interrupt(void *p, struct IntFrame *fr) {
         cProc->mpc = fr->mpc;
         cProc->s = fr->s;
         cProc->d = fr->d;
+*/
         cProc->state = PROC_STATE_KWORKER;
-        ei();
         resched_now();
         while (1) {
         } // wait for context switch

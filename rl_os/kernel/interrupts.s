@@ -42,5 +42,7 @@ loadsp_w system_interrupt_stack
 ; access this shit via system_interrupt_stack[0] [1] ....
 cnst_b 0 ;;mmuSelector
 icnst_w __sp_before_int ;;sp
-;call0_w timer_interrupt
+pushap ;;scallPtr
+call0_w system_interrupt
+discard_b 1
 reti

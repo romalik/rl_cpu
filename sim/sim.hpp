@@ -12,6 +12,7 @@
 #include "oplist.h"
 #include <SDL2/SDL.h>
 #include <functional>
+#include <signal.h>
 
 #include <unistd.h>
 #include <termios.h>
@@ -19,6 +20,9 @@
 #include <thread>
 #include <pthread.h>
 #define SDL_SUPPORT 1
+
+void onSignal(int signal);
+
 
 /* interrupt
 
@@ -645,7 +649,7 @@ public:
         //	printf("MMUTable write 0x%08X : 0x%08X\n", addr, val);
     }
     virtual w read(size_t addr, int seg) {
-        return 0;
+        return table[addr];
     }
 
     size_t getRealAddress(size_t a, w processSelector) {
@@ -976,6 +980,7 @@ public:
             }
         }
         printf("READ: Device for address 0x%08X not found!\n", effAddr);
+        usleep(100*1000);
         return 0;
     }
 };
@@ -1082,7 +1087,7 @@ public:
     w pop();
     w IRHigh();
 
-    w seqWriterPos;
+    size_t seqWriterPos;
     void setSeqWriterPos(size_t addr) {seqWriterPos = addr;}
     void writeSeq(w val);
     void setSP(w _sp) { SP = _sp; }

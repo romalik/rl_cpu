@@ -22,16 +22,29 @@ unsigned int pageMap[pageMapSize];
 
 void mmu_write_table(size_t process, size_t pageno, size_t s_code, size_t entry) {
   size_t target_io_addr = (process << 8) | (s_code << 12) | (pageno & 0xff);
-
   target_io_addr |= (1<<14); //select mmu from io devs
+  //printf("mmu write page 0x%04X = 0x%04X\n", target_io_addr, entry);
   outb(target_io_addr, entry);
 }
 
 size_t mmu_read_table(size_t process, size_t pageno, size_t s_code) {
   size_t target_io_addr = (process << 8) | (s_code << 12) | (pageno & 0xff);
-
+  size_t entry;
   target_io_addr |= (1<<14); //select mmu from io devs
-  return inb(target_io_addr);
+  entry = inb(target_io_addr);
+  //printf("mmu read page 0x%04X = 0x%04X\n", target_io_addr, entry);
+  return entry;
+}
+
+
+void mmu_test() {
+    size_t i;
+    for(i = 0; i<10; i++) {
+        mmu_write_table(0, i, 0, i);
+        //printf("write to %d val %d\n", i, i);
+        //printf("read from %d val %d\n", i, mmu_read_table(0,i,0));
+    }
+
 }
 
 void mmu_mark_page(size_t pageno, int flag) {
@@ -50,6 +63,7 @@ size_t mmu_get_free_page() {
 
   while(pageMap[pageno >> 4] & (1 <<(pageno & 0x0f))) { pageno++; }
 
+  //printf("Get free page : 0x%04x\n", pageno);
   if(pageno < pageNum) return pageno;
 
   return 0;
@@ -104,34 +118,91 @@ void mmu_init() {
   mmu_on();
 }
 
-
-
-
-unsigned int BankMap[NBANKS];
-
-void mm_init() {
-    int i;
-    for (i = 0; i < NBANKS; i++) {
-        BankMap[i] = 0;
-    }
-}
-void mm_freeSegment(unsigned int seg) {
-    BankMap[seg] = 0;
+unsigned int getPageAndOffset(struct Process * p, size_t addr, size_t * offset) {
+    size_t pageno = mmu_read_table(p->mmuSelector, (addr >> 12), 0);
+    if(offset) *offset = addr & 0xfff;
+    return pageno;
 }
 
-unsigned int mm_allocSegment(unsigned int *seg) {
-    int i;
-    for (i = 0; i < NBANKS; i++) {
-        if (BankMap[i] == 0) {
-            BankMap[i] = 1;
-            *seg = i;
-            return 1;
+unsigned int ugetc(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap) {
+    size_t offset;
+    mmu_write_table(processToMap, whereToMap, 0, getPageAndOffset(p, addr, &offset));
+    return *(unsigned int *)((whereToMap << 12)|offset);
+}
+
+void uputc(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, unsigned int val) {
+    size_t offset;
+    mmu_write_table(processToMap, whereToMap, 0, getPageAndOffset(p, addr, &offset));
+    *(unsigned int *)((whereToMap << 12)|offset) = val;
+}
+
+size_t ugets(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, size_t length, int nullTerminated, unsigned int * s) {
+    size_t pageno_u = 0xffff; //user's current page region
+    unsigned int c = 0;
+    size_t begin = addr;
+    //printf("Try ugets\n");
+    while(length) {
+        if((addr >> 12) != pageno_u) { //page boundary!
+            pageno_u = addr >> 12;
+            mmu_write_table(processToMap, whereToMap, 0, getPageAndOffset(p, addr, NULL));
+        }
+        c = (*s = *(unsigned int *)((whereToMap << 12)|(addr & 0xfff)));
+        //printf("ugets [%c] len 0x%04x\n", c, length);
+        s++; addr++; length--;
+        if(nullTerminated && (!c)) {
+            break;
         }
     }
-    return 0;
+    //printf("Ugets done!\n");
+
+    return addr - begin;
 }
-void mm_memcpy(unsigned int *dest, unsigned int *src, unsigned int n,
-               unsigned int bank) {
-    DATA_BANK_SEL = bank;
-    memcpy(dest, src, n);
+
+size_t uputs(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, size_t length, int nullTerminated, unsigned int * s) {
+    size_t pageno_u = 0xffff; //user's current page region
+    unsigned int c = 0;
+    size_t begin = addr;
+    while(length) {
+        if((addr >> 12) != pageno_u) { //page boundary!
+            pageno_u = addr >> 12;
+            mmu_write_table(processToMap, whereToMap, 0, getPageAndOffset(p, addr, NULL));
+        }
+        c = (*(unsigned int *)((whereToMap << 12)|(addr & 0xfff)) = *s);
+        printf("uputs : [0x%04X] <- 0x%04X\n", addr, c);
+        s++; addr++; length--;
+        if(nullTerminated && (!c)) {
+            break;
+        }
+    }
+    return addr - begin;
 }
+
+
+void freeProcessPages(struct Process * p) {
+    size_t pageno = 0;
+
+    //printf("freeProcessPages : freeing pid %d cProc pid %d\n", p->pid, cProc->pid);
+
+    while(pageno < 128) {
+        size_t src_page = mmu_read_table(p->mmuSelector, pageno, 1);
+        //printf("freeProcessPages : text pageno = %d src_page = 0x%04x\n", pageno, src_page);
+        if(src_page == FREE_PAGE_MARK) break;
+        //printf("freeProcessPages : text 1\n");
+        mmu_mark_page(src_page, 0);
+        //printf("freeProcessPages : text 2\n");
+        mmu_write_table(p->mmuSelector, pageno, 1, FREE_PAGE_MARK);
+        //printf("freeProcessPages : text 3\n");
+        pageno++;
+    }
+    pageno = 0;
+    while(pageno < 16) {
+        size_t src_page = mmu_read_table(p->mmuSelector, pageno, 0);
+        //printf("freeProcessPages : data pageno = %d src_page = 0x%04x\n", pageno, src_page);
+        if(src_page == FREE_PAGE_MARK) break;
+        mmu_mark_page(src_page, 0);
+        mmu_write_table(p->mmuSelector, pageno, 0, FREE_PAGE_MARK);
+        pageno++;
+    }
+
+}
+
