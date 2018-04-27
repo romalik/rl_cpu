@@ -212,32 +212,26 @@ void execWithPathSearch(char * nArgv[]) {
 
 }
 
-
 int main(int argc, char ** argv) {
   int i = 0;
   int script_mode = 0;
   int script_fd = 0;
 
-  //asm("blink");
-
-
-  while(1) {
-    char a = 'A';
-
-    write(1, &a, 1);//asm("blink");
-    write(1, "Hi from userspace!\n", 19);//asm("blink");
-  }
+  printf("Starting shell\n");
+/*
   if(argc > 1) {
     script_mode = 1;
     script_fd = open(argv[1], O_RDONLY);
     if(!script_fd) { return 0; }
 
   }
+*/
 
   setenv("PATH","/:/bin/",1);
 
   printf("\n");
-  do_pwd();
+
+  //do_pwd();
   printf("# ");
   while (1) {
     char c;
@@ -286,7 +280,7 @@ int main(int argc, char ** argv) {
           if(pipeStart < 0) {
             unsigned int childPid = fork();
             if (!childPid) {
-
+              //asm("blink_w 255");
               if(redirIN > 0) {
                 close(STDIN_FILENO);
                 dup(redirIN);

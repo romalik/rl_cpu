@@ -220,7 +220,7 @@ public:
 		  if(it->second.section == 0) {
                     it->second.position += (globalOffset + sections[i][it->second.section].offset)/code_block_size;
  		  } else {
-                    it->second.position += globalOffset + sections[i][it->second.section].offset;
+                    it->second.position += globalOffset + sections[i][it->second.section].offset + dataOffset;
 		  }
                 }
             }
@@ -556,7 +556,7 @@ int main(int argc, char ** argv) {
     //printf("Linking..\n");
     linker.link();
        // printf("Writing to %s..\n", outFile.c_str());
-    //linker.dumpLabels();
+    linker.dumpLabels();
     linker.writeBin(outFile,0);
     //    printf("Done.\n");
 

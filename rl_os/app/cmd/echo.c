@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+char str[] = "Write/read test\n";
+
 int main(int argc, char **argv, char ** envp) {
     int i = 0;
     char * c;

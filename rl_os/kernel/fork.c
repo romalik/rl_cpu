@@ -2,17 +2,26 @@
 #include <kstdio.h>
 struct Process * do_fork(struct Process * p, int clone) {
     struct Process * new_p;
+    int fd;
     size_t new_selector;
     size_t pageno = 0;
     new_p = get_free_proc();
-    printf("new_p 0x%04X\n", new_p);
+
+//    printf("new_p 0x%04X\n", new_p);
+
+
 
     if(!new_p) return NULL;
-    new_p->pid = sched_genPid();
 
+    memcpy((unsigned int *)new_p, (unsigned int *)p, sizeof(struct Process));
+
+    new_p->pid = sched_genPid();
+    new_p->parent = p;
     new_p->mmuSelector = mmu_get_free_selector();
     mmu_mark_selector(new_p->mmuSelector, 1);
 
+    new_p->intFrame.SW = (new_p->intFrame.SW & 0xff00) | (new_p->mmuSelector & 0x00ff);
+//    printf("Forking pid %d to pid %d\n", p->pid, new_p->pid);
 
     //copy code
     while(pageno < 128) {
@@ -21,7 +30,7 @@ struct Process * do_fork(struct Process * p, int clone) {
         if(src_page == FREE_PAGE_MARK) break;
 
         target_page = mmu_get_free_page();
-        printf("Select target %d\n", target_page);
+//        printf("Select target %d\n", target_page);
         mmu_mark_page(target_page, 1);
         mmu_copy_pages(src_page, target_page, 0, 14, 15);
 
@@ -38,7 +47,7 @@ struct Process * do_fork(struct Process * p, int clone) {
         if(src_page == FREE_PAGE_MARK) break;
 
         target_page = mmu_get_free_page();
-        printf("Select target %d\n", target_page);
+//        printf("Select target %d\n", target_page);
         mmu_mark_page(target_page, 1);
         mmu_copy_pages(src_page, target_page, 0, 14, 15);
 
@@ -53,13 +62,16 @@ struct Process * do_fork(struct Process * p, int clone) {
         }
     }
 
-
-    new_p->parent = p;
-
-
+/*
     printf("Old proc: "); printProcess(p);
     printf("New proc: "); printProcess(new_p);
+*/
 
+    for (fd = 0; fd < MAX_FILES_PER_PROC; fd++) {
+      if (p->openFiles[fd]) {
+        p->openFiles[fd]->refcnt++;
+      }
+    }
 
 
     if(p->pid == 0) {

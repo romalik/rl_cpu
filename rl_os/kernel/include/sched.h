@@ -43,58 +43,52 @@ extern unsigned int ticks;
 */
 
 
-#define SW_MMU_ENABLE (1<<14)
+#define SW_COMMIT_ENABLE (1<<14)
+//#define SW_MMU_ENABLE (1<<14)
 #define SW_INT_ENABLE (1<<12)
 #define SW_USER_MODE  (1<<13)
 
 
 struct InterruptFrame { //userspace
-    size_t highPC;
-    size_t BP;
-    size_t AP;
-    size_t S;
-    size_t D;
-    size_t SW;
-    size_t __sp_ptr;
+  size_t SW;
+  size_t SP;
+  size_t highPC;
+  size_t BP;
+  size_t AP;
+  size_t S;
+  size_t D;
 };
 
 struct Process {
-    unsigned int pid;
-    unsigned int state;
-/*
-    unsigned int ap;
-    unsigned int bp;
-    unsigned int sp;
-    unsigned int pc;
-    unsigned int mpc;
+  unsigned int pid;
+  unsigned int state;
 
-    unsigned int s;
-    unsigned int d;
-*/
+  struct InterruptFrame intFrame;
 
-    unsigned int sp;
-    int mode;
 
-    unsigned int mmuSelector;
+  int mode;
 
-    struct fs_node cwd;
+  unsigned int mmuSelector;
 
-    struct Process *parent;
+  struct fs_node cwd;
 
-    int retval;
+  struct Process *parent;
 
-    FILE *openFiles[MAX_FILES_PER_PROC];
+  int retval;
 
-    char  * argv;
-    char cmd[32];
-    int signalsPending;
-    sighandler_t sigActions[SIGNUM];
-    void * waitingOn;
-    int isThread;
+  FILE *openFiles[MAX_FILES_PER_PROC];
+
+  char  * argv;
+  char cmd[32];
+  int signalsPending;
+  sighandler_t sigActions[SIGNUM];
+  void * waitingOn;
+  int isThread;
 };
 
 
 void printProcess(struct Process *p);
+void resched(unsigned int t_stack[]);
 
 extern struct Process *cProc;
 extern struct Process procs[MAXPROC];

@@ -30,6 +30,7 @@ unsigned int ugetc(struct Process * p, size_t addr, size_t processToMap, size_t 
 void uputc(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, unsigned int val);
 size_t ugets(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, size_t length, int nullTerminated, unsigned int * s);
 size_t uputs(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, size_t length, int nullTerminated, unsigned int * s);
+size_t umemset(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, size_t length, unsigned int v);
 
 
 #endif

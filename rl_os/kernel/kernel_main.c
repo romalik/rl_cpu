@@ -26,6 +26,7 @@ extern void ei();
 char init_path[] = "/sh";
 
 void init_interrupts() {
+    asm("ec");
     outb(TIMER_INTERRUPT_ADDR_PORT, (size_t)(__timer_interrupt_vector));
     outb(SYSTEM_INTERRUPT_ADDR_PORT, (size_t)(__system_interrupt_vector));
     ei();
@@ -66,10 +67,9 @@ int kernel_main() {
 
     printf("Press s for builtin shell, any key for init [%s]\n", init_path);
 
-    init_interrupts();
 
 
-    if (getc() == 's') {
+    if (0/*getc() == 's'*/) {
         main_sh();
     } else {
         struct execSyscall initExecRequest;
@@ -83,6 +83,7 @@ int kernel_main() {
         procs[0].openFiles[1] = k_open("/dev/tty", 'w');
         procs[0].openFiles[2] = k_open("/dev/tty", 'w');
         sched_start();
+        init_interrupts();
         kernel_worker();
         /*
         struct Process * initP;

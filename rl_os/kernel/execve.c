@@ -8,7 +8,7 @@
 #define MAX_ARGV_ENTRIES 15
 unsigned int argvBuffer[ARGV_BUFFER_SIZE];
 
-size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, size_t off) {
+size_t parseArgs(size_t argv_in, size_t envp_in, unsigned int *buf, size_t off, struct execSyscall * s, struct Process * tp) {
     /*
    argc
    argv **
@@ -27,8 +27,9 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
    argv[m]
 
 
+
 */
-    unsigned int * target_argc;
+  unsigned int * target_argc;
     unsigned int * target_argv;
     unsigned int * target_envp;
 
@@ -42,7 +43,7 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
     unsigned int * envPtr_source;
     unsigned int nEnv = 0;
 
-    const char ** p;
+    size_t p;
     char * t;
     unsigned int i;
 
@@ -55,6 +56,7 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
     target_argv_ptrs_area = target_envp_entries_area + MAX_ENVP_ENTRIES * MAX_ENVP_ENTRY_LENGTH;
     target_argv_entries_area = target_argv_ptrs_area + MAX_ARGV_ENTRIES;
 
+
     memset(buf, 0, target_argv_entries_area - buf);
 
     *target_argv = target_argv_ptrs_area - buf + off;
@@ -64,38 +66,45 @@ size_t parseArgs(const char **argv_in, const char **envp_in, unsigned int *buf, 
     for(i = 0; i<MAX_ENVP_ENTRIES; i++) {
         target_envp_ptrs_area[i] = target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH - buf + off;
     }
-    p = envp_in;
+    p = ugetc(tp, envp_in, 0, 14);;
     i = 0;
     // copy envp entries
+/*
     if(envp_in) {
         while(*p) {
-            strncpy((char *)(target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH), *p, MAX_ENVP_ENTRY_LENGTH);
+
+          strncpy((char *)(target_envp_entries_area + i*MAX_ENVP_ENTRY_LENGTH), *p, MAX_ENVP_ENTRY_LENGTH);
             i++;
             p++;
         }
     }
     target_envp_ptrs_area[i] = 0;
-
+*/
 
     p = argv_in;
     t = (char *)target_argv_entries_area;
     i = 0;
-    if(argv_in) {
-        while(*p) {
-            strcpy(t, *p);
-            target_argv_ptrs_area[i] = (size_t)((size_t)t - (size_t)buf + (size_t)off);
-            i++;
-            t += strlen(*p)+1;
-            p++;
-        }
+    if(p) {
+      size_t pp;
+      while(pp = ugetc(tp, (size_t)p, 0, 14)) { //pp now points to userspace' argv[i] entry
+
+        size_t read_words;
+        read_words = ugets(tp, (size_t)pp, 0, 14, 1024, 1, (unsigned int *)t);
+
+        printf("Parse argv : %s\n", t);
+        target_argv_ptrs_area[i] = (size_t)((size_t)t - (size_t)buf + (size_t)off);
+        i++;
+        t += read_words+1;
+        p++;
+      }
     }
     target_argv_ptrs_area[i] = 0;
     *target_argc = i;
-
+    printf("Parse argc : %d\n", i);
     return (size_t)t - (size_t)buf;
 }
 
-unsigned int do_execve(struct Process * p, const char * u_filename, const char ** argv, const char ** envp) {
+unsigned int do_execve(struct Process * p, struct execSyscall * s) {
     FILE *fd;
     unsigned int filename[100];
 //    unsigned int * filename;
@@ -106,37 +115,39 @@ unsigned int do_execve(struct Process * p, const char * u_filename, const char *
     unsigned int sizeData;
 //    off_t sizeTextFull;
     size_t stack_placement;
-    size_t off;
+    size_t off = 0;
     size_t pageno = 0;
-    struct InterruptFrame launchFrame;
+    p->state = PROC_STATE_CONSTRUCT;
 
     printf("DO_EXECVE for pid %d\n", p->pid);
 
 
-//    printf("\n\n\n\n!!!!!!\n!!!!!!\nEXEC LOAD HACK /sh!\n!!!!!!\n!!!!!!\n\n\n\n");
-    ugets(p, (size_t)u_filename, 0, 14, 100, 1, filename);
-//    filename = (unsigned int *)("/sh");
-    printf("DO_EXECVE [1] for pid %d\n", p->pid);
+    ugets(p, (size_t)s->filename, 0, 14, 100, 1, filename);
+//    printf("DO_EXECVE [1] for pid %d\n", p->pid);
 
-    printf("Try exec %s\n", filename);
+//    printf("Try exec %s\n", filename);
     fd = k_open(filename, 'r');
     if(!fd) {
       puts("EXEC: fd == 0\n");
         return 1;
     }
-    printf("DO_EXECVE [2] for pid %d\n", p->pid);
+//    printf("DO_EXECVE [2] for pid %d\n", p->pid);
 
     while(cnt != 9) {
         cnt += k_read(fd, header+cnt, (9-cnt));
-        printf("EXEC: read %d\n", cnt);
+//        printf("EXEC: read %d\n", cnt);
         if(k_isEOF(fd)) {
             k_close(fd);
             puts("EXEC: short header\n");
             return 1;
         }
     }
-    printf("DO_EXECVE [3] for pid %d\n", p->pid);
+//    printf("DO_EXECVE [3] for pid %d\n", p->pid);
 
+
+
+    /*  SCRIPT PROCESSING
+     *
     if(!memcmp(header, &"#!", 2)) {
         //this is a script!!
         char interp[30];
@@ -156,8 +167,8 @@ unsigned int do_execve(struct Process * p, const char * u_filename, const char *
 
 
     }
-
-    printf("DO_EXECVE [4] for pid %d\n", p->pid);
+*/
+//    printf("DO_EXECVE [4] for pid %d\n", p->pid);
 
     if(memcmp(header, &"REXE", 4)) {
         k_close(fd);
@@ -170,39 +181,42 @@ unsigned int do_execve(struct Process * p, const char * u_filename, const char *
     sizeText = header[6];
     sizeData = header[8];
 
-    printf("DO_EXECVE [5] for pid %d\n", p->pid);
+//    printf("DO_EXECVE [5] for pid %d\n", p->pid);
 
-    printf("Loading bin %s header OK text %d data %d\n", filename, sizeText, sizeData);
+//    printf("Loading bin %s header OK text %d data %d\n", filename, sizeText, sizeData);
 
     stack_placement = sizeData;
-    off = parseArgs(argv, envp, argvBuffer, stack_placement);
 
-    printf("EXEC : freeing old process pages for pid %d\n", p->pid);
+    off = parseArgs((size_t)s->argv, (size_t)s->envp, argvBuffer, stack_placement, s, p);
+
+//    printf("EXEC : freeing old process pages for pid %d\n", p->pid);
     freeProcessPages(p);
-    printf("EXEC : freeing old process pages done\n");
+//    printf("EXEC : freeing old process pages done\n");
 
     //read text
 
+    cnt = 0;
     while(cnt < sizeText) {
         size_t read_now;
         size_t target_page;
+        size_t chunk_read = 0;
         if(sizeTextHigh) {
             printf("Long bin!\n");
             while(1) {}
         }
         read_now = (sizeText - cnt); //fit to one page
-        printf("EXEC: text read now 0x%04x\n", read_now);
+//        printf("EXEC: text read now 0x%04x\n", read_now);
         if(read_now > 0x1000) read_now = 0x1000;
         target_page = mmu_get_free_page();
-        printf("EXEC: text new target page 0x%04x as pageno %d\n", target_page, pageno);
+//        printf("EXEC: text new target page 0x%04x as pageno %d\n", target_page, pageno);
         mmu_mark_page(target_page, 1);
         mmu_write_table(0, 14, 0, target_page); //assign target page to pageno 14
 
         mmu_write_table(p->mmuSelector, pageno, 1, target_page);
         pageno++;
         cnt += read_now;
-        while(read_now) {
-            read_now -= k_read(fd, (unsigned int *)((14 << 12)), read_now);
+        while(read_now-chunk_read) {
+            chunk_read = k_read(fd, (unsigned int *)((14 << 12) + chunk_read), read_now-chunk_read);
         }
     }
 
@@ -212,11 +226,12 @@ unsigned int do_execve(struct Process * p, const char * u_filename, const char *
     while(cnt < sizeData) {
         size_t read_now;
         size_t target_page;
+        size_t chunk_read = 0;
         read_now = (sizeData - cnt); //fit to one page
-        printf("EXEC: data read now 0x%04x\n", read_now);
+//        printf("EXEC: data read now 0x%04x\n", read_now);
         if(read_now > 0x1000) read_now = 0x1000;
         target_page = mmu_get_free_page();
-        printf("EXEC: data new target page 0x%04x as pageno %d\n", target_page, pageno);
+//        printf("EXEC: data new target page 0x%04x as pageno %d\n", target_page, pageno);
 
         mmu_mark_page(target_page, 1);
         mmu_write_table(0, 14, 0, target_page); //assign target page to pageno 14
@@ -224,15 +239,16 @@ unsigned int do_execve(struct Process * p, const char * u_filename, const char *
         mmu_write_table(p->mmuSelector, pageno, 0, target_page);
         pageno++;
         cnt += read_now;
-        while(read_now) {
-            read_now -= k_read(fd, (unsigned int *)((14 << 12)), read_now);
+
+        while(read_now-chunk_read) {
+            chunk_read = k_read(fd, (unsigned int *)((14 << 12) + chunk_read), read_now-chunk_read);
         }
     }
 
     while(pageno < 16) { //allocate data seg
       size_t target_page;
       target_page = mmu_get_free_page();
-      printf("EXEC: data allocating empty page 0x%04x as pageno %d\n", target_page, pageno);
+//      printf("EXEC: data allocating empty page 0x%04x as pageno %d\n", target_page, pageno);
       mmu_mark_page(target_page, 1);
       mmu_write_table(p->mmuSelector, pageno, 0, target_page);
       pageno++;
@@ -241,22 +257,21 @@ unsigned int do_execve(struct Process * p, const char * u_filename, const char *
 
     k_close(fd);
 
-    p->sp = stack_placement;
+    uputs(p, stack_placement, 0, 14, off, 0, argvBuffer);
 
-    p->sp += uputs(p, stack_placement, 0, 14, off, 0, argvBuffer);
 
-    launchFrame.AP = stack_placement;
-    launchFrame.BP = stack_placement;
-    launchFrame.highPC = 0;
-    launchFrame.D = 0;
-    launchFrame.S = 0;
-    launchFrame.SW = SW_INT_ENABLE | SW_MMU_ENABLE | SW_USER_MODE | (p->mmuSelector&0xff);
+    p->intFrame.SP = stack_placement+off;//+sizeof(struct InterruptFrame)+off;
+    p->intFrame.AP = stack_placement;
+    p->intFrame.BP = stack_placement;
+    p->intFrame.highPC = 0;
+    p->intFrame.D = 0;
+    p->intFrame.S = 0;
+    p->intFrame.SW = SW_COMMIT_ENABLE | SW_INT_ENABLE | SW_USER_MODE | (p->mmuSelector&0xff);
 
-    printf("EXEC : write int frame\n");
-    p->sp += uputs(p, p->sp, 0, 14, sizeof(struct InterruptFrame) - 1, 0, (unsigned int *)(&launchFrame));
     memcpy((unsigned int *)p->cmd, (unsigned int *)filename, 32);
 
-    printf("EXEC: done\n");
+    p->state = PROC_STATE_NEW;
+//    printf("EXEC: done\n");
     return 0;
 }
 

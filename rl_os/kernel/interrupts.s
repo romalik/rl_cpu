@@ -19,13 +19,12 @@ ret
 .import sched_stack
 .label __timer_interrupt_vector
 ; save interrupted sp
-storesp_w __sp_before_int
+storesp_w sched_stack+1
 ; load scheduler sp
-loadsp_w sched_stack
 
-; access this shit via sched_stack[0] [1] ....
-cnst_b 0 ;;mmuSelector
-icnst_w __sp_before_int ;;sp
+loadsp_w sched_stack
+pushc ;will avoid writing to sched_stack+1 preserving prevSP, hopefully
+ec
 call0_w timer_interrupt
 reti
 
@@ -35,14 +34,13 @@ reti
 .label  __system_interrupt_vector
 .import system_interrupt_stack
 ; save interrupted sp
-storesp_w __sp_before_int
+storesp_w system_interrupt_stack+1
 ; load scheduler sp
 loadsp_w system_interrupt_stack
 
 ; access this shit via system_interrupt_stack[0] [1] ....
-cnst_b 0 ;;mmuSelector
-icnst_w __sp_before_int ;;sp
-pushap ;;scallPtr
+
+pushc
+ec
 call0_w system_interrupt
-discard_b 1
 reti

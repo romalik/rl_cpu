@@ -7,6 +7,6 @@ popap
 cnst_w __data_end
 popbp
 
-blink
+blink_w 3
 
 call1_w kernel_main

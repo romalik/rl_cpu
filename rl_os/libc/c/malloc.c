@@ -25,7 +25,7 @@ void malloc_init(size_t begin, size_t end) {
 
 extern int __data_end;
 void malloc_init_auto() {
-    malloc_init((size_t)(&__data_end), 0xE000);
+    malloc_init((size_t)(&__data_end)+0x2000, 0xE000);
 }
 
 void dumpList() {

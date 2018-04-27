@@ -68,84 +68,21 @@ void do_kernel_task_fork(int i) {
     struct Process *new_p;
     printf("Kernel worker: forking!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
-        size_t parentSyscallStructAddr;
         new_p = do_fork(p, 0);
         printf("Kernel worker: new_p 0x%04X\n", new_p);
-        //fill parent info, child's should be zeroed by library!!
-
-
-        //parentSyscallStructAddr = ugetc(p, p->sp + (offsetof(struct InterruptFrame, AP) - offsetof(struct InterruptFrame, __sp_ptr)), 0, 0xe);
-        //uputc(p, parentSyscallStructAddr + offsetof(struct forkSyscall, pid), 0, 0xe, new_p->pid);
-
         printf("New pid %d, mmuSelector %d\n", new_p->pid, new_p->mmuSelector);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         p->state = PROC_STATE_RUN;
 
+        if(kernelTaskQueue[i].args) {
+          struct forkSyscall s;
+          ugets(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
+          s.pid = new_p->pid;
+          uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
+        }
     }
 
     printf("Forked!\n");
-    /*
-        struct forkSyscall *sStruct;
-        struct Process *newProcess;
-        int currentCodeBank;
-        int currentDataBank;
-        int newCodeBank;
-        int newDataBank;
-        int newPid;
-        //printf("Kworker: di\n");
-        di();
-        currentCodeBank = p->codeMemBank;
-        currentDataBank = p->dataMemBank;
-        if (!mm_allocSegment(&newCodeBank)) {
-            printf("Kernel Worker: No more banks!!\n");
-            // panic here!
-        }
-        if(currentCodeBank == currentDataBank) {
-            newDataBank = newCodeBank;
-        } else {
-            if (!mm_allocSegment(&newDataBank)) {
-                printf("Kernel Worker: No more banks!!\n");
-                // panic here!
-            }
-
-        }
-
-        //printf("KWorker new bank %d\n", newBank);
-        ei();
-        copyBanks(newCodeBank, currentCodeBank);
-        if(newDataBank != newCodeBank) {
-            copyBanks(newDataBank, currentDataBank);
-        }
-        
-
-        di();
-        p->state = PROC_STATE_RUN;
-        newPid = sched_genPid();
-        newProcess = sched_add_proc(newPid, newCodeBank, newDataBank, p);
-
-        // set zero pid retval for child
-        DATA_BANK_SEL = newDataBank;
-        sStruct = (struct forkSyscall *)(*((
-            size_t *)(newProcess->ap))); // syscall struct
-                                         // pointer sits in
-                                         // first arg in arg
-                                         // space
-        sStruct->pid = 0;
-        newProcess->parent = p;
-
-        // set child pid as retval for parent
-        DATA_BANK_SEL = currentDataBank;
-        sStruct = (struct forkSyscall *)(*((
-            size_t *)(p->ap))); // syscall struct pointer sits
-                                // in first arg in arg space
-        sStruct->pid = newPid;
-
-        ei();
-    } else {
-        printf("Kernel Worker: pid %d not found!\n",
-               kernelTaskQueue[i].callerPid);
-    }
-*/
 }
 
 void do_kernel_task_clone(int i) {
@@ -214,148 +151,120 @@ void do_kernel_task_clone(int i) {
 
 
 
-void do_kernel_task_execve(int i, void * args) {
+void do_kernel_task_execve(int i) {
     struct Process *p;
-    struct execSyscall *sStruct = args;
     printf("EXECVE\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+      struct execSyscall s;
+
+      ugets(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct execSyscall), 0, (unsigned int *)&s);
+//      ugets(p, (size_t)s.filename, 0, 14, 512, 1, fname);
+//      ugets(p, (size_t)s.argv, 0, 14, 512, 0, argv);
+//      ugets(p, (size_t)s.envp, 0, 14, 512, 0, envp);
 
       printf("EXECVE for pid %d\n", p->pid);
 
       di();
-        do_execve(p, sStruct->filename, sStruct->argv, sStruct->envp);
+        do_execve(p, &s);
       ei();
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         run_proc(p);
     }
-    //while(1) {}
-    /*
-    struct Process *p;
-    if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
-        struct execSyscall *sStruct;
-        di();
-        DATA_BANK_SEL = p->dataMemBank;
-        sStruct = (struct execSyscall *)(*((
-            size_t *)(p->ap))); // syscall struct pointer sits
-                                // in first arg in arg space
-
-
-
-        do_exec(p, sStruct->filename, sStruct->argv, sStruct->envp);
-
-        p->state = PROC_STATE_RUN;
-
-        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-        ei();
-
-    } else {
-     printf("Kernel worker: execve TROUBLES!\n");
-        // hmmm...
-    }
-*/
 }
 
 void do_kernel_task_waitpid(int i) {
-    printf("WAITPID\n");
-    while(1) {}
-    /*
     struct Process *p;
     //printf("Kernel worker: waitpid!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
-        struct waitpidSyscall *sStruct;
+        struct waitpidSyscall s;
         struct Process *childProcess;
         int pid = 0;
         int retval = 0;
         int options = 0;
         //printf("Kernel worker: waitpid caller pid %d\n", kernelTaskQueue[i].callerPid);
-        di();
-        DATA_BANK_SEL = p->dataMemBank;
-        sStruct = (struct waitpidSyscall *)(*((
-            size_t *)(p->ap))); // syscall struct pointer sits
-                                // in first arg in arg space
 
-        if(sStruct->pid > 0) {
-          retval = findProcByPid(sStruct->pid, &childProcess);
+        ugets(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct waitpidSyscall), 0, (unsigned int *)&s);
+
+
+        pid = s.pid;
+        options = s.options;
+
+        if(pid > 0) {
+          retval = findProcByPid(pid, &childProcess);
         } else {
           retval = findProcByParent(p, &childProcess);
         }
-        pid = sStruct->pid;
-        options = sStruct->options;
+
 
         if (!retval) {
             //printf("process not found %d. Caller pid %d\n", pid,p->pid);
             if(options == WNOHANG) {
               p->state = PROC_STATE_RUN;
               kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-              sStruct->pid = 0;
+              s.pid = 0;
+              uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct waitpidSyscall), 0, (unsigned int *)&s);
             }
-            ei();
-            resched_now();
+
             return;
         }
 
-        if (childProcess->state != PROC_STATE_ZOMBIE) {
+        if ((childProcess->state != PROC_STATE_ZOMBIE) || (!retval)) {
             //printf("process not dead %d\n", pid);
 
-            if(sStruct->options == WNOHANG) {
+            if(options == WNOHANG) {
               p->state = PROC_STATE_RUN;
               kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-              sStruct->pid = 0;
+              s.pid = 0;
+              uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct waitpidSyscall), 0, (unsigned int *)&s);
             }
-            ei();
-            resched_now();
             return;
         }
 
         childProcess->state = PROC_STATE_NONE;
         p->state = PROC_STATE_RUN;
-        sStruct->pid = childProcess->pid;
-        *(sStruct->status) = childProcess->retval;
+        s.pid = childProcess->pid;
+        uputs(p, (size_t)s.status, 0, 14, 1, 0, (unsigned int *)&(childProcess->retval));
+        uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct waitpidSyscall), 0, (unsigned int *)&s);
+
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-        ei();
 
     } else {
      printf("Kernel worker: waitpid TROUBLES!\n");
         // hmmm...
     }
-*/
+
 }
 
 void do_kernel_task_exit(int i) {
-    printf("EXIT\n");
-    while(1) {}
-    /*
     struct Process *p;
+    printf("KernelWorker: exit\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
-        struct exitSyscall *sStruct;
-        int i;
-        di();
-        DATA_BANK_SEL = p->dataMemBank;
-        sStruct = (struct exitSyscall *)(*((size_t *)(p->ap)));
-        p->retval = sStruct->code;
+        struct exitSyscall s;
+        int j;
+        ugets(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct exitSyscall), 0, (unsigned int *)&s);
+        p->retval = s.code;
         p->state = PROC_STATE_ZOMBIE;
         //printf("Exit code: %d\n", p->retval);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         //close files
-        for (i = 0; i < MAX_FILES_PER_PROC; i++) {
-            if (p->openFiles[i]) {
-              k_close(p->openFiles[i]);
-              p->openFiles[i] = 0;
+        for (j = 0; j < MAX_FILES_PER_PROC; j++) {
+            if (p->openFiles[j]) {
+              k_close(p->openFiles[j]);
+              p->openFiles[j] = 0;
               //printf("Closing file %d\n", i);
             }
         }
 
         if(!p->isThread) {
-            mm_freeSegment(p->codeMemBank);
-            mm_freeSegment(p->dataMemBank);
+          freeProcessPages(p);
+          mmu_mark_selector(p->mmuSelector, 0);
         }
-        ei();
     } else {
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-      //printf("Kernel worker: EXIT TROUBLES!!!! double exit??\n");
+        printf("Kernel worker: EXIT TROUBLES!!!! double exit??\n");
     }
-*/
+
 }
 void kernel_worker() {
     while (1) {
@@ -366,7 +275,7 @@ void kernel_worker() {
                 if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
                     do_kernel_task_fork(i);
                 } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXECVE) {
-                    do_kernel_task_execve(i, kernelTaskQueue[i].args);
+                    do_kernel_task_execve(i);
                 } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXIT) {
                     do_kernel_task_exit(i);
                 } else if (kernelTaskQueue[i].type == KERNEL_TASK_WAITPID) {
@@ -408,8 +317,9 @@ void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
     kernelTaskQueue[i].type = task;
     kernelTaskQueue[i].callerPid = callerPid;
     kernelTaskQueue[i].args = args;
+    //printf("Adding kerner task [%d] from pid %d type %d\n", i, callerPid, task);
     //spinlock_unlock(&kernelTaskQueueLock);
 
-    //    showTasks();
+    //showTasks();
 }
 

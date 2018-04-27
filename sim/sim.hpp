@@ -986,7 +986,7 @@ public:
 };
 
 
-class Cpu {
+class Cpu {  
     w RA, RB;
     w AP, BP, SP, T;
     size_t PC;
@@ -996,12 +996,20 @@ class Cpu {
     w S;
     w D;
 
+    w commitEnabled;
     w intEnabled;
     w userMode;
 
     w MMUEnabled;
 
     w MMUEntrySelector;
+
+    w hPC_b;
+    w BP_b;
+    w AP_b;
+    w S_b;
+    w D_b;
+    w SW_b;
 
     int flDebug;
 
@@ -1010,6 +1018,34 @@ class Cpu {
 
     InterruptController * intCtl;
 public:
+
+    bool commit() {
+      hPC_b = highPC();
+      BP_b = BP;
+      AP_b = AP;
+      S_b = S;
+      D_b = D;
+      SW_b = SW();
+
+    }
+    bool pushCommit() {
+      // RET frame
+      //D S AP BP highPC SP SW
+
+
+
+
+      this->push(SW_b);
+      this->SP++;
+      this->push(hPC_b);
+      this->push(BP_b);
+      this->push(AP_b);
+      this->push(S_b);
+      this->push(D_b);
+
+      //printf("PUSHC : hPC 0x%04X (0x%04X) SW 0x%04X\n", hPC_b, hPC_b << 3,  SW_b);
+
+    }
 
     Demux demux;
 
@@ -1024,25 +1060,27 @@ public:
 
 
     void dumpRegs() {
-        printf("PC 0x%08X\nRA 0x%08X\nRB 0x%08X\nAP 0x%08X\nBP 0x%08X\nSP 0x%08X\nT 0x%08X\nIR 0x%08X\nML 0x%08X\nS 0x%08X\nD 0x%08X\bint %d\nuser %d\nMMU %d\n", PC, RA, RB, AP, BP, SP, T, IR, ML, S, D, intEnabled, userMode, MMUEnabled);
+        printf("PC 0x%08X\nRA 0x%08X\nRB 0x%08X\nAP 0x%08X\nBP 0x%08X\nSP 0x%08X\nT 0x%08X\nIR 0x%08X\nML 0x%08X\nS 0x%08X\nD 0x%08X\bint %d\nuser %d\nMMU %d\nEC %d\n", PC, RA, RB, AP, BP, SP, T, IR, ML, S, D, intEnabled, userMode, MMUEnabled, commitEnabled);
     }
 
     w SW() {
         //15 14    13    12     11 10 09 08 07 06 05 04 03 02 01 00
-        //-- MMUEn User  IntEn  ----mPC---- ------mmuSelector------
+        //-- EC User  IntEn  ----mPC---- ------mmuSelector------
 
         w res = 0;
         res |= (MMUEntrySelector & 0xff);
         res |= ((mPC()) << 8);
-        res |= (intEnabled << 12);
-        res |= (userMode << 13);
+        res |= ((intEnabled ? 1:0) << 12);
+        res |= ((userMode ? 1:0) << 13);
         //	res |= (MMUEnabled << 14);
+        res |= ((commitEnabled ? 1:0) << 14);
         return res;
     }
 
 
     void set_SW(w sw) {
-        //    MMUEnabled = sw & (1<<14);
+        commitEnabled   = (sw & (1<<14))?1:0;
+      //    MMUEnabled = sw & (1<<14);
         userMode   = (sw & (1<<13))?1:0;
         intEnabled = (sw & (1<<12))?1:0;
         set_mPC((sw & (mPcMask<<8)) >> 8);

@@ -35,7 +35,7 @@ enum {
 Cpu myCpu;
 struct termios old_tio, new_tio;
 int oldf;
-
+bool stop = false;
 
 VMemDevice::VMemDevice(Cpu * _cpu) : cpu(_cpu) {
 }
@@ -218,15 +218,20 @@ void Cpu::execute() {
         //    printf("CPU: IRQ Line Status: %d\n", intCtl->irqLineStatus());
         if(intCtl->irqLineStatus()) {
             //printf("Into int vec!\n");
+/*
             this->push(highPC());
             this->push(BP);
             this->push(AP);
             this->push(S);
             this->push(D);
             this->push(SW());
+*/
+
+          //printf("INT PC %08X SP %04X\n", PC, SP);
             this->userMode = 0;
             this->intEnabled = 0;
             this->MMUEntrySelector = 0;
+            this->commitEnabled = 0;
             //printf("Try get vec..");
             set_highPC(intCtl->getIrqVector());
             reset_mPC();
@@ -655,6 +660,15 @@ void Cpu::execute() {
     } else if(op == di) {
         this->intEnabled = 0;
 
+    } else if(op == ec) {
+        this->commitEnabled = 1;
+
+    } else if(op == dc) {
+        this->commitEnabled = 0;
+
+    } else if(op == pushc) {
+        pushCommit();
+
     } else if(op == pushap) {
         push(AP);
 
@@ -687,17 +701,18 @@ void Cpu::execute() {
         intCtl->request(0);
 
     } else if(op == reti) {
-        RA = pop(); //SP
-        MMUEntrySelector = pop();
-        //printf("RETI : restore sel %d\n", MMUEntrySelector);
-        SP = RA;
-        set_SW(pop());
         D = pop();
         S = pop();
         AP = pop();
         BP = pop();
         set_highPC(pop());
+        RA = pop(); //SP
+        w sw = pop();
+        set_SW(sw);
+        //printf("RETI : restore sw 0x%08X\n", sw);
+        SP = RA;
         //printf("RETI : restore PC 0x%08X\n", PC);
+        //printf("RETI : restore SP 0x%08X\n", SP);
         if(PC == 0) {
           //flDebug = 1;
           //intEnabled = 0;
@@ -804,21 +819,28 @@ void Cpu::execute() {
         MMUEnabled = 0;
 
 
-    } else if(op == blink) {
-        printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ BLINK! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+    } else if(op == blink_w) {
+
+      RA = this->memRead(PC, C_SEG_CODE);
+      PC++;
+
+
+
+      printf("---->>> BLINK! 0x%04X\n", RA);
+      dumpRegs();
         blinkCnt++;
 
     } else {
         printf("op not implemented! %d\n", op);
         printf("op not implemented! %s\n", oplist[op]);
         onSignal(SIGINT);
-
         exit(1);
     }
 
 
-
-
+    if(commitEnabled) {
+      commit();
+    }
 
 }
 

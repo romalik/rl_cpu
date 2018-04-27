@@ -152,6 +152,7 @@ kernel/include/signal.h
 kernel/include/signal.h
 kernel/include/string.h
 kernel/include/string.h
+kernel/include/sys.h
 kernel/include/syscall.h
 kernel/include/syscall.h
 kernel/include/tty.h
@@ -184,6 +185,8 @@ kernel/string.c
 kernel/string.c
 kernel/sys.c
 kernel/sys.c
+kernel/sys_fs.c
+kernel/sys_proc.c
 kernel/syscall.s
 kernel/tty.c
 kernel/tty.c

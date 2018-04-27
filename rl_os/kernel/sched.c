@@ -31,15 +31,13 @@ extern void kernel_worker_entry();
 
 unsigned int schedMx;
 
-void resched();
 
 
 void timer_interrupt() {
-  sched_stack[0] =  cProc->mmuSelector;
     ticks++;
     if(ticksToSwitch) {
         ticksToSwitch--;
-        if(ticksToSwitch == 0) resched();
+        if(ticksToSwitch == 0) resched(sched_stack);
     }
 }
 
@@ -57,7 +55,7 @@ void sched_init() {
 
 void printProcess(struct Process * p) {
     int i = 0;
-    printf("Process: ptr 0x%04x\npid: %d\nmmu: %d\nsp: 0x%04X\nstate: %d\n", p, p->pid, p->mmuSelector, p->sp, p->state);
+    printf("Process: ptr 0x%04x\npid: %d\nmmu: %d\nsp: 0x%04X\nstate: %d\n", p, p->pid, p->mmuSelector, p->intFrame.SP, p->state);
 
     for(i = 0; i<20; i++) {
         printf("code page %d : 0x%04X\n", i, mmu_read_table(p->mmuSelector, i, 1));
@@ -78,7 +76,7 @@ void ps() {
 
         printf("Entry %d: state %d pid %d sp "
                "0x%04x cmd %s\n",
-               i, procs[i].state, procs[i].pid, procs[i].sp, procs[i].cmd);
+               i, procs[i].state, procs[i].pid, procs[i].intFrame.SP, procs[i].cmd);
     }
     printf("\n");
 }
@@ -225,36 +223,14 @@ unsigned int sendSig(unsigned int pid, unsigned int sig) {
     return 0;
 }
 
-extern size_t __sp_before_int;
-void resched() {
+void resched(unsigned int t_stack[]) {
     int nextTask;
-
-//    printf("__sp_before_int 0x%04X, addr = 0x%04X\n", __sp_before_int, &__sp_before_int);
-
-
-
-    // check if we have any pending tasks
-    //if(nr_ready < 2) { //nowhere to switch
-    //    return;
-    //}
 
     // now save current task state to its ptab
     // if current task is valid
     if (currentTask < MAXPROC) {
-        if (procs[currentTask].state == PROC_STATE_RUN || procs[currentTask].state == PROC_STATE_SLEEP ) {
-            //	printf("Switching from %d pc 0x%04X mpc 0x%04X\n", currentTask, fr->pc, fr->mpc);
-/*
-            procs[currentTask].ap = fr->ap;
-            procs[currentTask].bp = fr->bp;
-            procs[currentTask].sp = fr->sp;
-            procs[currentTask].pc = fr->pc;
-            procs[currentTask].mpc = fr->mpc;
-            procs[currentTask].s = fr->s;
-            procs[currentTask].d = fr->d;
-            */
-
-            procs[currentTask].sp = __sp_before_int;
-
+        if (procs[currentTask].state == PROC_STATE_RUN || procs[currentTask].state == PROC_STATE_SLEEP || procs[currentTask].state == PROC_STATE_KWORKER) {
+            memcpy((unsigned int *)&procs[currentTask].intFrame, t_stack, sizeof(struct InterruptFrame));
         }
     }
 
@@ -283,13 +259,13 @@ rescanTable:
         nextTask++;
     }
 
-    if(nextTask == currentTask) {
+    if(procs[nextTask].state == PROC_STATE_KWORKER) {
         // hmmm.. if we asserted nr_ready > 1 we should never get here
-
-        sched_stack[0] = procs[nextTask].mmuSelector;
-        sched_stack[1] = procs[nextTask].sp;
-
-        return;
+      printf("Switching to same task in state kernel worker! Something is wrong! Halting\n");
+      di();
+      while(1) {}
+//      memcpy(sched_stack, (unsigned int *)&procs[nextTask].intFrame, sizeof(struct InterruptFrame));
+//        return;
     }
 
     // check for signals
@@ -318,27 +294,14 @@ rescanTable:
     //sched_stack[1] - sp
 
     // restore process
-    sched_stack[0] = procs[nextTask].mmuSelector;
-    sched_stack[1] = procs[nextTask].sp;
-/*
-    CODE_BANK_SEL = procs[nextTask].codeMemBank;
-    DATA_BANK_SEL = procs[nextTask].dataMemBank;
-*/
-    //printf("Sched switch %d -> %d\n", currentTask, nextTask);
-    //printf("Switch to PC 0x%04x\n", fr->pc);
-
-//    printf("Switch\npid %d -> %d\nmmuSel %d -> %d\nsp %d -> %d\n", procs[currentTask].pid, procs[nextTask].pid, procs[currentTask].mmuSelector, procs[nextTask].mmuSelector, procs[currentTask].sp, procs[nextTask].sp);
-
-//    printf("Curr proc: "); printProcess(&procs[currentTask]);
-//    printf("Next proc: "); printProcess(&procs[nextTask]);
 
 
+    memcpy(t_stack, (unsigned int *)&procs[nextTask].intFrame, sizeof(struct InterruptFrame));
+
+    //printf("Switch proc %d->%d\n", procs[currentTask].pid, procs[nextTask].pid);
     currentTask = nextTask;
     cProc = &(procs[nextTask]);
     ticksToSwitch = TIMESLICE;
-
-
-
 }
 
 
@@ -428,14 +391,16 @@ unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n) {
     unsigned int * b = buf;
     //printf("procfs read\n");
     for(i = 0; i<MAXPROC; i++) {
-        if(procs[i].state != PROC_STATE_NONE) {
+        if(1||procs[i].state != PROC_STATE_NONE) {
 
             *b = procs[i].pid;
             b++;
             *b = procs[i].state;
             b++;
             memcpy((unsigned int *)b, (unsigned int *)procs[i].cmd, 32);
-            b += 32;
+            b += 31;
+            *b = 0;
+            b++;
         }
     }
     *b = 0;

@@ -97,6 +97,10 @@ enum opname {
     ei,
     di,
 
+    ec,
+    dc,
+    pushc,
+
     pushap,
     popap,
 
@@ -142,7 +146,7 @@ enum opname {
     mmuon,
     mmuoff,
 
-    blink
+    blink_w
 
 };
 
@@ -242,6 +246,10 @@ char oplist[][16] = {
     "ei",
     "di",
 
+    "ec",
+    "dc",
+    "pushc",
+
     "pushap",
     "popap",
 
@@ -288,7 +296,7 @@ char oplist[][16] = {
     "mmuon",
     "mmuoff",
 
-    "blink",
+    "blink_w",
 
     ""
 

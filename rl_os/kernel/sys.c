@@ -8,282 +8,105 @@
 #include <memmap.h>
 #include <syscall.h>
 #include <mm.h>
+#include <sys.h>
 
-unsigned int system_interrupt_stack[512];
-unsigned int iobuf[1024];
+unsigned int system_interrupt_stack[2048];
 
 extern unsigned int ticks;
 
+int sys_none(void * scallStructPtr) {
+  int scall_id = ugetc(cProc, (size_t)scallStructPtr, 0, 14);
+  printf("Unknown syscall %d from pid %d\n", scall_id, cProc->pid);
+  return 0;
+}
+
+int (*sys_table[])(void * scallStructPtr) = {
+
+    /* __NR_setup 0  */ sys_none,
+    /* __NR_exit 1   */ sys_exit,
+    /* __NR_fork 2   */ sys_fork,
+    /* __NR_read 3   */ sys_read,
+    /* __NR_write 4  */ sys_write,
+    /* __NR_open 5   */ sys_open,
+    /* __NR_close 6  */ sys_close,
+    /* __NR_waitpid 7*/ sys_waitpid,
+    /* __NR_creat 8  */ sys_none,
+    /* __NR_link 9   */ sys_none,
+    /* __NR_unlink 10*/ sys_unlink,
+    /* __NR_execve 11*/ sys_execve,
+    /* __NR_chdir 12 */ sys_chdir,
+    /* __NR_time 13  */ sys_none,
+    /* __NR_mknod 14 */ sys_none,
+    /* __NR_chmod 15 */ sys_none,
+    /* __NR_chown 16 */ sys_none,
+    /* __NR_break 17 */ sys_none,
+    /* __NR_stat 18  */ sys_stat,
+    /* __NR_lseek 19 */ sys_none,
+    /* __NR_getpid 20*/ sys_none,
+    /* __NR_mount 21 */ sys_none,
+    /* __NR_umount 22*/ sys_none,
+    /* __NR_setuid 23*/ sys_none,
+    /* __NR_getuid 24*/ sys_none,
+    /* __NR_stime 25 */ sys_none,
+    /* __NR_ptrace 26*/ sys_none,
+    /* __NR_alarm 27 */ sys_none,
+    /* __NR_fstat 28 */ sys_fstat,
+    /* __NR_pause 29 */ sys_none,
+    /* __NR_utime 30 */ sys_none,
+    /* __NR_stty 31  */ sys_none,
+    /* __NR_gtty 32  */ sys_none,
+    /* __NR_access 33*/ sys_none,
+    /* __NR_nice 34  */ sys_none,
+    /* __NR_ftime 35 */ sys_none,
+    /* __NR_sync 36  */ sys_none,
+    /* __NR_kill 37  */ sys_kill,
+    /* __NR_rename 38*/ sys_none,
+    /* __NR_mkdir 39 */ sys_mkdir,
+    /* __NR_rmdir 40 */ sys_none,
+    /* __NR_dup 41   */ sys_dup,
+    /* __NR_pipe 42  */ sys_pipe,
+    /* __NR_times 43 */ sys_none,
+    /* __NR_prof 44  */ sys_none,
+    /* __NR_brk 45   */ sys_none,
+    /* __NR_setgid 46*/ sys_none,
+    /* __NR_getgid 47*/ sys_none,
+    /* __NR_signal 48*/ sys_none,
+    /* __NR_geteuid 49*/ sys_none,
+    /* __NR_getegid 50*/ sys_none,
+    /* __NR_acct 51  */ sys_none,
+    /* __NR_phys 52  */ sys_none,
+    /* __NR_lock 53  */ sys_none,
+    /* __NR_ioctl 54 */ sys_none,
+    /* __NR_fcntl 55 */ sys_none,
+    /* __NR_mpx 56   */ sys_none,
+    /* __NR_setpgid 57*/ sys_none,
+    /* __NR_ulimit 58*/ sys_none,
+    /* __NR_uname 59 */ sys_none,
+    /* __NR_umask 60 */ sys_none,
+    /* __NR_chroot 61*/ sys_none,
+    /* __NR_ustat 62 */ sys_none,
+    /* __NR_dup2 63  */ sys_dup2,
+    /* __NR_getppid 64*/ sys_none,
+    /* __NR_getpgrp 65*/ sys_none,
+    /* __NR_setsid 66*/ sys_none,
+    /* __NR_clone 67 */ sys_clone,
+    /* __NR_mkfifo 68*/ sys_none
+
+
+    };
+
+
 void system_interrupt(/*, struct IntFrame *fr*/) {
-  void *p;
   void * scallStructPtr;
   int scall_id;
-    //scall_id = *(unsigned int *)p;
-size_t pp;
-    pp = system_interrupt_stack[2];
-    scallStructPtr = (void *)ugetc(cProc, (size_t)pp, 0, 14);
-    scall_id = ugetc(cProc, (size_t)scallStructPtr, 0, 14);
 
+  struct InterruptFrame * fr = (struct InterruptFrame *)system_interrupt_stack;
+  scallStructPtr = (void *)ugetc(cProc, (size_t)fr->AP, 0, 14);
+  scall_id = ugetc(cProc, (size_t)scallStructPtr, 0, 14);
 
-    system_interrupt_stack[0] = cProc->mmuSelector;
-
-
-    printf("SYS : inside system_interrupt() cProc->pid = %d pp = 0x%04X scallStructPtr = 0x%04X scall_id = %d\n", cProc->pid, pp, scallStructPtr, scall_id);
-    asm("blink");
-
-    if (scall_id == __NR_write) {
-        int sz_write = 0;
-        struct writeSyscall s;
-        ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct writeSyscall), 0, (unsigned int *)&s);
-        ugets(cProc, (size_t)s.buf, 0, 14, s.size, 0, iobuf);
-        asm("blink");
-        printf("SYS : write\n");
-        sz_write = k_write(cProc->openFiles[s.fd], iobuf, s.size);
-        printf("KERNEL: write %d/%d words to %d from 0x%04X\n>>>%s\n", sz_write, s.size,  s.fd, s.buf, iobuf);
-        s.size = sz_write;
-        return;
-    } else if (scall_id == __NR_read) {
-        int sz_read = 0;
-        struct readSyscall *s = (struct readSyscall *)p;
-        sz_read = k_read(cProc->openFiles[s->fd], s->buf, s->size);
-        //printf("KERNEL: read %d/%d words from %d\n", sz_read, s->size, s->fd);
-        s->size = sz_read;
-        return;
-    } else if (scall_id == __NR_kill) {
-        struct killSyscall *s = (struct killSyscall *)p;
-        sendSig(s->pid, s->sig);
-        return;
-    } else if (scall_id == __NR_mkdir) {
-        struct mkdirSyscall *s = (struct mkdirSyscall *)p;
-
-        s->res = k_mkdir(s->path);
-
-        return;
-
-    } else if (scall_id == __NR_mkfifo) {
-        struct mkfifoSyscall *s = (struct mkfifoSyscall *)p;
-
-        s->res = k_mkfifo(s->path);
-
-        return;
-    } else if (scall_id == __NR_pipe) {
-        struct pipeSyscall *s = (struct pipeSyscall *)p;
-        int fd;
-        char newPath[100];
-        newPath[0] = 0;
-
-        k_mkfifo(newPath);
-
-        for (fd = 0; fd < MAX_FILES_PER_PROC; fd++) {
-            if (!cProc->openFiles[fd]) {
-                break;
-            }
-        }
-        if (fd != MAX_FILES_PER_PROC) {
-            cProc->openFiles[fd] = k_open(newPath, O_WRONLY);
-            s->pipefd[1] = fd;
-        }
-        for (; fd < MAX_FILES_PER_PROC; fd++) {
-            if (!cProc->openFiles[fd]) {
-                break;
-            }
-        }
-        if (fd != MAX_FILES_PER_PROC) {
-            cProc->openFiles[fd] = k_open(newPath, O_RDONLY);
-            s->pipefd[0] = fd;
-        }
-        return;
-    } else if (scall_id == __NR_chdir) {
-        struct chdirSyscall *s = (struct chdirSyscall *)p;
-        struct stat st;
-        k_stat(s->path, &st);
-        if (S_ISDIR(st.st_mode)) {
-            cProc->cwd.idx = st.st_ino;
-            s->res = 0;
-        } else {
-            s->res = -1;
-        }
-        return;
-    } else if (scall_id == __NR_unlink) {
-        struct unlinkSyscall *s = (struct unlinkSyscall *)p;
-        struct stat st;
-        k_stat(s->path, &st);
-        if (S_ISDIR(st.st_mode)) {
-            s->res = -1;
-        } else {
-            s->res = k_unlink(s->path);
-        }
-        return;
-    } else if (scall_id == __NR_stat) {
-        struct statSyscall *s = (struct statSyscall *)p;
-        k_stat(s->filename, s->buf);
-        return;
-    } else if (scall_id == __NR_fstat) {
-        struct fstatSyscall *s = (struct fstatSyscall *)p;
-        fs_stat(&(cProc->openFiles[s->fd]->node), s->buf);
-        return;
-    } else if (scall_id == __NR_open) {
-        int fd;
-        struct openSyscall *s = (struct openSyscall *)p;
-
-        for (fd = 0; fd < MAX_FILES_PER_PROC; fd++) {
-            if (!cProc->openFiles[fd]) {
-                break;
-            }
-        }
-        if (fd != MAX_FILES_PER_PROC) {
-            cProc->openFiles[fd] = k_open(s->filename, s->mode);
-            s->mode = fd;
-            //printf("KERNEL: open %s as %d\n", s->filename, s->mode);
-            return;
-        }
-
-        //printf("KERNEL: open failed %s\n", s->filename);
-        s->mode = -1;
-        return;
-    } else if (scall_id == __NR_close) {
-        int fd;
-        struct closeSyscall *s = (struct closeSyscall *)p;
-        if ((s->fd >= 0) && (s->fd < MAX_FILES_PER_PROC)) {
-            if (cProc->openFiles[s->fd]) {
-                k_close(cProc->openFiles[s->fd]);
-                cProc->openFiles[s->fd] = 0;
-                s->fd = 0;
-                //printf("KERNEL: close %d\n", s->fd);
-                return;
-            }
-        }
-                //printf("KERNEL: close failed %d\n", s->fd);
-        s->fd = -1;
-        return;
-    } else if (scall_id == __NR_dup) {
-        int fd;
-        struct dupSyscall *s = (struct dupSyscall *)p;
-
-        if(!cProc->openFiles[s->oldfd]) {
-          s->retval = -1;
-            //printf("dup(%d) -> %d\n", s->oldfd, s->retval);
-          return;
-        }
-
-        for (fd = 0; fd < MAX_FILES_PER_PROC; fd++) {
-            if (!cProc->openFiles[fd]) {
-                break;
-            }
-        }
-        if (fd != MAX_FILES_PER_PROC) {
-            cProc->openFiles[fd] = cProc->openFiles[s->oldfd];
-            cProc->openFiles[fd]->refcnt++;
-            s->retval = fd;
-            //printf("dup(%d) -> %d\n", s->oldfd, s->retval);
-            return;
-        }
-        s->retval = -1;
-        return;
-    } else if (scall_id == __NR_dup2) {
-        int fd;
-        struct dup2Syscall *s = (struct dup2Syscall *)p;
-
-        if(!cProc->openFiles[s->oldfd] || s->newfd<0 || s->newfd>MAX_FILES_PER_PROC ) {
-          s->retval = -1;
-            //printf("dup2(%d, %d) -> %d\n", s->oldfd, s->newfd, s->retval);
-          return;
-        }
-
-        if(s->oldfd == s->newfd) {
-          s->retval = s->newfd;
-            //printf("dup2(%d, %d) -> %d\n", s->oldfd, s->newfd, s->retval);
-          return;
-        }
-
-        if(cProc->openFiles[s->newfd]) {
-          k_close(cProc->openFiles[s->newfd]);
-        }
-
-        cProc->openFiles[s->oldfd] = cProc->openFiles[s->oldfd];
-        cProc->openFiles[s->oldfd]->refcnt++;
-        s->retval = fd;
-            //printf("dup2(%d, %d) -> %d\n", s->oldfd, s->newfd, s->retval);
-        return;
-
-    } else if (scall_id == __NR_fork) {
-        addKernelTask(KERNEL_TASK_FORK, cProc->pid, 0);
-/*
-        cProc->ap = fr->ap;
-        cProc->bp = fr->bp;
-        cProc->sp = fr->sp;
-        cProc->pc = fr->pc;
-        cProc->mpc = fr->mpc;
-
-        cProc->s = fr->s;
-        cProc->d = fr->d;
-*/
-        cProc->state = PROC_STATE_KWORKER;
-        resched_now();
-        while (1) {
-        } // wait for context switch
-    } else if (scall_id == __NR_clone) {
-        addKernelTask(KERNEL_TASK_CLONE, cProc->pid, 0);
-/*
-        cProc->ap = fr->ap;
-        cProc->bp = fr->bp;
-        cProc->sp = fr->sp;
-        cProc->pc = fr->pc;
-        cProc->mpc = fr->mpc;
-
-        cProc->s = fr->s;
-        cProc->d = fr->d;
-  */
-        cProc->state = PROC_STATE_KWORKER;
-        resched_now();
-        while (1) {
-        } // wait for context switch
-    } else if (scall_id == __NR_execve) {
-        addKernelTask(KERNEL_TASK_EXECVE, cProc->pid, p);
-/*
-        cProc->ap = fr->ap;
-        cProc->bp = fr->bp;
-        cProc->sp = fr->sp;
-        cProc->pc = fr->pc;
-        cProc->mpc = fr->mpc;
-        cProc->s = fr->s;
-        cProc->d = fr->d;
-*/
-        cProc->state = PROC_STATE_KWORKER;
-        resched_now();
-        while (1) {
-        } // wait for context switch
-    } else if (scall_id == __NR_waitpid) {
-        addKernelTask(KERNEL_TASK_WAITPID, cProc->pid, p);
-/*
-        cProc->ap = fr->ap;
-        cProc->bp = fr->bp;
-        cProc->sp = fr->sp;
-        cProc->pc = fr->pc;
-        cProc->mpc = fr->mpc;
-        cProc->s = fr->s;
-        cProc->d = fr->d;
-*/
-        cProc->state = PROC_STATE_KWORKER;
-        resched_now();
-        while (1) {
-        } // wait for context switch
-    } else if (scall_id == __NR_exit) {
-        addKernelTask(KERNEL_TASK_EXIT, cProc->pid, p);
-/*
-        cProc->ap = fr->ap;
-        cProc->bp = fr->bp;
-        cProc->sp = fr->sp;
-        cProc->pc = fr->pc;
-        cProc->mpc = fr->mpc;
-        cProc->s = fr->s;
-        cProc->d = fr->d;
-*/
-        cProc->state = PROC_STATE_KWORKER;
-        resched_now();
-        while (1) {
-        } // wait for context switch
-    } else {
-        printf("Unknown syscall %d\n", scall_id);
-    }
+  if(scall_id >= 0 && scall_id < __NR_N_SYSCALL) {
+    sys_table[scall_id](scallStructPtr);
+  } else {
+    sys_none(scallStructPtr);
+  }
 }
