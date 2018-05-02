@@ -214,6 +214,9 @@ unsigned int getSignalFromMask(unsigned int mask) {
 unsigned int sendSig(unsigned int pid, unsigned int sig) {
     int r;
     struct Process * pt;
+
+    printf("sendSig %d to pid %d\n", sig, pid);
+
     spinlock_lock(&schedMx);
     r = findProcByPid(pid, &pt);
     if(r) {
@@ -225,7 +228,7 @@ unsigned int sendSig(unsigned int pid, unsigned int sig) {
 
 void resched(unsigned int t_stack[]) {
     int nextTask;
-
+    //printf("Resched\n");
     // now save current task state to its ptab
     // if current task is valid
     if (currentTask < MAXPROC) {
@@ -274,7 +277,7 @@ rescanTable:
         int sig = getSignalFromMask(procs[nextTask].signalsPending);
         //printf("Found signal %d while waking process %d. Mask = 0x%04x\n", sig, procs[nextTask].pid, procs[nextTask].signalsPending);
         if(sig == SIGKILL) {
-            //printf("SIGKILL! killing pid %d\n", procs[nextTask].pid);
+            printf("SIGKILL! killing pid %d\n", procs[nextTask].pid);
             addKernelTask(KERNEL_TASK_EXIT, procs[nextTask].pid, NULL);
             procs[nextTask].state = PROC_STATE_KWORKER;
             nextTask++;
@@ -294,11 +297,16 @@ rescanTable:
     //sched_stack[1] - sp
 
     // restore process
-
+/*
+    printf("Current task:\n");
+    printProcess(&procs[currentTask]);
+    printf("Next task:\n");
+    printProcess(&procs[nextTask]);
+*/
 
     memcpy(t_stack, (unsigned int *)&procs[nextTask].intFrame, sizeof(struct InterruptFrame));
 
-    //printf("Switch proc %d->%d\n", procs[currentTask].pid, procs[nextTask].pid);
+//    printf("Switch proc %d->%d\n", procs[currentTask].pid, procs[nextTask].pid);
     currentTask = nextTask;
     cProc = &(procs[nextTask]);
     ticksToSwitch = TIMESLICE;

@@ -12,6 +12,8 @@
 
 unsigned int system_interrupt_stack[2048];
 
+unsigned int decoder_stack[2048];
+
 extern unsigned int ticks;
 
 int sys_none(void * scallStructPtr) {
@@ -95,6 +97,12 @@ int (*sys_table[])(void * scallStructPtr) = {
 
     };
 
+void in_sys_int() {
+  printf("SYS IN\n");
+}
+void out_sys_int() {
+  printf("SYS OUT\n");
+}
 
 void system_interrupt(/*, struct IntFrame *fr*/) {
   void * scallStructPtr;
@@ -110,3 +118,12 @@ void system_interrupt(/*, struct IntFrame *fr*/) {
     sys_none(scallStructPtr);
   }
 }
+
+
+void decoder_interrupt() {
+  printf("Decoder fault!\nKilling\n");
+  sendSig(cProc->pid, SIGKILL);
+  resched(decoder_stack);
+
+}
+

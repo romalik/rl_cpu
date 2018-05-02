@@ -19,6 +19,14 @@ unsigned int pageMap[pageMapSize];
 
 unsigned int pageMap[pageMapSize];
 
+unsigned int mmu_stack[150];
+
+void mmu_interrupt() {
+
+  printf("MMU fault!\n");
+  while(1) {}
+
+}
 
 void mmu_write_table(size_t process, size_t pageno, size_t s_code, size_t entry) {
   size_t target_io_addr = (process << 8) | (s_code << 12) | (pageno & 0xff);
@@ -87,11 +95,9 @@ void mmu_on() {
 }
 
 void mmu_copy_pages(size_t p_src, size_t p_dst, int processToMap, int whereToMapSrc, int whereToMapDst) {
-  di();
   mmu_write_table(processToMap, whereToMapSrc, 0, p_src);
   mmu_write_table(processToMap, whereToMapDst, 0, p_dst);
   memcpy((unsigned int *)(whereToMapDst * pageSize), (unsigned int *)(whereToMapSrc * pageSize), pageSize);
-  ei();
 }
 
 
@@ -122,9 +128,7 @@ void mmu_init() {
 
 unsigned int getPageAndOffset(struct Process * p, size_t addr, size_t * offset) {
     size_t pageno = 0;
-    di();
     pageno = mmu_read_table(p->mmuSelector, (addr >> 12), 0);
-    ei();
     if(offset) *offset = addr & 0xfff;
     return pageno;
 }
@@ -132,19 +136,15 @@ unsigned int getPageAndOffset(struct Process * p, size_t addr, size_t * offset) 
 unsigned int ugetc(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap) {
     size_t offset;
     unsigned int retval = 0;
-    di();
     mmu_write_table(processToMap, whereToMap, 0, getPageAndOffset(p, addr, &offset));
     retval = *(unsigned int *)((whereToMap << 12)|offset);
-    ei();
     return retval;
 }
 
 void uputc(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, unsigned int val) {
     size_t offset;
-    di();
     mmu_write_table(processToMap, whereToMap, 0, getPageAndOffset(p, addr, &offset));
     *(unsigned int *)((whereToMap << 12)|offset) = val;
-    ei();
 }
 
 size_t ugets(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, size_t length, int nullTerminated, unsigned int * s) {
@@ -152,7 +152,6 @@ size_t ugets(struct Process * p, size_t addr, size_t processToMap, size_t whereT
     unsigned int c = 0;
     size_t begin = addr;
     //printf("Try ugets\n");
-    di();
     while(length) {
         if((addr >> 12) != pageno_u) { //page boundary!
             pageno_u = addr >> 12;
@@ -165,7 +164,6 @@ size_t ugets(struct Process * p, size_t addr, size_t processToMap, size_t whereT
             break;
         }
     }
-    ei();
     //printf("Ugets done!\n");
 
     return addr - begin;
@@ -175,7 +173,6 @@ size_t uputs(struct Process * p, size_t addr, size_t processToMap, size_t whereT
     size_t pageno_u = 0xffff; //user's current page region
     unsigned int c = 0;
     size_t begin = addr;
-    di();
     while(length) {
         if((addr >> 12) != pageno_u) { //page boundary!
             pageno_u = addr >> 12;
@@ -188,7 +185,6 @@ size_t uputs(struct Process * p, size_t addr, size_t processToMap, size_t whereT
             break;
         }
     }
-    ei();
     return addr - begin;
 }
 
@@ -196,7 +192,6 @@ size_t umemset(struct Process * p, size_t addr, size_t processToMap, size_t wher
     size_t pageno_u = 0xffff; //user's current page region
     unsigned int c = 0;
     size_t begin = addr;
-    di();
     while(length) {
         if((addr >> 12) != pageno_u) { //page boundary!
             pageno_u = addr >> 12;
@@ -206,7 +201,6 @@ size_t umemset(struct Process * p, size_t addr, size_t processToMap, size_t wher
 //        printf("uputs : [0x%04X] <- 0x%04X\n", addr, c);
         addr++; length--;
     }
-    ei();
     return addr - begin;
 }
 
@@ -215,7 +209,6 @@ void freeProcessPages(struct Process * p) {
     size_t pageno = 0;
 
     //printf("freeProcessPages : freeing pid %d cProc pid %d\n", p->pid, cProc->pid);
-    di();
     while(pageno < 128) {
         size_t src_page = mmu_read_table(p->mmuSelector, pageno, 1);
         //printf("freeProcessPages : text pageno = %d src_page = 0x%04x\n", pageno, src_page);
@@ -236,6 +229,5 @@ void freeProcessPages(struct Process * p) {
         mmu_write_table(p->mmuSelector, pageno, 0, FREE_PAGE_MARK);
         pageno++;
     }
-    ei();
 }
 

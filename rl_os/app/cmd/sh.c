@@ -218,20 +218,20 @@ int main(int argc, char ** argv) {
   int script_fd = 0;
 
   printf("Starting shell\n");
-/*
+
   if(argc > 1) {
     script_mode = 1;
     script_fd = open(argv[1], O_RDONLY);
     if(!script_fd) { return 0; }
 
   }
-*/
+
 
   setenv("PATH","/:/bin/",1);
 
   printf("\n");
 
-  //do_pwd();
+  do_pwd();
   printf("# ");
   while (1) {
     char c;
@@ -242,6 +242,7 @@ int main(int argc, char ** argv) {
 
     } else {
       c = getchar();
+      if(!c) continue;
     }
     putchar(c);
     if (addChar(c)) {

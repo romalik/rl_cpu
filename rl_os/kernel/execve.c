@@ -91,7 +91,6 @@ size_t parseArgs(size_t argv_in, size_t envp_in, unsigned int *buf, size_t off, 
         size_t read_words;
         read_words = ugets(tp, (size_t)pp, 0, 14, 1024, 1, (unsigned int *)t);
 
-        printf("Parse argv : %s\n", t);
         target_argv_ptrs_area[i] = (size_t)((size_t)t - (size_t)buf + (size_t)off);
         i++;
         t += read_words+1;
@@ -100,7 +99,6 @@ size_t parseArgs(size_t argv_in, size_t envp_in, unsigned int *buf, size_t off, 
     }
     target_argv_ptrs_area[i] = 0;
     *target_argc = i;
-    printf("Parse argc : %d\n", i);
     return (size_t)t - (size_t)buf;
 }
 
@@ -119,19 +117,13 @@ unsigned int do_execve(struct Process * p, struct execSyscall * s) {
     size_t pageno = 0;
     p->state = PROC_STATE_CONSTRUCT;
 
-    printf("DO_EXECVE for pid %d\n", p->pid);
-
-
     ugets(p, (size_t)s->filename, 0, 14, 100, 1, filename);
-//    printf("DO_EXECVE [1] for pid %d\n", p->pid);
 
-//    printf("Try exec %s\n", filename);
     fd = k_open(filename, 'r');
     if(!fd) {
       puts("EXEC: fd == 0\n");
         return 1;
     }
-//    printf("DO_EXECVE [2] for pid %d\n", p->pid);
 
     while(cnt != 9) {
         cnt += k_read(fd, header+cnt, (9-cnt));
@@ -150,7 +142,8 @@ unsigned int do_execve(struct Process * p, struct execSyscall * s) {
      *
     if(!memcmp(header, &"#!", 2)) {
         //this is a script!!
-        char interp[30];
+      struct execSyscall sc;
+      char interp[30];
         char * t_argv[3];
         int i;
         puts("EXEC: is a script\n");

@@ -44,7 +44,7 @@ void VMemDevice::regInCPU(std::function<bool(size_t)> selectFn, std::function<si
     myCpu.regDevice(this, selectFn, transformFn);
 }
 void VMemDevice::regMMUTableInCPU() {
-    myCpu.demux.regMMUTable(reinterpret_cast<MMUTable *> (this));
+    myCpu.demux->regMMUTable(reinterpret_cast<MMUTable *> (this));
 }
 void VMemDevice::regRamInCPU(std::function<bool(size_t)> selectFn, std::function<size_t(size_t)> transformFn) {
     myCpu.regRam(this, selectFn, transformFn);
@@ -62,13 +62,15 @@ Cpu::Cpu() {
     MMUEntrySelector = 0;
 
 
+    this->demux = new Demux();
+
     intCtl = new InterruptController(8);
 
 
     this->devices.push_back(new RAM(0, 1024*1024)); //ROM
 
 
-    this->devices.push_back(new UART(NULL,0,0, &std::cin, NULL));
+    this->devices.push_back(new UART(intCtl,INT_UART_LINE,0, &std::cin, NULL));
     this->devices.push_back(new PORT(0, NULL, &std::cout));
 
     this->devices.push_back(new LCD(320, 240));
@@ -76,6 +78,8 @@ Cpu::Cpu() {
     this->devices.push_back(new Timer(intCtl, 3, 5000ULL));
     this->devices.push_back(new MMUTable());
     this->devices.push_back(intCtl);
+
+    this->demux->intCtl = intCtl;
 
 }
 
@@ -139,7 +143,7 @@ void Cpu::memWrite(size_t addr, w val, int seg) {
     //        effAddr |= (1<<20);
     //    }
 
-    this->demux.memWrite(effAddr, val, MMUEntrySelector, MMUEnabled);
+    this->demux->memWrite(effAddr, val, MMUEntrySelector, MMUEnabled);
 
     /*
     for(int i = 0; i<this->devices.size(); i++) {
@@ -174,7 +178,7 @@ w Cpu::memRead(size_t addr, int seg) {
     //        effAddr |= (1<<20);
     //    }
 
-    return this->demux.memRead(effAddr, MMUEntrySelector, MMUEnabled);
+    return this->demux->memRead(effAddr, MMUEntrySelector, MMUEnabled);
 }
 
 void Cpu::tick() {
@@ -832,9 +836,9 @@ void Cpu::execute() {
 
     } else {
         printf("op not implemented! %d\n", op);
-        printf("op not implemented! %s\n", oplist[op]);
-        onSignal(SIGINT);
-        exit(1);
+        //printf("op not implemented! %s\n", oplist[op]);
+        intCtl->request(INT_DECODE_LINE);
+        commitEnabled = false;
     }
 
 
@@ -947,7 +951,12 @@ int main(int argc, char ** argv) {
             clock_gettime(CLOCK_REALTIME, &tsStart);
 #endif
         }
-        myCpu.execute();
+
+        try {
+          myCpu.execute();
+        } catch(int i) {
+          printf("SIMULATOR : exception in execute [%d]\n", i);
+        }
 
         //log << gettime_ms() << " " << __current_code_bank << " " << __current_data_bank << " " << myCpu.getPC() << " " << myCpu.getSP() << std::endl;
 

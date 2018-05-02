@@ -66,11 +66,11 @@ extern void ps();
 void do_kernel_task_fork(int i) {
     struct Process *p;
     struct Process *new_p;
-    printf("Kernel worker: forking!\n");
+    //printf("Kernel worker: forking!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         new_p = do_fork(p, 0);
-        printf("Kernel worker: new_p 0x%04X\n", new_p);
-        printf("New pid %d, mmuSelector %d\n", new_p->pid, new_p->mmuSelector);
+        //printf("Kernel worker: new_p 0x%04X\n", new_p);
+        //printf("New pid %d, mmuSelector %d\n", new_p->pid, new_p->mmuSelector);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         p->state = PROC_STATE_RUN;
 
@@ -82,7 +82,7 @@ void do_kernel_task_fork(int i) {
         }
     }
 
-    printf("Forked!\n");
+    //printf("Forked!\n");
 }
 
 void do_kernel_task_clone(int i) {
@@ -153,7 +153,7 @@ void do_kernel_task_clone(int i) {
 
 void do_kernel_task_execve(int i) {
     struct Process *p;
-    printf("EXECVE\n");
+    //printf("EXECVE\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
       struct execSyscall s;
 
@@ -162,11 +162,9 @@ void do_kernel_task_execve(int i) {
 //      ugets(p, (size_t)s.argv, 0, 14, 512, 0, argv);
 //      ugets(p, (size_t)s.envp, 0, 14, 512, 0, envp);
 
-      printf("EXECVE for pid %d\n", p->pid);
+      //printf("EXECVE for pid %d\n", p->pid);
 
-      di();
         do_execve(p, &s);
-      ei();
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         run_proc(p);
     }
@@ -197,7 +195,7 @@ void do_kernel_task_waitpid(int i) {
 
 
         if (!retval) {
-            //printf("process not found %d. Caller pid %d\n", pid,p->pid);
+            //printf("WAITPID: process not found %d. Caller pid %d\n", pid,p->pid);
             if(options == WNOHANG) {
               p->state = PROC_STATE_RUN;
               kernelTaskQueue[i].type = KERNEL_TASK_NONE;
@@ -209,7 +207,7 @@ void do_kernel_task_waitpid(int i) {
         }
 
         if ((childProcess->state != PROC_STATE_ZOMBIE) || (!retval)) {
-            //printf("process not dead %d\n", pid);
+            //printf("WAITPID: process not dead %d\n", pid);
 
             if(options == WNOHANG) {
               p->state = PROC_STATE_RUN;
@@ -237,7 +235,7 @@ void do_kernel_task_waitpid(int i) {
 
 void do_kernel_task_exit(int i) {
     struct Process *p;
-    printf("KernelWorker: exit\n");
+    //printf("KernelWorker: exit\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         struct exitSyscall s;
         int j;
@@ -267,26 +265,26 @@ void do_kernel_task_exit(int i) {
 
 }
 void kernel_worker() {
-    while (1) {
-        int i = 0;
-        for (i = 0; i < MAX_QUEUE_SIZE; i++) {
-            //spinlock_lock(&kernelTaskQueueLock);
-            if (kernelTaskQueue[i].type != KERNEL_TASK_NONE) {
-                if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
-                    do_kernel_task_fork(i);
-                } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXECVE) {
-                    do_kernel_task_execve(i);
-                } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXIT) {
-                    do_kernel_task_exit(i);
-                } else if (kernelTaskQueue[i].type == KERNEL_TASK_WAITPID) {
-                    do_kernel_task_waitpid(i);
-                } else if (kernelTaskQueue[i].type == KERNEL_TASK_CLONE) {
-                    do_kernel_task_clone(i);
-                }
-            }
-            //spinlock_unlock(&kernelTaskQueueLock);
+  while (1) {
+    int i = 0;
+    for (i = 0; i < MAX_QUEUE_SIZE; i++) {
+//      spinlock_lock(&kernelTaskQueueLock);
+      if (kernelTaskQueue[i].type != KERNEL_TASK_NONE) {
+        if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
+          do_kernel_task_fork(i);
+        } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXECVE) {
+          do_kernel_task_execve(i);
+        } else if (kernelTaskQueue[i].type == KERNEL_TASK_EXIT) {
+          do_kernel_task_exit(i);
+        } else if (kernelTaskQueue[i].type == KERNEL_TASK_WAITPID) {
+          do_kernel_task_waitpid(i);
+        } else if (kernelTaskQueue[i].type == KERNEL_TASK_CLONE) {
+          do_kernel_task_clone(i);
         }
+      }
+//      spinlock_unlock(&kernelTaskQueueLock);
     }
+  }
 }
 
 void showTasks() {
@@ -300,7 +298,7 @@ void showTasks() {
 void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
     int i = 0;
 
-    //spinlock_lock(&kernelTaskQueueLock);
+//    spinlock_lock(&kernelTaskQueueLock);
 
 
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
@@ -318,7 +316,7 @@ void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
     kernelTaskQueue[i].callerPid = callerPid;
     kernelTaskQueue[i].args = args;
     //printf("Adding kerner task [%d] from pid %d type %d\n", i, callerPid, task);
-    //spinlock_unlock(&kernelTaskQueueLock);
+//    spinlock_unlock(&kernelTaskQueueLock);
 
     //showTasks();
 }

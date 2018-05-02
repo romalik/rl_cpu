@@ -42,12 +42,9 @@ int sys_chdir(void * scallStructPtr) {
 }
 
 int sys_fork(void * scallStructPtr) {
-  printf("fork syscall called\n");
     addKernelTask(KERNEL_TASK_FORK, cProc->pid, scallStructPtr);
     cProc->state = PROC_STATE_KWORKER;
-    printf("resched..\n");
     resched(system_interrupt_stack);
-    printf("done,ret\n");
     return 0;
 }
 
@@ -59,7 +56,6 @@ int sys_clone(void * scallStructPtr) {
 }
 
 int sys_execve(void * scallStructPtr) {
-  printf("execve syscall called\n");
     addKernelTask(KERNEL_TASK_EXECVE, cProc->pid, scallStructPtr);
     cProc->state = PROC_STATE_KWORKER;
     resched(system_interrupt_stack);

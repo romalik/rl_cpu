@@ -6,7 +6,31 @@ char str[] = "Write/read test\n";
 
 int main(int argc, char **argv, char ** envp) {
     int i = 0;
+    int j = 0;
+    int cnt = 0;
     char * c;
+
+    i = fork();
+    if(i) {
+      while(1) {
+        printf("Parent %d\n", cnt);
+        cnt++;
+        for(j = 0; j<10000; j++) {
+
+        }
+      }
+
+    } else {
+      while(1) {
+        printf("Child %d\n", cnt);
+        cnt++;
+        for(j = 0; j<10000; j++) {
+
+        }
+      }
+
+    }
+
 
     printf("Echo: argc = %d\n", argc);
 

@@ -17,19 +17,29 @@ extern char __data_end;
 extern char __code_end;
 extern void __timer_interrupt_vector();
 extern void __system_interrupt_vector();
+extern void __uart_interrupt_vector();
+extern void __mmu_interrupt_vector();
+extern void __decoder_interrupt_vector();
 
 extern void syscall();
 extern void ei();
+#define DECODER_INTERRUPT_ADDR_PORT INT6_vec
+#define MMU_INTERRUPT_ADDR_PORT INT5_vec
+#define UART_INTERRUPT_ADDR_PORT INT4_vec
 #define TIMER_INTERRUPT_ADDR_PORT INT3_vec
 #define SYSTEM_INTERRUPT_ADDR_PORT INT0_vec
 
 char init_path[] = "/sh";
 
 void init_interrupts() {
-    asm("ec");
-    outb(TIMER_INTERRUPT_ADDR_PORT, (size_t)(__timer_interrupt_vector));
-    outb(SYSTEM_INTERRUPT_ADDR_PORT, (size_t)(__system_interrupt_vector));
-    ei();
+  asm("ec");
+  outb(DECODER_INTERRUPT_ADDR_PORT, (size_t)(__decoder_interrupt_vector));
+  outb(MMU_INTERRUPT_ADDR_PORT, (size_t)(__mmu_interrupt_vector));
+  outb(UART_INTERRUPT_ADDR_PORT, (size_t)(__uart_interrupt_vector));
+  outb(TIMER_INTERRUPT_ADDR_PORT, (size_t)(__timer_interrupt_vector));
+  outb(SYSTEM_INTERRUPT_ADDR_PORT, (size_t)(__system_interrupt_vector));
+  asm("ei");
+  return;
 }
 int blah() {return 0;}
 
@@ -44,8 +54,9 @@ int kernel_main() {
     block_init();
     fs_init();
 
+    uart_init();
 
-    mmu_test();
+    //mmu_test();
     //while(1) {};
 
     mmu_init();
@@ -75,7 +86,7 @@ int kernel_main() {
         struct execSyscall initExecRequest;
         initExecRequest.id = __NR_execve;
         initExecRequest.filename = (void *)init_path;
-        initExecRequest.argv = (void *)init_path;
+        initExecRequest.argv = NULL;//(void *)init_path;
         initExecRequest.envp = NULL;
         addKernelTask(KERNEL_TASK_FORK, 0, 0); //will fork to pids 0 & 1
         addKernelTask(KERNEL_TASK_EXECVE, 1, (void *)(&initExecRequest));

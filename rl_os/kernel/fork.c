@@ -15,6 +15,7 @@ struct Process * do_fork(struct Process * p, int clone) {
 
     memcpy((unsigned int *)new_p, (unsigned int *)p, sizeof(struct Process));
 
+    new_p->state = PROC_STATE_CONSTRUCT;
     new_p->pid = sched_genPid();
     new_p->parent = p;
     new_p->mmuSelector = mmu_get_free_selector();

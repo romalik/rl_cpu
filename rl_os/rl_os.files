@@ -1,6 +1,7 @@
 app/cmd/banner.c
 app/cmd/cat.c
 app/cmd/cp.c
+app/cmd/dd.c
 app/cmd/echo.c
 app/cmd/hello.c
 app/cmd/kill.c
@@ -119,6 +120,7 @@ kernel/ata.c
 kernel/ata.c
 kernel/blk.c
 kernel/blk.c
+kernel/cb.c
 kernel/exec.c
 kernel/execve.c
 kernel/fork.c
@@ -126,6 +128,7 @@ kernel/include/ata.h
 kernel/include/ata.h
 kernel/include/blk.h
 kernel/include/blk.h
+kernel/include/cb.h
 kernel/include/errno.h
 kernel/include/errno.h
 kernel/include/exec.h
