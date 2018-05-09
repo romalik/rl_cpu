@@ -9,7 +9,8 @@
 DIR *opendir(char *path) {
     DIR *dir = calloc(1, sizeof(DIR));
     if (dir == NULL) {
-        errno = ENOMEM;
+      printf("Opendir ENOMEM!\n");
+      errno = ENOMEM;
         return NULL;
     }
     dir = opendir_r(dir, path);

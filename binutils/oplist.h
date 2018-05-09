@@ -145,6 +145,7 @@ enum opname {
 
     mmuon,
     mmuoff,
+    pushmmu,
 
     blink_w
 
@@ -295,6 +296,7 @@ char oplist[][16] = {
 
     "mmuon",
     "mmuoff",
+    "pushmmu",
 
     "blink_w",
 

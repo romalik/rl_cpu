@@ -251,7 +251,7 @@ public:
   }
 
   void request(int irq) {
-    //printf("IRQ on line %d\n", irq);
+    if(irq == INT_MMU_LINE) printf("IRQ on line %d (MMU)\n", irq);
 
     if(irq < nIRQs) {
       pendingInterrupts |= (1 << irq);
@@ -679,6 +679,10 @@ public:
     }
   }
 
+  size_t getRealPage(size_t a, w processSelector) {
+    return (((a & ADDR_PAGE_NUM_MASK) >> (ADDR_PAGE_NUM_SHIFT)) | ((size_t)processSelector << MMU_PROCESS_ENTRY_SIZE) | (((a & ADDR_CODE_FLAG)?1:0) << 12));
+  }
+
 
   size_t getFlags(size_t a, w processSelector) {
     size_t page_entry_address = (((a & ADDR_PAGE_NUM_MASK) >> (ADDR_PAGE_NUM_SHIFT)) | ((size_t)processSelector << MMU_PROCESS_ENTRY_SIZE) | (((a & ADDR_CODE_FLAG)?1:0) << 12));
@@ -932,6 +936,7 @@ class Demux {
   MMUTable * mmuTable;
 
 public:
+  Cpu * cpu;
   InterruptController * intCtl;
   Demux() {}
   void regMMUTable(MMUTable * tab) {
@@ -943,94 +948,8 @@ public:
   void regRam(VMemDevice * dev, std::function<bool(size_t)> selectFunc, std::function<size_t(size_t)> transformFunc) {
     rams.push_back(DemuxEntry(dev, selectFunc, transformFunc));
   }
-  void memWrite(size_t effAddr, w val, w mmuSelector, w mmuEnabled) {
-    if(effAddr & (1<<20)) { //this is io or mmu
-      //      if(effAddr & (1<<14)) { //this is mmu
-      //      effAddr &= 0x3fff;
-
-      //write pagetable here
-      //	mmuTable->table[effAddr] = val;
-      //	printf("write mmu table 0x%08X : 0x%08X\n\n", effAddr, val);
-      //      } else { //this is io
-      //write io here
-      //	  effAddr &= 0x1ff;
-      effAddr &= 0xffff;
-      for(const auto & dev : devs) {
-        if(dev(effAddr)) {
-          return dev.dev->write(dev.transformFunc(effAddr), val, 0, 0);
-        }
-      }
-
-      //      }
-    } else { //this is ram
-      size_t realAddr = 0x00; //get real address from mmu process selector->pagetable
-      //write realaddress to ram here
-      size_t flags = 0;
-      if(!mmuEnabled) {
-        effAddr &= 0xffff;
-      } else {
-        flags = mmuTable->getFlags(effAddr, mmuSelector);
-        effAddr = mmuTable->getRealAddress(effAddr, mmuSelector);
-        //get real address
-        if((flags & PAGE_FLAG_NOT_PRESENT) || (flags & PAGE_FLAG_READ_ONLY)) {
-          intCtl->request(INT_MMU_LINE);
-          throw 1;
-        }
-
-      }
-      for(const auto & ram : rams) {
-        if(ram(effAddr)) {
-          return ram.dev->write(ram.transformFunc(effAddr), val, 0, 0);
-        }
-      }
-    }
-    throw 0;
-    //printf("WRITE: Device for address 0x%08X not found!\n", effAddr);
-  }
-  w memRead(size_t effAddr, w mmuSelector, w mmuEnabled) {
-    if(effAddr & (1<<20)) { //this is io or mmu
-      //      if(effAddr & (1<<14)) { //this is mmu
-      //	effAddr &= 0x3fff;
-      //	return mmuTable->table[effAddr];
-      //     } else { //this is io
-      //write io here
-      //	effAddr &= 0x1ff;
-      effAddr &= 0xffff;
-      for(const auto & dev : devs) {
-        if(dev(effAddr)) {
-          return dev.dev->read(dev.transformFunc(effAddr), 0);
-        }
-      }
-
-      //      }
-    } else { //this is ram
-      size_t realAddr = 0x00; //get real address from mmu process selector->pagetable
-      size_t flags = 0;
-      if(!mmuEnabled) {
-        effAddr &= 0xffff;
-      } else {
-        flags = mmuTable->getFlags(effAddr, mmuSelector);
-        //get real address
-        effAddr = mmuTable->getRealAddress(effAddr, mmuSelector);
-        if((flags & PAGE_FLAG_NOT_PRESENT)) {
-
-          intCtl->request(INT_MMU_LINE);
-          throw 1;
-        }
-
-      }
-      //write realaddress to ram here
-      for(const auto & ram : rams) {
-        if(ram(effAddr)) {
-          return ram.dev->read(ram.transformFunc(effAddr), 0);
-        }
-      }
-    }
-    throw 0;
-    printf("READ: Device for address 0x%08X not found!\n", effAddr);
-    usleep(100*1000);
-    return 0;
-  }
+  void memWrite(size_t effAddr, w val, w mmuSelector, w mmuEnabled);
+  w memRead(size_t effAddr, w mmuSelector, w mmuEnabled);
 };
 
 
@@ -1052,6 +971,7 @@ class Cpu {
 
   w MMUEntrySelector;
 
+
   w hPC_b;
   w BP_b;
   w AP_b;
@@ -1066,6 +986,7 @@ class Cpu {
 
   InterruptController * intCtl;
 public:
+  w MMULastFailPage;
 
   bool commit() {
     hPC_b = highPC();

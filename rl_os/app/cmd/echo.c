@@ -10,6 +10,7 @@ int main(int argc, char **argv, char ** envp) {
     int cnt = 0;
     char * c;
 
+    printf("Now will fork!\n");
     i = fork();
     if(i) {
       while(1) {

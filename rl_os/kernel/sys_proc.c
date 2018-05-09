@@ -24,7 +24,7 @@ int sys_chdir(void * scallStructPtr) {
     struct chdirSyscall s;
     struct stat st;
     unsigned int fn_buf[1024];
-
+    printf("Before chdir cwd.idx %d\n", cProc->cwd.idx);
     ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct chdirSyscall), 0, (unsigned int *)&s);
     ugets(cProc, (size_t)s.path, 0, 14, 1024, 1, fn_buf);
 
@@ -38,6 +38,8 @@ int sys_chdir(void * scallStructPtr) {
     }
 
     uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct chdirSyscall), 0, (unsigned int *)&s);
+    printf("After chdir cwd.idx %d\n", cProc->cwd.idx);
+
     return 0;
 }
 

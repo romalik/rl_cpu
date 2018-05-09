@@ -3,21 +3,28 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-
+char path[64*4];
+void do_pwd(char * prefix) {
+  getcwd(path, 64*4);
+  printf("-------->>>>>>>>>>>> %s : %s\n", prefix, path);
+}
 
 int main(int argc, char **argv) {
+  int i = 0;
+  do_pwd("1 Main");
+  do_pwd("2 Main");
+  do_pwd("3 Main");
+  if(i = fork()) {
+    do_pwd("1 Parent");
+    do_pwd("2 Parent");
+    do_pwd("3 Parent");
+  } else {
+    do_pwd("1 Child");
+    do_pwd("2 Child");
+    do_pwd("3 Child");
 
-    char buf[100];
-    int i;
-    int n = 10;
-    if(argc > 1) n = atoi(argv[1]);
-    for(i = 0; i<n; i++) {
-      int fd;
-      sprintf(buf, "file-%d", i);
-      fd = open(buf, O_TRUNC | O_CREAT | O_WRONLY);
-      printf("writing %d bytes to %s\n", write(fd, buf, strlen(buf)+1), buf);
-      close(fd);
-    }
+  }
 
-    return 0;
+
+  return 0;
 }

@@ -13,7 +13,10 @@ void uart_init() {
 }
 
 void uart_interrupt() {
-  cb_push(&uart_buffer, inb(UART));
+  int c;
+  while ((c = inb(UART)) != 0) {
+    cb_push(&uart_buffer, c);
+  }
 
 }
 

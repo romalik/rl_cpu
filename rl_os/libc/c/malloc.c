@@ -25,7 +25,8 @@ void malloc_init(size_t begin, size_t end) {
 
 extern int __data_end;
 void malloc_init_auto() {
-    malloc_init((size_t)(&__data_end)+0x2000, 0xE000);
+//  malloc_init((size_t)(&__data_end)+0x2000, 0xF000);
+  malloc_init(0xD000, 0xFF00);
 }
 
 void dumpList() {
@@ -36,57 +37,71 @@ void dumpList() {
         iter = iter->next;
     }
 }
+static void some_test_func(int a, int b) { return; }
+//static void some_test_func2() { return; }
 
 void *malloc(size_t sz) {
     Marker_t *iter = malloc_head;
-    //  printf("malloc call\n");
+    //printf("malloc call\n");
     //  printf("Before\n");
-    //  dumpList();
+    //dumpList();
     while (iter) {
         if (iter->isFree) {
             if (iter->size > sz + 2 * sizeof(Marker_t)) {
                 Marker_t *newEntry;
                 newEntry = (Marker_t *)((size_t)iter + sz + sizeof(Marker_t));
+//                printf("iter 0x%04X newEntry 0x%04X sz %d iter sz %d\n", iter, newEntry, sz, iter->size);
+//                printf("malloc page copy begin\n");
+//                dumpList();
                 newEntry->prev = iter;
+//                printf("malloc page copy end\n");
+//                dumpList();
+//                printf("iter 0x%04X newEntry 0x%04X sz %d iter sz %d\n", iter, newEntry, sz, iter->size);
                 newEntry->next = iter->next;
                 if (newEntry->next) {
                     newEntry->next->prev = newEntry;
                 }
                 newEntry->size = iter->size - sz - sizeof(Marker_t);
+                //printf("new entry size 0x%04X iter size 0x%04X sz 0x%04x\n", 0/*newEntry->size*/, /*iter->size*/0, /*sz*/0);
+                asm("blink_w 0x0010");
+                //some_test_func(0,0);
+                asm("blink_w 0x0020");
+                //printf("blah\n");
                 newEntry->isFree = 1;
                 iter->next = newEntry;
                 iter->size = sz + sizeof(Marker_t);
                 iter->isFree = 0;
-                //        printf("After\n");
-                //        dumpList();
-                //        printf("Ret iter 0x%04x\n",iter);
+//                        printf("After 0\n");
+//                        dumpList();
+                //        printf("Malloc : Ret iter 0x%04x\n",iter);
                 return (void *)((size_t)iter + (size_t)sizeof(Marker_t));
             } else if (iter->size >= sz + sizeof(Marker_t)) {
                 iter->isFree = 0;
-                //        printf("After\n");
-                //        dumpList();
+                        //printf("After 1\n");
+                        //dumpList();
+                //        printf("Malloc : Ret iter 0x%04x\n",iter);
                 return (void *)((size_t)iter + (size_t)sizeof(Marker_t));
             }
         }
 
         iter = iter->next;
     }
-
+    //asm("blink_w 0x3456");
     return 0; /* hit end of list */
 }
 
 void free(void *ptr) {
     Marker_t *it;
 
-    //  printf("free call\nBefore\n");
-    //  dumpList();
+//      printf("free call\n");
+//      dumpList();
 
     it = (Marker_t *)((size_t)ptr - (size_t)sizeof(Marker_t));
     it->isFree = 1;
-    //  printf("Free iter 0x%04x\n",it);
+//      printf("Free iter 0x%04x\n",it);
     if (it->next) {
         if (it->next->isFree) {
-            //      printf("Merge forward\n");
+//                  printf("Merge forward\n");
             it->size = it->size + it->next->size;
             it->next = it->next->next;
             if (it->next) {
@@ -97,7 +112,7 @@ void free(void *ptr) {
 
     if (it->prev) {
         if (it->prev->isFree) {
-            //      printf("merge backwards\n");
+//                  printf("merge backwards\n");
             it->prev->size = it->prev->size + it->size;
             it->prev->next = it->next;
             if (it->next) {
@@ -105,8 +120,8 @@ void free(void *ptr) {
             }
         }
     }
-    //  printf("After\n");
-    //  dumpList();
+//      printf("After\n");
+//      dumpList();
 }
 
 void *realloc(void *ptr, size_t size) {

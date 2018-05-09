@@ -69,16 +69,20 @@ void do_kernel_task_fork(int i) {
     //printf("Kernel worker: forking!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
         new_p = do_fork(p, 0);
-        //printf("Kernel worker: new_p 0x%04X\n", new_p);
-        //printf("New pid %d, mmuSelector %d\n", new_p->pid, new_p->mmuSelector);
-        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-        p->state = PROC_STATE_RUN;
 
         if(kernelTaskQueue[i].args) {
           struct forkSyscall s;
           ugets(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
           s.pid = new_p->pid;
           uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
+        }
+        printf("Kernel worker: new_p 0x%04X\n", new_p);
+        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
+        p->state = PROC_STATE_RUN;
+
+        if(p->pid != 0) {
+            //do not launch the process if forked from pid 0 - exec follows
+          run_proc(new_p);
         }
     }
 
@@ -226,6 +230,8 @@ void do_kernel_task_waitpid(int i) {
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
 
+        printf("Waitpid for pid %d selector %d done\n", childProcess->pid, childProcess->mmuSelector);
+
     } else {
      printf("Kernel worker: waitpid TROUBLES!\n");
         // hmmm...
@@ -253,10 +259,11 @@ void do_kernel_task_exit(int i) {
             }
         }
 
-        if(!p->isThread) {
+        //if(!p->isThread) {
           freeProcessPages(p);
           mmu_mark_selector(p->mmuSelector, 0);
-        }
+        //}
+          printf("Exit for pid %d selector %d done\n", p->pid, p->mmuSelector);
     } else {
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
@@ -269,6 +276,7 @@ void kernel_worker() {
     int i = 0;
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
 //      spinlock_lock(&kernelTaskQueueLock);
+      di();
       if (kernelTaskQueue[i].type != KERNEL_TASK_NONE) {
         if (kernelTaskQueue[i].type == KERNEL_TASK_FORK) {
           do_kernel_task_fork(i);
@@ -282,6 +290,7 @@ void kernel_worker() {
           do_kernel_task_clone(i);
         }
       }
+      ei();
 //      spinlock_unlock(&kernelTaskQueueLock);
     }
   }

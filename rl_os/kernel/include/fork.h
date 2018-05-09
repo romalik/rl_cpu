@@ -4,7 +4,8 @@
 #include <mm.h>
 #include <types.h>
 
-
+#define ENABLE_COPY_ON_WRITE 1
+extern int enable_copy_on_write;
 struct Process * do_fork(struct Process * p, int clone);
 
 #endif

@@ -22,6 +22,7 @@ ret
 .import timer_interrupt
 .import sched_stack
 .label __timer_interrupt_vector
+di
 ; save interrupted sp
 storesp_w sched_stack+1
 ; load scheduler sp
@@ -40,14 +41,17 @@ reti
 .import mmu_interrupt
 .import mmu_stack
 .label __mmu_interrupt_vector
+di
 ; save interrupted sp
 storesp_w mmu_stack+1
 ; load scheduler sp
 
 loadsp_w mmu_stack
 pushc
+pushmmu
 ec
 call0_w mmu_interrupt
+discard_b 1
 reti
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,6 +62,7 @@ reti
 .import decoder_interrupt
 .import decoder_stack
 .label __decoder_interrupt_vector
+di
 ; save interrupted sp
 storesp_w decoder_stack+1
 ; load scheduler sp
@@ -81,6 +86,7 @@ reti
 .import uart_interrupt_stack
 .label __uart_interrupt_vector
 ; save interrupted sp
+di
 storesp_w uart_interrupt_stack+1
 
 loadsp_w uart_interrupt_stack
