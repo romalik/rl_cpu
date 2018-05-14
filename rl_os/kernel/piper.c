@@ -88,9 +88,14 @@ unsigned int piper_write(unsigned int p, const unsigned int * buf, size_t n) {
     return alreadyWritten;
 }
 
-unsigned int piper_close(unsigned int p) {
+unsigned int piper_close(unsigned int p, FILE * fd) {
     pipes[p].closed = 1;
     //printf("Piper close %d\n", p);
+
+    return 0;
+}
+
+unsigned int piper_open(unsigned int p, FILE * fd) {
 
     return 0;
 }

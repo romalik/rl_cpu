@@ -77,16 +77,18 @@ void Demux::memWrite(size_t effAddr, w val, w mmuSelector, w mmuEnabled) {
     if(!mmuEnabled) {
       effAddr &= 0xffff;
     } else {
+		//if((effAddr & 0xf000) == (13 << 12)) printf("Write to page 13!\n");
+		
       flags = mmuTable->getFlags(effAddr, mmuSelector);
       effAddr = mmuTable->getRealAddress(effAddr, mmuSelector);
       //get real address
       if((flags & PAGE_FLAG_NOT_PRESENT) || (flags & PAGE_FLAG_READ_ONLY)) {
         cpu->MMULastFailPage = mmuTable->getRealPage(reqAddr, mmuSelector);
-        printf("Set faulty page to %d : page %d sel %d code %d\n", cpu->MMULastFailPage, cpu->MMULastFailPage&0xff, (cpu->MMULastFailPage >> 8)&0xf, (cpu->MMULastFailPage & (1<<12)));
+        //printf("Set faulty page to %d : page %d sel %d code %d\n", cpu->MMULastFailPage, cpu->MMULastFailPage&0xff, (cpu->MMULastFailPage >> 8)&0xf, (cpu->MMULastFailPage & (1<<12)));
         intCtl->request(INT_MMU_LINE);
 
 
-        printf("Page fault on write\n");
+        printf("Page fault on write with instruction %d %s\n",cpu->IR & 0xff, oplist[cpu->IR & 0xff]);
         throw 1;
       }
 
@@ -122,14 +124,15 @@ w Demux::memRead(size_t effAddr, w mmuSelector, w mmuEnabled) {
     if(!mmuEnabled) {
       effAddr &= 0xffff;
     } else {
+		//if((effAddr & 0xf000) == (13 << 12)) printf("Read from page 13!\n");
 
       flags = mmuTable->getFlags(effAddr, mmuSelector);
       //get real address
       effAddr = mmuTable->getRealAddress(effAddr, mmuSelector);
       if((flags & PAGE_FLAG_NOT_PRESENT)) {
-        printf("Page fault on read\n");
+        //printf("Page fault on read\n");
         cpu->MMULastFailPage = mmuTable->getRealPage(reqAddr, mmuSelector);
-        printf("Set faulty page to %d : page %d sel %d code %d\n", cpu->MMULastFailPage, cpu->MMULastFailPage&0xff, (cpu->MMULastFailPage >> 8)&0xf, (cpu->MMULastFailPage & (1<<12)));
+        //printf("Set faulty page to %d : page %d sel %d code %d\n", cpu->MMULastFailPage, cpu->MMULastFailPage&0xff, (cpu->MMULastFailPage >> 8)&0xf, (cpu->MMULastFailPage & (1<<12)));
 
         intCtl->request(INT_MMU_LINE);
         throw 1;
@@ -1059,7 +1062,7 @@ int main(int argc, char ** argv) {
         try {
           myCpu.execute();
         } catch(int i) {
-          printf("SIMULATOR : exception in execute [%d]\n", i);
+          //printf("SIMULATOR : exception in execute [%d]\n", i);
         }
 
         //log << gettime_ms() << " " << __current_code_bank << " " << __current_data_bank << " " << myCpu.getPC() << " " << myCpu.getSP() << std::endl;

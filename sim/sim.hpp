@@ -954,6 +954,7 @@ public:
 
 
 class Cpu {  
+public:
   w RA, RB;
   w AP, BP, SP, T;
   size_t PC;

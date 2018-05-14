@@ -40,7 +40,7 @@ cp -rfv libc/include rootfs/lib
 make -C app clean 
 make -C app
 #-------------------
-cp app/lcc_strip/build/rcc rootfs/bin
+#cp app/lcc_strip/build/rcc rootfs/bin
 
 
 ####################

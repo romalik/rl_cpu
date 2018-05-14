@@ -642,7 +642,7 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
       minor = (s.st_rdev & 0xff);
       ops = &devList[major];
       if(ops->open) {
-        ops->open(minor);
+        ops->open(minor, &openFiles[fd]);
       }
     }
     return &openFiles[fd];
@@ -828,7 +828,7 @@ void k_close(FILE *fd) {
       minor = (fd->device & 0xff);
       ops = &devList[major];
       if(ops->close) {
-        ops->close(minor);
+        ops->close(minor, fd);
       }
     }
 

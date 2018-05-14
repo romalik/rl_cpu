@@ -33,7 +33,7 @@ static char *search_dir(uint this_dev, uint this_ino)
         ptr = path_buf + slen - 1;
         if (*ptr != '/') {
                 if (slen + 2 > path_size) {
-                  printf("E10\n");
+                  //printf("E10\n");
                         errno = ERANGE;
                         return NULL;
                 }
@@ -42,13 +42,13 @@ static char *search_dir(uint this_dev, uint this_ino)
         }
         ++slen;
         if ((dp = opendir(path_buf)) == 0) {
-          printf("E11\n");
+          //printf("E11\n");
           return NULL;
         }
         while ((d = readdir(dp)) != 0) {
                 if (slow_search || this_ino == d->d_ino) {
                         if (slen + strlen(d->d_name) > path_size) {
-                                printf("E12\n");
+                                //printf("E12\n");
                                 errno = ERANGE;
                                 return NULL;
                         }
@@ -57,7 +57,7 @@ static char *search_dir(uint this_dev, uint this_ino)
                                 continue;
                         if (st.st_ino == this_ino && st.st_dev == this_dev) {
                                 closedir(dp);
-                                printf("Searchdir : %s\n", path_buf);
+                                //printf("Searchdir : %s\n", path_buf);
                                 return path_buf;
                         }
                 }
@@ -65,7 +65,7 @@ static char *search_dir(uint this_dev, uint this_ino)
         }
         closedir(dp);
         errno = ENOENT;
-        printf("E13\n");
+        //printf("E13\n");
         return NULL;
 }
 
@@ -75,24 +75,24 @@ static char *recurser(void)
         uint this_ino;
 
         if (stat(path_buf, &st) < 0) {
-          printf("E1!\n");
+          //printf("E1!\n");
           return NULL;
 
         }
         this_dev = st.st_dev;
         this_ino = st.st_ino;
 
-        printf("getcwd trace : this_dev = %d root_dev = %d this_ino = %d root_ino = %d\n",this_dev, root_dev, this_ino, root_ino);
-        printf("getcwd trace : path_buf = %s\n", path_buf);
+        //printf("getcwd trace : this_dev = %d root_dev = %d this_ino = %d root_ino = %d\n",this_dev, root_dev, this_ino, root_ino);
+        //printf("getcwd trace : path_buf = %s\n", path_buf);
 
 
         if (this_dev == root_dev && this_ino == root_ino) {
-          printf("Hit root\n");
+          //printf("Hit root\n");
                 strcpy(path_buf, "/");
                 return path_buf;
         }
         if (strlen(path_buf) + 4 > path_size) {
-          printf("E2!\n");
+          //printf("E2!\n");
                 errno = ERANGE;
                 return NULL;
         }

@@ -315,7 +315,9 @@ int main(int argc, char ** argv) {
               if(nArgv[0][0] == '&') {
                 bgChildren++;
               } else {
+				//printf("before waitpid:");malloc_sanity_check();printf("done\n");
                 r = waitpid(childPid, &status, 0);
+				//printf("after waitpid:");malloc_sanity_check();printf("done\n");
               }
             }
           } else {
@@ -367,7 +369,9 @@ err:
           break;
         }
       }
+	  //printf("before do_pwd: "); malloc_sanity_check(); printf("done\n");
       do_pwd();
+	  //printf("after do_pwd: "); malloc_sanity_check(); printf("done\n");
       printf("# ");
     }
   }

@@ -20,6 +20,14 @@ void uart_interrupt() {
 
 }
 
+unsigned int tty_open(unsigned int minor, FILE * fd) {
+	return 0;
+}
+
+unsigned int tty_close(unsigned int minor, FILE * fd) {
+	return 0;
+}
+
 
 unsigned int tty_read(unsigned int minor, unsigned int * buf, size_t n) {
   int to_read = n;

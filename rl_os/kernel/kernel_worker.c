@@ -76,7 +76,7 @@ void do_kernel_task_fork(int i) {
           s.pid = new_p->pid;
           uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
         }
-        printf("Kernel worker: new_p 0x%04X\n", new_p);
+        //printf("Kernel worker: new_p 0x%04X\n", new_p);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         p->state = PROC_STATE_RUN;
 
@@ -230,7 +230,7 @@ void do_kernel_task_waitpid(int i) {
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
 
-        printf("Waitpid for pid %d selector %d done\n", childProcess->pid, childProcess->mmuSelector);
+        //printf("Waitpid for pid %d selector %d done\n", childProcess->pid, childProcess->mmuSelector);
 
     } else {
      printf("Kernel worker: waitpid TROUBLES!\n");
@@ -263,7 +263,7 @@ void do_kernel_task_exit(int i) {
           freeProcessPages(p);
           mmu_mark_selector(p->mmuSelector, 0);
         //}
-          printf("Exit for pid %d selector %d done\n", p->pid, p->mmuSelector);
+          //printf("Exit for pid %d selector %d done\n", p->pid, p->mmuSelector);
     } else {
 
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;

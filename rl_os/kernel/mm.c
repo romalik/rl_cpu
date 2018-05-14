@@ -129,13 +129,16 @@ int check_and_fix_page(struct Process * p, size_t pageno, int is_code, int wr) {
   flags = mmu_read_table_flags(p->mmuSelector, pageno, is_code);
 
   if(flags != 0) {
-    printf("check_and_fix_page: flags = %d mmuSelector %d pageno %d is_code %d\n", flags, p->mmuSelector, pageno, is_code);
     //action required
+//      printf("pid %d\n", p->pid);
+//        printf("before mmu copy:\n");
+//      dumpProcessPages(p);
     if((flags & PAGE_FLAG_READ_ONLY) && wr) {
       //want to write to write-protected page
       size_t src_page;
       size_t target_page;
       size_t refcnt;
+      //printf("check_and_fix_page: flags = %d mmuSelector %d pageno %d is_code %d\n", flags, p->mmuSelector, pageno, is_code);
       src_page = mmu_read_table(p->mmuSelector, pageno, is_code);
       refcnt = mmu_get_page_refcnt(src_page);
       if(refcnt > 1) {
@@ -145,16 +148,18 @@ int check_and_fix_page(struct Process * p, size_t pageno, int is_code, int wr) {
         mmu_mark_page(target_page, 1);
         mmu_write_table(p->mmuSelector, pageno, is_code, target_page);
         mmu_copy_pages(src_page, target_page, 0, 14, 15);
-        printf("check&fix : copy! %04d -> %04d\n", src_page, target_page);
+        //printf("copy page %04d -> %04d\n", src_page, target_page);
+        //printf("copy page\n");
         result = 1;
       } else {
         target_page = src_page;
-        printf("check&fix : no copy!\n");
+        //printf("no copy page %04d\n", src_page);
       }
       mmu_write_table_flags(p->mmuSelector, pageno, is_code, 0);
 
     }
-    dumpProcessPages(p);
+    //printf("after mmu copy pid %d:\n", p->pid);
+    //dumpProcessPages(p);
   }
   return result;
 

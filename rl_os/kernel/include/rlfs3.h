@@ -122,12 +122,6 @@
 
 typedef struct fs_node { blk_t idx; } fs_node_t;
 
-struct devOpTable {
-    unsigned int (*write)(unsigned int minor, const unsigned int * buf, size_t n);
-    unsigned int (*read)(unsigned int minor, unsigned int * buf, size_t n);
-    unsigned int (*open)(unsigned int minor);
-    unsigned int (*close)(unsigned int minor);
-};
 
 typedef struct dirent {
     unsigned int name[31];
@@ -143,6 +137,16 @@ typedef struct __FILE {
     unsigned int flags;
     int refcnt;
 } FILE;
+
+struct devOpTable {
+    unsigned int (*write)(unsigned int minor, const unsigned int * buf, size_t n);
+    unsigned int (*read)(unsigned int minor, unsigned int * buf, size_t n);
+    unsigned int (*open)(unsigned int minor, FILE * file);
+    unsigned int (*close)(unsigned int minor, FILE * file);
+};
+
+
+
 /*
 typedef struct __stat {
     fs_node_t node;
