@@ -74,6 +74,7 @@ void syscall(void *p);
 #define __NR_setsid 66
 #define __NR_clone 67
 #define __NR_mkfifo 68
+#define __NR_yield 69
 
 
 struct creatSyscall {
@@ -86,6 +87,10 @@ struct killSyscall {
     unsigned int id;
     int pid;
     int sig;
+};
+
+struct yieldSyscall {
+    unsigned int id;
 };
 
 

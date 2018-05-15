@@ -41,7 +41,7 @@ unsigned int cb_pop(struct circular_buffer * cb) {
 void cb_push(struct circular_buffer * cb, unsigned int val) {
   cb->data[cb->w] = val;
   cb->w++;
-  if(cb->w > cb->capacity) cb->w = 0;
+  if(cb->w >= cb->capacity) cb->w = 0;
   if(cb->size < cb->capacity) {
     cb->size++;
   } else {

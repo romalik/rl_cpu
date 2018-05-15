@@ -56,13 +56,19 @@ tar cfv bstrap/scripts.tar scripts
 cd ..
 cp ls_c rootfs/bstrap
 cp rootfs/bin/sh rootfs/bstrap
+cp rootfs/bin/cat rootfs/bstrap
+cp rootfs/bin/wc rootfs/bstrap
 cp rootfs/bin/echo rootfs/bstrap
-cp rootfs/bin/test rootfs/bstrap
+#cp rootfs/bin/test rootfs/bstrap
 cp rootfs/bin/ls rootfs/bstrap
 cp rootfs/bin/ps rootfs/bstrap
-cp rootfs/bin/hello rootfs/bstrap
-cp rootfs/bin/kill rootfs/bstrap
+#cp rootfs/bin/hello rootfs/bstrap
+#cp rootfs/bin/kill rootfs/bstrap
+#cp rootfs/bin/cat rootfs/bstrap
 cp rootfs/bin/tar rootfs/bstrap
+cp rootfs/bin/vt rootfs/bstrap
+cp rootfs/bin/reader rootfs/bstrap
+
 cp rootfs/scripts/install.sh rootfs/bstrap/init.sh
 
 #-------------------

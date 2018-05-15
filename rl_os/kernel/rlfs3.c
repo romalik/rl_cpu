@@ -5,10 +5,15 @@
 #else
 #include <kstdio.h>
 #include <sched.h>
+#include <waitq.h>
+#include <syscall.h>
+#include <sys.h>
 #endif
 FILE openFiles[MAX_FILES];
 struct fs_node fs_root;
 struct devOpTable devList[MAX_DEVS];
+
+int blockRequest = 0;
 
 /* RLFS3 filesystem
  *
@@ -732,6 +737,79 @@ size_t k_write(FILE *fd, const unsigned int *buf, size_t size) {
     }
 }
 
+
+unsigned int iobuf[1024];
+size_t try_k_read(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_t scallStruct) {
+
+	size_t retval = 0;
+	struct Process * p;
+	struct readSyscall s;
+	findProcByPid(caller, &p);
+	retval = k_read(fd, iobuf, size);
+
+	uputs(p, (size_t)buf, 0, 14, retval, 0, iobuf);
+	
+	if(!retval) {
+		if(blockRequest) {
+			unsigned int params[4];
+			blockRequest = 0;
+			params[0] = (size_t)fd;
+			params[1] = (size_t)buf;
+			params[2] = (size_t)size;
+			params[3] = 0;
+			waitqAddEntry(caller, (size_t)(fd->node.idx), WAITQ_TYPE_FILE, scallStruct, params);
+			//request resched
+			p->state = PROC_STATE_BLOCKED;
+			//printf("Block on try_k_read\n");
+			if(cProc->pid == caller) resched(system_interrupt_stack);
+		}
+	} 
+
+
+	ugets(p, (size_t)scallStruct, 0, 14, sizeof(struct readSyscall), 0, (unsigned int *)&s);
+	s.size = retval;
+	uputs(p, (size_t)scallStruct, 0, 14, sizeof(struct readSyscall), 0, (unsigned int *)&s);
+	return retval;
+	
+}
+
+size_t try_k_write(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_t scallStruct) {
+
+	size_t retval = 0;
+	struct Process * p;
+	struct writeSyscall s;
+	findProcByPid(caller, &p);
+	ugets(p, (size_t)buf, 0, 14, size, 0, iobuf);
+	retval = k_write(fd, iobuf, size);
+	
+	if(!retval) {
+		if(blockRequest) {
+			if(blockRequest == 1) {
+				unsigned int params[4];
+				blockRequest = 0;
+				params[0] = (size_t)fd;
+				params[1] = (size_t)buf;
+				params[2] = (size_t)size;
+				params[3] = 1;
+				waitqAddEntry(caller, (size_t)(fd->node.idx), WAITQ_TYPE_FILE, scallStruct, params);
+			
+			} else if(blockRequest == 2) { //generate sigpipe!
+				sendSig(caller, SIGPIPE);
+			}
+			//request resched
+			p->state = PROC_STATE_BLOCKED;
+			//printf("Block on try_k_write\n");
+			if(cProc->pid == caller) resched(system_interrupt_stack);
+
+		}
+	} 
+
+	ugets(p, (size_t)scallStruct, 0, 14, sizeof(struct writeSyscall), 0, (unsigned int *)&s);
+	s.size = retval;
+	uputs(p, (size_t)scallStruct, 0, 14, sizeof(struct writeSyscall), 0, (unsigned int *)&s);
+	return retval;
+}
+
 size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
   size_t alreadyRead = 0;
     if (S_ISBLK(fd->flags)) {
@@ -957,11 +1035,11 @@ int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor
 
 int k_mkfifo(const void *__path) {
   char * path = (char *)__path;
-  static int current_pipe_id = 0;
+  int current_pipe_id = piper_getFreePipe();
   if(path[0] == 0) {
     sprintf(path, "/tmp/%d.pipe", current_pipe_id);
   }
-  return k_mknod(path, 'c', 2, current_pipe_id++);
+  return k_mknod(path, 'c', 2, current_pipe_id);
 }
 
 int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc) {

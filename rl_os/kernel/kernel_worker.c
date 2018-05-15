@@ -5,6 +5,7 @@
 #include <wait.h>
 #include <fork.h>
 #include <execve.h>
+#include <waitq.h>
 
 unsigned int kernelTaskQueueLock;
 struct KernelTask kernelTaskQueue[MAX_QUEUE_SIZE];
@@ -271,9 +272,57 @@ void do_kernel_task_exit(int i) {
     }
 
 }
+
+/*
+ * 		waitq[i].params[0] = params[0]; //fd
+		waitq[i].params[1] = params[1]; //dest
+		waitq[i].params[2] = params[2]; //n
+		waitq[i].params[3] = params[3]; //r/w
+		 */
+
+void processWaitQEntry(struct waitqEntry * e) {
+	struct Process * p;
+	if(!findProcByPid(e->pid,&p)) {
+		panic("processWaitQEntry : caller not found!\n");
+	}
+	
+	//printf("processWaitQEntry : caller %d waitfor 0x%04X\n", e->pid, e->trigger);
+	
+	if(e->type == WAITQ_TYPE_FILE) {
+		p->state = PROC_STATE_RUN;
+		if(e->params[3]) { //write
+			//printf("processWaitQEntry : try_k_write\n");
+			try_k_write((FILE *)(e->params[0]),(unsigned int *)(e->params[1]),(size_t)(e->params[2]),p->pid,e->scallStruct);
+		} else { //read
+			//printf("processWaitQEntry : try_k_read\n");
+			try_k_read((FILE *)(e->params[0]),(unsigned int *)(e->params[1]),(size_t)(e->params[2]),p->pid,e->scallStruct);
+		}
+	}
+}
+
+void processWaiting() {
+	unsigned int what = 0;
+	struct waitqEntry * e = 0;
+	while(waitqPendingNotifications.size) {
+		what = cb_pop(&waitqPendingNotifications);
+		//printf("Read out notification what: 0x%04X\n", what);
+		while(waitqGetNextWaiter(what, &e)) {
+			//printf("Found waiting process\n");
+			processWaitQEntry(e);
+			e->type = WAITQ_TYPE_NONE;
+		}
+	}
+}
+
+
 void kernel_worker() {
   while (1) {
     int i = 0;
+	
+	di();
+	processWaiting();
+	ei();
+	
     for (i = 0; i < MAX_QUEUE_SIZE; i++) {
 //      spinlock_lock(&kernelTaskQueueLock);
       di();
@@ -330,3 +379,8 @@ void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
     //showTasks();
 }
 
+
+void panic(char * s) {
+	printf("Kernel panic! %s\n");
+	while(1) {};
+}

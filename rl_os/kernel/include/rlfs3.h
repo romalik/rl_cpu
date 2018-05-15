@@ -8,7 +8,8 @@
 #endif
 #include <string.h>
 #include <types.h>
-
+//#include <waitq.h>
+//#include <sched.h>
 #define MAX_FILES 10
 #define MAX_DEVS 10
 
@@ -204,6 +205,8 @@ struct stat {
 };
 
 
+extern int blockRequest;
+
 
 extern FILE openFiles[MAX_FILES];
 extern struct fs_node fs_root;
@@ -249,5 +252,8 @@ int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor
 int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc);
 
 int k_unlink(const char * name);
+
+size_t try_k_read(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_t scallStruct);
+size_t try_k_write(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_t scallStruct);
 
 #endif

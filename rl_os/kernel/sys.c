@@ -92,7 +92,8 @@ int (*sys_table[])(void * scallStructPtr) = {
     /* __NR_getpgrp 65*/ sys_none,
     /* __NR_setsid 66*/ sys_none,
     /* __NR_clone 67 */ sys_clone,
-    /* __NR_mkfifo 68*/ sys_none
+    /* __NR_mkfifo 68*/ sys_mkfifo,
+    /* __NR_yield 68*/ sys_yield
 
 
     };

@@ -232,7 +232,7 @@ void resched(unsigned int t_stack[]) {
     // now save current task state to its ptab
     // if current task is valid
     if (currentTask < MAXPROC) {
-        if (procs[currentTask].state == PROC_STATE_RUN || procs[currentTask].state == PROC_STATE_SLEEP || procs[currentTask].state == PROC_STATE_KWORKER) {
+        if (procs[currentTask].state == PROC_STATE_RUN || procs[currentTask].state == PROC_STATE_SLEEP || procs[currentTask].state == PROC_STATE_KWORKER || procs[currentTask].state == PROC_STATE_BLOCKED) {
             memcpy((unsigned int *)&procs[currentTask].intFrame, t_stack, sizeof(struct InterruptFrame));
         }
     }
@@ -256,7 +256,7 @@ rescanTable:
         if (procs[nextTask].state == PROC_STATE_NEW)
             break;
 
-        if (procs[nextTask].state == PROC_STATE_SLEEP && procs[nextTask].signalsPending)
+        if ((procs[nextTask].state == PROC_STATE_SLEEP || procs[nextTask].state == PROC_STATE_BLOCKED) && procs[nextTask].signalsPending)
             break;
 
         nextTask++;
@@ -264,11 +264,7 @@ rescanTable:
 
     if(procs[nextTask].state == PROC_STATE_KWORKER) {
         // hmmm.. if we asserted nr_ready > 1 we should never get here
-      printf("Switching to same task in state kernel worker! Something is wrong! Halting\n");
-      di();
-      while(1) {}
-//      memcpy(sched_stack, (unsigned int *)&procs[nextTask].intFrame, sizeof(struct InterruptFrame));
-//        return;
+      panic("Switching to same task in state kernel worker!");
     }
 
     // check for signals
@@ -276,7 +272,7 @@ rescanTable:
     if(procs[nextTask].signalsPending) {
         int sig = getSignalFromMask(procs[nextTask].signalsPending);
         //printf("Found signal %d while waking process %d. Mask = 0x%04x\n", sig, procs[nextTask].pid, procs[nextTask].signalsPending);
-        if(sig == SIGKILL) {
+        if(sig == SIGKILL || sig == SIGPIPE) {
             printf("SIGKILL! killing pid %d\n", procs[nextTask].pid);
             addKernelTask(KERNEL_TASK_EXIT, procs[nextTask].pid, NULL);
             procs[nextTask].state = PROC_STATE_KWORKER;
@@ -306,7 +302,7 @@ rescanTable:
 
     memcpy(t_stack, (unsigned int *)&procs[nextTask].intFrame, sizeof(struct InterruptFrame));
 
-//    printf("Switch proc %d->%d\n", procs[currentTask].pid, procs[nextTask].pid);
+//    printf("[sched] %d->%d\n", procs[currentTask].pid, procs[nextTask].pid);
     currentTask = nextTask;
     cProc = &(procs[nextTask]);
     ticksToSwitch = TIMESLICE;
@@ -399,7 +395,7 @@ unsigned int proc_file_read(unsigned int minor, unsigned int * buf, size_t n) {
     unsigned int * b = buf;
     //printf("procfs read\n");
     for(i = 0; i<MAXPROC; i++) {
-        if(1||procs[i].state != PROC_STATE_NONE) {
+        if(procs[i].state != PROC_STATE_NONE) {
 
             *b = procs[i].pid;
             b++;

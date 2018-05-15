@@ -54,4 +54,11 @@ size_t uputs(struct Process * p, size_t addr, size_t processToMap, size_t whereT
 size_t umemset(struct Process * p, size_t addr, size_t processToMap, size_t whereToMap, size_t length, unsigned int v);
 
 
+unsigned int null_file_read(unsigned int minor, unsigned int * buf, size_t n);
+unsigned int null_file_write(unsigned int minor, const unsigned int * buf, size_t n);
+
+unsigned int zero_file_read(unsigned int minor, unsigned int * buf, size_t n);
+unsigned int zero_file_write(unsigned int minor, const unsigned int * buf, size_t n);
+
+
 #endif

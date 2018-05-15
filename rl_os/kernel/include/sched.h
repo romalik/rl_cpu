@@ -16,6 +16,7 @@
 #define PROC_STATE_KWORKER 4
 #define PROC_STATE_NEW 5
 #define PROC_STATE_CONSTRUCT 6
+#define PROC_STATE_BLOCKED 7
 
 extern unsigned int ticks;
 

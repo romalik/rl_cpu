@@ -349,3 +349,20 @@ void freeProcessPages(struct Process * p) {
     }
 }
 
+
+unsigned int null_file_read(unsigned int minor, unsigned int * buf, size_t n) {
+	return 0;
+}
+
+unsigned int null_file_write(unsigned int minor, const unsigned int * buf, size_t n) {
+    return n;
+}
+
+unsigned int zero_file_read(unsigned int minor, unsigned int * buf, size_t n) {
+	memset(buf, 0, n);
+	return n;
+}
+
+unsigned int zero_file_write(unsigned int minor, const unsigned int * buf, size_t n) {
+    return n;
+}

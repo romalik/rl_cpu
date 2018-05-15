@@ -10,41 +10,17 @@
 #include <mm.h>
 
 int sys_write(void * scallStructPtr) {
-  unsigned int iobuf[1024];
-  int sz_write = 0;
-  struct writeSyscall s;
+  struct readSyscall s;
   ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct writeSyscall), 0, (unsigned int *)&s);
-  iobuf[0]=0;
-  ugets(cProc, (size_t)s.buf, 0, 14, s.size, 0, iobuf);
-  //asm("blink");
-  //    printf("SYS : write\n");
-  sz_write = k_write(cProc->openFiles[s.fd], iobuf, s.size);
-  //printf("KERNEL: write %d/%d words to %d from 0x%04X\n", sz_write, s.size,  s.fd, s.buf);
-  s.size = sz_write;
-
-  uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct writeSyscall), 0, (unsigned int *)&s);
-
+  try_k_write(cProc->openFiles[s.fd], s.buf, s.size, cProc->pid, (size_t)scallStructPtr);
   return 0;
 }
 
 int sys_read(void * scallStructPtr) {
   unsigned int iobuf[1024];
-  int sz_read = 0;
   struct readSyscall s;
-
-
   ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct readSyscall), 0, (unsigned int *)&s);
-  iobuf[0]=0;
-  //asm("blink");
-  //    printf("SYS : write\n");
-  sz_read = k_read(cProc->openFiles[s.fd], iobuf, s.size);
-  //    printf("KERNEL: write %d/%d words to %d from 0x%04X\n>>>%s\n", sz_write, s.size,  s.fd, s.buf, iobuf);
-  uputs(cProc, (size_t)s.buf, 0, 14, sz_read, 0, iobuf);
-
-  s.size = sz_read;
-
-  uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct readSyscall), 0, (unsigned int *)&s);
-
+  try_k_read(cProc->openFiles[s.fd], s.buf, s.size, cProc->pid, (size_t)scallStructPtr);
   return 0;
 }
 

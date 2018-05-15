@@ -13,7 +13,7 @@ struct pEntry {
 };
 
 
-char stateToString[][8] = {"Unknown", "Running", "Waiting", "Zombie", "KWorker", "New"};
+char stateToString[][10] = {"Unknown", "Running", "Waiting", "Zombie", "KWorker", "New", "Construct", "Blocked"};
 
 
 

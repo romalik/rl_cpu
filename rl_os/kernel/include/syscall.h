@@ -71,7 +71,9 @@
 #define __NR_setsid 66
 #define __NR_clone 67
 #define __NR_mkfifo 68
-#define __NR_N_SYSCALL 69
+#define __NR_yield 69
+
+#define __NR_N_SYSCALL 70
 
 struct creatSyscall {
     unsigned int id;
@@ -83,6 +85,10 @@ struct killSyscall {
     unsigned int id;
     int pid;
     int sig;
+};
+
+struct yieldSyscall {
+    unsigned int id;
 };
 
 struct writeSyscall {

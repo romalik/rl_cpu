@@ -166,6 +166,12 @@ int pipe(int pipefd[2]) {
   return 0;
 }
 
+int yield() {
+	struct yieldSyscall s;
+	s.id = __NR_yield;
+	syscall(&s);
+	return 0;
+}
 
 int read(int fd, void *buf, int count) {
     struct readSyscall s;
@@ -277,7 +283,7 @@ pid_t wait(int * status) {
   return waitpid(-1,status,0);
 }
 
-int write(int fd, const void *buf, int count) {
+int actual_write(int fd, const void *buf, int count) {
     struct writeSyscall s;
     s.id = __NR_write;
     s.fd = fd;
@@ -286,6 +292,19 @@ int write(int fd, const void *buf, int count) {
     syscall(&s);
     return s.size;
 }
+
+int write(int fd, const void * buf, int count) {
+	size_t n = count;
+	size_t write_now = 0;
+	while(n) {
+		write_now = actual_write(fd, buf, n);
+		if(!write_now) break;
+		n -= write_now;
+		buf = (const void *) ((size_t)buf + write_now);
+	}
+	return count - n;
+}
+
 
 int unlink(const char *path){
   struct unlinkSyscall s;

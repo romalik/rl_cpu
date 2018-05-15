@@ -8,6 +8,7 @@ typedef void (*sighandler_t)(int);
 #define SIGINT 2
 #define SIGKILL 3
 #define SIGNUM 4
+#define SIGPIPE 13
 
 #define SIG_DFL 0
 #define SIG_IGN 1

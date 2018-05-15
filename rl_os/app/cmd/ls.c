@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     res = readdir(fd);
     if(do_stat) {
             //printf("dev\tino\tmode\tnlink\tuid\tgid\trdev\tsize\tatime\tmtime\tctime\t - name\n");
-            printf("type\tino\tsize\t -\tname\n");
+            printf("type\tino\t\tsize\t -\tname\n");
     }
 
     while (res) {

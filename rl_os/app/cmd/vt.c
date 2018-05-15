@@ -96,6 +96,20 @@ int main() {
   mkfifo("/dev/pty", 0777);
   fd = open("/dev/pty", O_RDONLY);
 
+
+  while(1) {
+    n = read(fd, ch, PIPE_READ_CHUNK);
+    c = ch;
+	printf("[vt] Recv %d : ", n);
+	while(n) {
+//      processChar(*c);
+		putchar(*c);
+	  n--; 
+	  c++;
+	}
+	printf("\n");		
+}
+/*
   while(1) {
     n = read(fd, ch, PIPE_READ_CHUNK);
     c = ch;
@@ -106,6 +120,6 @@ int main() {
     }
     drawFB();
   } 
-
+*/
   return 0;
 }

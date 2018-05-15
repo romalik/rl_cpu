@@ -1,60 +1,53 @@
+/* echo command */
+
 #include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
+#include <string.h>
 
-char str[] = "Write/read test\n";
+int main(int argc, const char *argv[])
+{
+    const char *p;
+    char c;
+    int  i, nflag, eflag;
 
-int main(int argc, char **argv, char ** envp) {
-    int i = 0;
-    int j = 0;
-    int cnt = 0;
-    char * c;
+    nflag = eflag = 0;
+    p = *(++argv);
 
-    printf("Now will fork!\n");
-    i = fork();
-    if(i) {
-      while(1) {
-        printf("Parent %d\n", cnt);
-        cnt++;
-        for(j = 0; j<10000; j++) {
-
-        }
-      }
-
-    } else {
-      while(1) {
-        printf("Child %d\n", cnt);
-        cnt++;
-        for(j = 0; j<10000; j++) {
-
-        }
-      }
-
+    while (p && *p == '-') {
+        c = *(++p);
+	if (c == 'n')
+	    nflag = 1;
+	else if (c == 'e')
+	    eflag = 1;
+	else
+	    break;
+	if (*(++p)) break;
+	p = *(++argv);
     }
-
-
-    printf("Echo: argc = %d\n", argc);
-
-    printf("envp = 0x%04x, environ = 0x%04x\n", (size_t)envp, (size_t)environ);
-
-    for (i = 0; i < argc; i++) {
-        printf("%d: %s atoi %d\n", i, argv[i], atoi(argv[i]));
-    }
-
-
-    c = getenv("blah");
-    printf("getenv blah= [%s]\n", c);
-    setenv("blah", "BLAH_VALUE", 0);
-
-    c = getenv("blah");
-    printf("getenv blah= [%s]\n", c);
-    setenv("blah", "BLAH_VALUE", 0);
-
-    c = getenv("blah");
-    printf("getenv blah= [%s]\n", c);
-    unsetenv("blah");
     
-    c = getenv("blah");
-    printf("getenv blah= [%s]\n", c);
+    while ((p = *argv++) != NULL) {
+	while ((c = *p++) != '\0') {
+	    if (c == '\\' && eflag) {
+	        switch (*p++) {
+	        case '0':  c = 0;
+	        	   for (i = 0; i < 3 && *p >= '0' && *p <= '7'; ++i)
+	        	       c = (c << 3) + *p++ - '0';
+	        	   break;
+		case 'b':  c = '\b'; break;
+		case 'c':  return 0;
+		case 'f':  c = '\f'; break;
+		case 'n':  c = '\n'; break;
+		case 'r':  c = '\r'; break;
+		case 't':  c = '\t'; break;
+		case 'v':  c = '\v'; break;
+		case '\\': break;
+		default:   --p; break;
+		}
+	    }
+	    putchar(c);
+	}
+	if (*argv) putchar(' ');
+    }
+    if (!nflag) putchar('\n');
+    
     return 0;
 }

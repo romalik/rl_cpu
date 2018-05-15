@@ -50,6 +50,11 @@ int sys_fork(void * scallStructPtr) {
     return 0;
 }
 
+int sys_yield(void * scallStructPtr) {
+    resched(system_interrupt_stack);
+    return 0;
+}
+
 int sys_clone(void * scallStructPtr) {
   addKernelTask(KERNEL_TASK_CLONE, cProc->pid, scallStructPtr);
   cProc->state = PROC_STATE_KWORKER;

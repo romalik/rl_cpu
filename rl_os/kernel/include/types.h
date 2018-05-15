@@ -15,6 +15,8 @@ typedef unsigned int blk_t;
 
 typedef int16_t pid_t;
 
+extern void panic(char * s);
+
 #define NULL 0
 
 #endif /* ndef TYPES_H */

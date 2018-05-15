@@ -22,4 +22,6 @@ void kernel_worker_init();
 void kernel_worker();
 void addKernelTask(unsigned int task, unsigned int callerPid, void *args);
 
+void panic(char * s);
+
 #endif

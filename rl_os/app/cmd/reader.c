@@ -1,9 +1,11 @@
 #include <stdio.h>
 
+unsigned int buf[1024];
+
 int main() {
-	int i;
-	for(i = 0; i<1000; i++) {
-		printf("%d\n", i);
+	size_t n = 0;
+	while(n = read(0, buf, 1024)) {
+		write(1, buf, n);
 	}
 	return 0;
 }

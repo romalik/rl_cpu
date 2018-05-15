@@ -12,6 +12,7 @@
 #include <syscall.h>
 #include <mm.h>
 
+extern unsigned int system_interrupt_stack[2048];
 
 /* __NR_setup 0  */ int sys_none(void * scallStructPtr);
 /* __NR_exit 1   */ int sys_exit(void * scallStructPtr);
@@ -82,6 +83,7 @@
 ///* __NR_setsid 66*/ int sys_none,
 /* __NR_clone 67 */ int sys_clone(void * scallStructPtr);
 /* __NR_mkfifo 68*/ int sys_mkfifo(void * scallStructPtr);
+/* __NR_yield 69   */ int sys_yield(void * scallStructPtr);
 
 
 
