@@ -242,7 +242,7 @@ int main(int argc, char ** argv) {
 
     } else {
       c = getchar();
-      if(!c) continue;
+      //if(!c) continue;
     }
     putchar(c);
     if (addChar(c)) {
@@ -315,9 +315,7 @@ int main(int argc, char ** argv) {
               if(nArgv[0][0] == '&') {
                 bgChildren++;
               } else {
-				//printf("before waitpid:");malloc_sanity_check();printf("done\n");
                 r = waitpid(childPid, &status, 0);
-				//printf("after waitpid:");malloc_sanity_check();printf("done\n");
               }
             }
           } else {

@@ -18,7 +18,7 @@
 #define SIGUSR1		10
 #define SIGSEGV		11
 #define SIGUSR2		12
-#define SIGPIPE		13
+//#define SIGPIPE		13
 //#define SIGALRM		14
 #define SIGTERM		15
 #define SIGSTKFLT	16
@@ -48,6 +48,7 @@
 #define SIGINT 2
 #define SIGKILL 3
 #define SIGNUM 4
+#define SIGPIPE 5
 
 
 

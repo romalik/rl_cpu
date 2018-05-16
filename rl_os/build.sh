@@ -62,6 +62,7 @@ cp rootfs/bin/echo rootfs/bstrap
 #cp rootfs/bin/test rootfs/bstrap
 cp rootfs/bin/ls rootfs/bstrap
 cp rootfs/bin/ps rootfs/bstrap
+cp rootfs/bin/dd rootfs/bstrap
 #cp rootfs/bin/hello rootfs/bstrap
 #cp rootfs/bin/kill rootfs/bstrap
 #cp rootfs/bin/cat rootfs/bstrap

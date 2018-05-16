@@ -8,19 +8,26 @@ unsigned int uart_buffer_data[UART_BUFFER_SIZE];
 struct circular_buffer uart_buffer;
 unsigned int uart_interrupt_stack[50];
 
+FILE * ttyOpenedAs;
+
 void uart_init() {
   cb_create_static(UART_BUFFER_SIZE, &uart_buffer, uart_buffer_data);
 }
 
 void uart_interrupt() {
   int c;
+  int got = 0;
   while ((c = inb(UART)) != 0) {
+	  got = 1;
     cb_push(&uart_buffer, c);
   }
+  
+  if(got) waitqNotify((size_t)(ttyOpenedAs->node.idx));
 
 }
 
 unsigned int tty_open(unsigned int minor, FILE * fd) {
+	ttyOpenedAs = fd;
 	return 0;
 }
 
@@ -46,9 +53,8 @@ unsigned int tty_read(unsigned int minor, unsigned int * buf, size_t n) {
   if(got) {
     return got;
   } else {
-    *buf = 0;
-    //block here!
-    return 1;
+	blockRequest = 1;
+    return 0;
   }
 }
 

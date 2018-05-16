@@ -86,7 +86,7 @@ void main(int argc, char *argv[])
 	str = *++argv;
 	cp = strchr(str, '=');
 	if (cp == NULL) {
-	    fprintf(stderr, "Bad dd argument\n");
+	    fprintf(stderr, "Bad dd argument %s %d\n", str, argc);
 	    return;
 	}
 	*cp++ = '\0';
