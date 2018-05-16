@@ -381,6 +381,6 @@ void addKernelTask(unsigned int task, unsigned int callerPid, void *args) {
 
 
 void panic(char * s) {
-	printf("Kernel panic! %s\n");
+	printf("Kernel panic! %s\n", s);
 	while(1) {};
 }

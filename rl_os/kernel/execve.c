@@ -107,8 +107,9 @@ unsigned int do_execve(struct Process * p, struct execSyscall * s) {
     unsigned int filename[100];
 //    unsigned int * filename;
     unsigned int header[9];
-    unsigned int cnt = 0;
-    unsigned int sizeText;
+    unsigned long cnt = 0;
+    unsigned long sizeText;
+	unsigned int sizeTextLow;
     unsigned int sizeTextHigh;
     unsigned int sizeData;
 //    off_t sizeTextFull;
@@ -171,7 +172,7 @@ unsigned int do_execve(struct Process * p, struct execSyscall * s) {
 
 //    mode = header[4];
     sizeTextHigh = header[5];
-    sizeText = header[6];
+    sizeTextLow = header[6];
     sizeData = header[8];
 
 //    printf("DO_EXECVE [5] for pid %d\n", p->pid);
@@ -188,30 +189,30 @@ unsigned int do_execve(struct Process * p, struct execSyscall * s) {
 
     //read text
 
-    cnt = 0;
-    while(cnt < sizeText) {
-        size_t read_now;
-        size_t target_page;
-        size_t chunk_read = 0;
-        if(sizeTextHigh) {
-            printf("Long bin!\n");
-            while(1) {}
-        }
-        read_now = (sizeText - cnt); //fit to one page
-//        printf("EXEC: text read now 0x%04x\n", read_now);
-        if(read_now > 0x1000) read_now = 0x1000;
-        target_page = mmu_get_free_page();
-//        printf("EXEC: text new target page 0x%04x as pageno %d\n", target_page, pageno);
-        mmu_mark_page(target_page, 1);
-        mmu_write_table(0, 14, 0, target_page); //assign target page to pageno 14
+	sizeText = ((unsigned long)sizeTextHigh << 16) + sizeTextLow;
 
-        mmu_write_table(p->mmuSelector, pageno, 1, target_page);
-        pageno++;
-        cnt += read_now;
-        while(read_now-chunk_read) {
-            chunk_read = k_read(fd, (unsigned int *)((14 << 12) + chunk_read), read_now-chunk_read);
-        }
-    }
+
+	cnt = 0;
+	while(cnt < sizeText) {
+		unsigned long read_now;
+		size_t target_page;
+		size_t chunk_read = 0;
+		read_now = (sizeText - cnt); //fit to one page
+        //printf("EXEC: text read now 0x%04x\n", read_now);
+		if(read_now > 0x1000) read_now = 0x1000;
+		target_page = mmu_get_free_page();
+//        printf("EXEC: text new target page 0x%04x as pageno %d\n", target_page, pageno);
+		mmu_mark_page(target_page, 1);
+		mmu_write_table(0, 14, 0, target_page); //assign target page to pageno 14
+
+		mmu_write_table(p->mmuSelector, pageno, 1, target_page);
+		pageno++;
+		cnt += read_now;
+		while(read_now-chunk_read) {
+			chunk_read = k_read(fd, (unsigned int *)((14 << 12) + chunk_read), read_now-chunk_read);
+		}
+	}
+
 
     //read data
     pageno = 0;
@@ -264,6 +265,8 @@ unsigned int do_execve(struct Process * p, struct execSyscall * s) {
     memcpy((unsigned int *)p->cmd, (unsigned int *)filename, 32);
 
     p->state = PROC_STATE_NEW;
+	
+	//dumpProcessPages(p);
 //    printf("EXEC: done\n");
     return 0;
 }

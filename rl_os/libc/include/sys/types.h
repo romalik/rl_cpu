@@ -34,6 +34,11 @@ typedef uint32_t useconds_t;
 typedef unsigned char uchar;
 typedef unsigned int uint;
 
+
+#define FLT_MAX 0
+#define DBL_MAX 0
+#define LDBL_MAX 0
+
 #define NULL 0
 
 #endif /* ndef TYPES_H */

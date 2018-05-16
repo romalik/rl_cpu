@@ -40,7 +40,18 @@ cp -rfv libc/include rootfs/lib
 make -C app clean 
 make -C app
 #-------------------
-#cp app/lcc_strip/build/rcc rootfs/bin
+
+
+
+####################
+#  build lcc       #
+####################
+#cd app/lcc-strip
+#make clean
+#make rcc
+#cd ../..
+#cp app/lcc-strip/build/rcc rootfs/bin
+#-------------------
 
 
 ####################
@@ -62,7 +73,7 @@ cp rootfs/bin/echo rootfs/bstrap
 #cp rootfs/bin/test rootfs/bstrap
 cp rootfs/bin/ls rootfs/bstrap
 cp rootfs/bin/ps rootfs/bstrap
-cp rootfs/bin/dd rootfs/bstrap
+#cp rootfs/bin/dd rootfs/bstrap
 #cp rootfs/bin/hello rootfs/bstrap
 #cp rootfs/bin/kill rootfs/bstrap
 #cp rootfs/bin/cat rootfs/bstrap

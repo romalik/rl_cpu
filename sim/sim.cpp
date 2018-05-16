@@ -943,6 +943,7 @@ void Cpu::execute() {
 
     } else {
         printf("op not implemented! %d\n", op);
+		dumpRegs();
         //printf("op not implemented! %s\n", oplist[op]);
         intCtl->request(INT_DECODE_LINE);
         commitEnabled = false;
