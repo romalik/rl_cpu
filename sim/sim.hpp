@@ -14,6 +14,9 @@
 #include <functional>
 #include <signal.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <unistd.h>
 #include <termios.h>
 #include <mutex>
@@ -85,12 +88,10 @@ typedef int16_t ws;
 #define IO_ADDR_GLCD_RANGE 4
 #define IO_ADDR_GPIO_RANGE 5
 
-
 #define INT_UART_LINE 4
-
 #define INT_MMU_LINE 5
-
 #define INT_DECODE_LINE 6
+#define INT_UART2_LINE 7
 
 
 bool addrIsIO(size_t a) {
@@ -425,6 +426,9 @@ class LCD : public VMemDevice {
   w dataAddr;
   w cIdx;
 
+
+  std::deque<w> inBuffer;
+
   static const w CMD_SETADDR = 0x01;
   static const w CMD_CLEAR = 0x02;
   static const w CMD_SETCURSOR = 0x03;
@@ -442,8 +446,12 @@ class LCD : public VMemDevice {
   int cursor_visible{1};
   int cursor_blink_state{1};
 
+	int rxIrq;
+	std::ostream * out;
 
   std::mutex vbufLock;
+  std::mutex kbLock;
+
 #if SDL_SUPPORT
   SDL_Window* window{NULL};
   SDL_Surface* screenSurface{NULL};
@@ -543,23 +551,70 @@ class LCD : public VMemDevice {
 
   }
 
+
+
   void runner() {
+  
+	char lower[] = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./";
+	char higher[] = "~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:\"ZXCVBNM<>?";
+	char tf[255];
+	memset(tf,0,255);
+	
+	for(int i = 0; i<strlen(lower); i++) {
+		tf[lower[i]] = higher[i];
+	}
+	
     int tick = 0;
     while(1) {
       updateLCD();
       usleep(10*1000);
       tick++;
       if(tick % 50 == 0) cursor_blink_state = !cursor_blink_state;
-    }
+	  
+	  
+		SDL_Event event;
+		
+		
+		/* Poll for events. SDL_PollEvent() returns 0 when there are no  */
+		/* more events on the event queue, our while loop will exit when */
+		/* that occurs.                                                  */
+		while( SDL_PollEvent( &event ) ){
+		/* We are only worried about SDL_KEYDOWN and SDL_KEYUP events */
+			switch( event.type ){
+			  case SDL_KEYDOWN:
+					//printf( "Key press detected: %d %c\n", event.key.keysym.sym, event.key.keysym.sym);
+				int c = event.key.keysym.sym;
+				
+				if(c == 0xD) c = 0xA; // \r -> \n 
+				
+				if(c < 255) {
+					if(event.key.keysym.mod & KMOD_LSHIFT || event.key.keysym.mod & KMOD_RSHIFT) {
+						if(tf[c]) c = tf[c];
+					}
+					kbLock.lock();
+					inBuffer.push_back(c);
+					intCtl->request(rxIrq);
+					kbLock.unlock();
+					//printf("Pushing %c , calling int %d\n", c, rxIrq);
+
+				}
+				break;
+			}
+		}
+	}
+		
   }
 #endif
   std::thread updateThread;
   bool inited{false};
   int textStart{0};
+  InterruptController * intCtl;
 public:
-  LCD(int _width, int _height) {
+  LCD(int _width, int _height, InterruptController * intCtl_) {
     //    cmdAddr = _cmdAddr;
     //    dataAddr = _dataAddr;
+	intCtl = intCtl_;
+	rxIrq = INT_UART2_LINE;
     cmdAddr = 0x01;
     dataAddr = 0x00;
     width = _width;
@@ -619,7 +674,14 @@ public:
 #endif
   }
   w read(size_t addr, int seg) {
-    return 0;
+	kbLock.lock();
+	w retval = 0;
+	if(!inBuffer.empty() && addr == 1) {
+	  retval = inBuffer.front();
+	  inBuffer.pop_front();
+	}
+	kbLock.unlock();
+	return retval;
   }
 
 };
@@ -703,30 +765,35 @@ public:
 
 class UART : public VMemDevice {
 
-  pthread_t worker_tid;
+  std::vector<pthread_t> worker_tid;
   bool running;
 
-  std::deque<w> outBuffer;
-  std::deque<w> inBuffer;
+  std::vector<std::deque<w>> outBuffer;
+  std::vector<std::deque<w>> inBuffer;
 
 public:
 
-  size_t addr;
-
-  int rxIrq;
-  int txIrq;
+  std::vector<int> rxIrq;
+  std::vector<int> txIrq;
   InterruptController * intCtl;
 
-  std::istream * in;
-  std::ostream * out;
+  std::vector<std::istream *> inv;
+  std::vector<std::ostream *> outv;
 
-  UART(InterruptController * _intCtl, int _rxIrq, int _txIrq, std::istream * _in, std::ostream * _out) {
+  struct ThInfo {
+	  UART * thiz;
+	  int addr;
+  };
+	std::vector<ThInfo> ThInfoVec;
+
+  UART(InterruptController * _intCtl, std::vector<int> _rxIrq, std::vector<int> _txIrq, std::vector<std::istream *> _inv, std::vector<std::ostream *> _outv) {
     //    addr = _addr;
-    addr = 0x00;
 
-    in = _in;
-    out = _out;
+    inv = _inv;
+    outv = _outv;
 
+	inBuffer.resize(inv.size());
+	outBuffer.resize(outv.size());
 
     intCtl = _intCtl;
     rxIrq = _rxIrq;
@@ -742,50 +809,69 @@ public:
     };
     regInCPU(selectFn, transformFn);
 
-    //start thread here
-    pthread_create(&worker_tid, NULL, UART::worker_thread, this);
+	
+	for(int i = 0; i<inv.size(); i++) {
+		ThInfo t;
+		t.thiz = this;
+		t.addr = i;
+		ThInfoVec.push_back(t);
+	}
+	worker_tid.resize(ThInfoVec.size());
+	for(int i = 0; i<inv.size(); i++) {
+		pthread_create(&worker_tid[i], NULL, UART::worker_thread, &ThInfoVec[i]);
+    }
   }
   ~UART() {
     running = false;
 
     //join here
-    pthread_join(worker_tid, NULL);
+	for(int i = 0; i<worker_tid.size(); i++) {
+		pthread_join(worker_tid[i], NULL);
+	
+	}
   }
 
 
   static void * worker_thread(void * p) {
-    UART * thiz = (UART *)(p);
+    UART * thiz = ((ThInfo *)(p))->thiz;
+	int addr = ((ThInfo *)(p))->addr;
     while(thiz->running) {
-      thiz->readLoop();
+      thiz->readLoop(addr);
     }
     return NULL;
   }
 
-  void readLoop() {
+  void readLoop(int addr) {
 
     int c = 0;
-    if(in) {
-      c = (*in).get();
+    if(inv[addr]) {
+      c = (*inv[addr]).get();
     }
     w val = (w)(c);
-    inBuffer.push_back(c);
-    intCtl->request(rxIrq);
+    inBuffer[addr].push_back(c);
+    intCtl->request(rxIrq[addr]);
   }
 
   virtual void write(size_t addr, w val, int seg, int force) {
-    if(out) {
-      (*out) << (char)((char)val & 0xff);
-      (*out).flush();
-    }
+	if(addr < outv.size()) {
+		auto & out = outv[addr];
+		if(out) {
+		  (*out) << (char)((char)val & 0xff);
+		  (*out).flush();
+		}
+	}
   }
   virtual w read(size_t addr, int seg) {
-    if(!inBuffer.empty()) {
-      w r = inBuffer.front();
-      inBuffer.pop_front();
-      return r;
-    } else {
-      return 0;
-    }
+	if(addr < inBuffer.size()) {
+		if(!inBuffer[addr].empty()) {
+		  w r = inBuffer[addr].front();
+		  inBuffer[addr].pop_front();
+		  return r;
+		} else {
+		  return 0;
+		}
+		
+	}
   }
 };
 

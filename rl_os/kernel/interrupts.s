@@ -96,6 +96,26 @@ call0_w uart_interrupt
 reti
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;; UART2 INTERRUPT ;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+.export __uart2_interrupt_vector
+.import uart2_interrupt
+.import uart_interrupt_stack
+.label __uart2_interrupt_vector
+; save interrupted sp
+di
+storesp_w uart_interrupt_stack+1
+
+loadsp_w uart_interrupt_stack
+pushc ;will avoid writing to uart_interrupt_stack+1 preserving prevSP, hopefully
+ec
+call0_w uart2_interrupt
+reti
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
 
 .import in_sys_int

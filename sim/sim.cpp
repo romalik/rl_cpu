@@ -169,16 +169,27 @@ Cpu::Cpu() {
     this->demux = new Demux();
     this->demux->cpu = this;
 
+
+
     intCtl = new InterruptController(8);
 
 
     this->devices.push_back(new RAM(0, 1024*1024)); //ROM
 
 
-    this->devices.push_back(new UART(intCtl,INT_UART_LINE,0, &std::cin, NULL));
+	std::vector<std::istream *> uartSources;
+	std::vector<std::ostream *> uartTargets;
+	std::vector<int> uartInts;
+	uartSources.push_back(&std::cin);
+
+	uartTargets.push_back(NULL);
+	
+	uartInts.push_back(INT_UART_LINE);
+	
+    this->devices.push_back(new UART(intCtl,uartInts,std::vector<int>(1), uartSources, uartTargets));
     this->devices.push_back(new PORT(0, NULL, &std::cout));
 
-    this->devices.push_back(new LCD(320, 240));
+    this->devices.push_back(new LCD(320, 240, intCtl));
     this->devices.push_back(new HDD(std::string("hdd")));
     this->devices.push_back(new Timer(intCtl, 3, 5000ULL));
     this->devices.push_back(new MMUTable());

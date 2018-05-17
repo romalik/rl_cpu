@@ -18,11 +18,13 @@ extern char __code_end;
 extern void __timer_interrupt_vector();
 extern void __system_interrupt_vector();
 extern void __uart_interrupt_vector();
+extern void __uart2_interrupt_vector();
 extern void __mmu_interrupt_vector();
 extern void __decoder_interrupt_vector();
 
 extern void syscall();
 extern void ei();
+#define UART2_INTERRUPT_ADDR_PORT INT7_vec
 #define DECODER_INTERRUPT_ADDR_PORT INT6_vec
 #define MMU_INTERRUPT_ADDR_PORT INT5_vec
 #define UART_INTERRUPT_ADDR_PORT INT4_vec
@@ -36,6 +38,7 @@ void init_interrupts() {
   outb(DECODER_INTERRUPT_ADDR_PORT, (size_t)(__decoder_interrupt_vector));
   outb(MMU_INTERRUPT_ADDR_PORT, (size_t)(__mmu_interrupt_vector));
   outb(UART_INTERRUPT_ADDR_PORT, (size_t)(__uart_interrupt_vector));
+  outb(UART2_INTERRUPT_ADDR_PORT, (size_t)(__uart2_interrupt_vector));
   outb(TIMER_INTERRUPT_ADDR_PORT, (size_t)(__timer_interrupt_vector));
   outb(SYSTEM_INTERRUPT_ADDR_PORT, (size_t)(__system_interrupt_vector));
   asm("ei");
@@ -77,6 +80,7 @@ int kernel_main() {
     k_mkdir("/dev");
 
     k_mknod("/dev/tty", 'c', 0, 0);
+    k_mknod("/dev/tty2", 'c', 0, 1);
     k_mknod("/dev/proc", 'c', 1, 0);
     k_mknod("/dev/schedctl", 'c', 3, 0);
     k_mknod("/dev/null", 'c', 4, 0);

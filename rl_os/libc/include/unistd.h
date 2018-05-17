@@ -64,6 +64,7 @@ int getlogin_r(char * __buf, size_t __size);
 int system(const char *);
 int pause(void);
 pid_t fork(void);
+pid_t vfork(void);
 char *getcwd(char *, int);
 void swab(const void * __from, void * __to, ssize_t __count);
 
@@ -79,6 +80,7 @@ int close(int fd);
 int creat(const char *path, mode_t mode);
 int mknod(const char *path, mode_t mode, dev_t dev);
 int link(const char *path, const char *path2);
+int symlink(const char *path, const char *path2);
 int unlink(const char *path);
 ssize_t read(int fd, void *buf, int len);
 ssize_t write(int fd, const void *buf, int len);
@@ -138,6 +140,8 @@ int listen(int fd, int len);
 int bind(int fd, const struct sockaddr *s, int len);
 int connect(int fd, const struct sockaddr *s, int len);
 int shutdown(int fd, int how);
+int reboot(int a, int b, int c);
+
 
 /* asm syscall hooks with C wrappers */
 int getdirent(int fd, void *buf, int len);

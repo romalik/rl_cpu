@@ -6,6 +6,11 @@
 #include <sys/types.h>
 #include <stdio.h>
 
+int reboot(int a, int b, int c) {
+  puts("reboot stub!");
+  return 1;
+
+}
 int access(const char * filename, int mode) {
   puts("access stub!");
   return 1;
@@ -68,13 +73,24 @@ void exit(int status) {
     _exit(status);
 }
 
+int symlink(const char *target, const char *linkpath) {
 
+  puts("symlink stub!");
+  return 0;
+}
 
 int fchmod(int fd, mode_t mode) {
   puts("fchmod stub!");
   return 0;
 }
 pid_t fork(void) {
+    struct forkSyscall s;
+    s.id = __NR_fork;
+    s.pid = 0;
+    syscall(&s);
+    return s.pid;
+}
+pid_t vfork(void) {
     struct forkSyscall s;
     s.id = __NR_fork;
     s.pid = 0;

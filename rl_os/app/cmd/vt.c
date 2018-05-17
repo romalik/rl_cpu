@@ -91,6 +91,9 @@ void resetFB() {
 }
 
 void processChar(int ch) {
+	
+	//printf("[vt] recieve char %d [%c]\n", ch , ch);
+	
   if(ch != '\n') {
     fb[row*COLS + col] = ch;
     col++;

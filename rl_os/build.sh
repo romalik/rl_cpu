@@ -80,6 +80,7 @@ cp rootfs/bin/ps rootfs/bstrap
 cp rootfs/bin/tar rootfs/bstrap
 cp rootfs/bin/vt rootfs/bstrap
 cp rootfs/bin/reader rootfs/bstrap
+cp levee rootfs/bstrap/
 
 cp rootfs/scripts/install.sh rootfs/bstrap/init.sh
 

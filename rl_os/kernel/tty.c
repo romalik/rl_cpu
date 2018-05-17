@@ -4,14 +4,15 @@
 
 #define UART_BUFFER_SIZE 100
 
-unsigned int uart_buffer_data[UART_BUFFER_SIZE];
-struct circular_buffer uart_buffer;
+unsigned int uart_buffer_data[2][UART_BUFFER_SIZE];
+struct circular_buffer uart_buffer[2];
 unsigned int uart_interrupt_stack[50];
 
-FILE * ttyOpenedAs;
+FILE * ttyOpenedAs[2];
 
 void uart_init() {
-  cb_create_static(UART_BUFFER_SIZE, &uart_buffer, uart_buffer_data);
+  cb_create_static(UART_BUFFER_SIZE, &uart_buffer[0], uart_buffer_data[0]);
+  cb_create_static(UART_BUFFER_SIZE, &uart_buffer[1], uart_buffer_data[1]);
 }
 
 void uart_interrupt() {
@@ -19,15 +20,27 @@ void uart_interrupt() {
   int got = 0;
   while ((c = inb(UART)) != 0) {
 	  got = 1;
-    cb_push(&uart_buffer, c);
+    cb_push(&uart_buffer[0], c);
   }
   
-  if(got) waitqNotify((size_t)(ttyOpenedAs->node.idx));
+  if(got) waitqNotify((size_t)(ttyOpenedAs[0]->node.idx));
+
+}
+
+void uart2_interrupt() {
+  int c;
+  int got = 0;
+  while ((c = inb(UART2)) != 0) {
+	  got = 1;
+    cb_push(&uart_buffer[1], c);
+  }
+  
+  if(got) waitqNotify((size_t)(ttyOpenedAs[1]->node.idx));
 
 }
 
 unsigned int tty_open(unsigned int minor, FILE * fd) {
-	ttyOpenedAs = fd;
+	ttyOpenedAs[minor] = fd;
 	return 0;
 }
 
@@ -39,12 +52,12 @@ unsigned int tty_close(unsigned int minor, FILE * fd) {
 unsigned int tty_read(unsigned int minor, unsigned int * buf, size_t n) {
   int to_read = n;
   int got = 0;
-  while(to_read && uart_buffer.size) {
+  while(to_read && uart_buffer[minor].size) {
     int c;
 //    while ((c = inb(UART)) == 0) {
 //    }
 
-    c = cb_pop(&uart_buffer);
+    c = cb_pop(&uart_buffer[minor]);
     *buf = c;
     buf++;
     to_read--;
