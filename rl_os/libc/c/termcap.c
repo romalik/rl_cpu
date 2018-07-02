@@ -245,7 +245,7 @@ char *tgoto(const char *cm, int destcol, int destline)
  *	terminal that needs padding at the moment...
  */
 
-int tputs(const char *cp, int affcnt, int (*outc)(int ch))
+int tputs(const char *cp, int affcnt, void (*outc)(int ch))
 {
     if (cp == (char *) NULL)
 	return (1);

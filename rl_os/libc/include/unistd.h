@@ -82,6 +82,7 @@ int mknod(const char *path, mode_t mode, dev_t dev);
 int link(const char *path, const char *path2);
 int symlink(const char *path, const char *path2);
 int unlink(const char *path);
+#define remove unlink
 ssize_t read(int fd, void *buf, int len);
 ssize_t write(int fd, const void *buf, int len);
 int chdir(const char *path);
@@ -98,7 +99,7 @@ int execve(const char *path, char * const argv[], char *const envp[]);
 pid_t wait(int *status);
 int setuid(uid_t uid);
 int setgid(gid_t gid);
-int ioctl(int fd, int request,...);
+int ioctl(int fd, int request, ...);
 int brk(void *addr);
 void *sbrk(intptr_t increment);
 int mount(const char *dev, const char *path, int flags);

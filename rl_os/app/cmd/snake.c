@@ -285,8 +285,8 @@ void draw() {
 }
 
 void delay() {
-    volatile unsigned long long it = 0;
-    while(it < 100000000) {
+    int it = 0;
+    while(it < 1000) {
         it++;
     }
 }
@@ -315,7 +315,7 @@ int main() {
     self[13] = 0b00000110;
 */
 
-    generate_food();
+    //generate_food();
     while(1) {
         check_control();
         move();

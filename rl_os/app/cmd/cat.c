@@ -27,7 +27,7 @@
 #define STDIN_FILENO   0  /* fileno(stdin)  */
 #define STDOUT_FILENO  1  /* fileno(stdout) */
 
-#define BUFFER_SIZE    64 //4096
+#define BUFFER_SIZE    100
 
 static char buff[BUFFER_SIZE];
 

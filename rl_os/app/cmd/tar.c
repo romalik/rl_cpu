@@ -44,7 +44,7 @@ enum Type {
     FIFO = '6'
 };
 
-unsigned int minfn(unsigned int a, unsigned int b) {
+unsigned long minfn(unsigned long a, unsigned long b) {
     if (a < b)
         return a;
     return b;
@@ -159,7 +159,7 @@ int x(char *fname, unsigned long l, char b16[SZ_16]) {
     char b[END];
 
 
-	printf("file %s length %d\n", fname, l);
+	printf("file %s size %lu\n", fname, l);
 
     memset(lname, 0, 101);
     memset(chk, 0, 8);
@@ -212,7 +212,7 @@ int x(char *fname, unsigned long l, char b16[SZ_16]) {
     while (l) {
         read(STDIN_FILENO, b16, SZ_16);
         if (fd > 0)
-            write(fd, b16, minfn(l, SZ_16));
+            write(fd, b16, minfn(l>>1, SZ_16));
         if (l <= END)
             break;
         l -= END;

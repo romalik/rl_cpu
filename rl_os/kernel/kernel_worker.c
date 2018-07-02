@@ -93,65 +93,25 @@ void do_kernel_task_fork(int i) {
 void do_kernel_task_clone(int i) {
     struct Process *p;
     struct Process *new_p;
-    printf("Kernel worker: cloning!\nSTUB\n");
-    while(1) {}
-/*
+    //printf("Kernel worker: forking!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
-        size_t parentSyscallStructAddr;
         new_p = do_fork(p, 1);
-        //fill parent info, child's should be zeroed by library!!
 
-        parentSyscallStructAddr = ugetc(p, p->ap, 0, 0xe);
-        uputc(p, parentSyscallStructAddr + offsetof(struct forkSyscall, pid), 0, 0xe, new_p->pid);
-
-        printf("New pid %d, mmuSelector %d\n", new_p->pid, new_p->mmuSelector);
+        if(kernelTaskQueue[i].args) {
+          struct forkSyscall s;
+          ugets(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
+          s.pid = new_p->pid;
+          uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
+        }
+        //printf("Kernel worker: new_p 0x%04X\n", new_p);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-        run_proc(p);
-
-    }
-
-    printf("Cloned!\n");
-  */
-  /*
-    struct Process *p;
-    if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
-        struct cloneSyscall *sStruct;
-        struct Process *newProcess;
-        int currentCodeBank;
-        int currentDataBank;
-        int newPid;
-
-
-
-
-        di();
-        currentCodeBank = p->codeMemBank;
-        currentDataBank = p->dataMemBank;
-        DATA_BANK_SEL = currentDataBank;
-        sStruct = (struct cloneSyscall *)(*((
-            size_t *)(p->ap))); // syscall struct pointer sits
-                                // in first arg in arg space
         p->state = PROC_STATE_RUN;
-        newPid = sched_genPid();
-        newProcess = sched_add_proc(newPid, currentCodeBank, currentDataBank, p);
 
-        // set zero pid retval for child
-        newProcess->parent = p;
-        *(unsigned int *)(sStruct->stack) = (unsigned int)sStruct->args;
-        newProcess->ap = (unsigned int)sStruct->stack;
-        newProcess->bp = newProcess->sp = ((unsigned int)sStruct->stack + 1);
-        newProcess->pc = (unsigned int)(sStruct->fn);
-    newProcess->mpc = 0;
-        newProcess->isThread = 1;
-        newProcess->state = PROC_STATE_NEW;
-        kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-        sStruct->retval = newPid;
-        ei();
-    } else {
-        printf("Kernel Worker: pid %d not found!\n",
-               kernelTaskQueue[i].callerPid);
+        if(p->pid != 0) {
+            //do not launch the process if forked from pid 0 - exec follows
+          run_proc(new_p);
+        }
     }
-*/
 }
 
 

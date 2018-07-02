@@ -81,3 +81,9 @@ unsigned int tty_write(unsigned int minor, const unsigned int * buf, size_t n) {
   }
     return n;
 }
+
+int tty_ioctl(unsigned int minor, unsigned int request, unsigned int * buf, size_t * sz, FILE * file) {
+	printf("[tty_ioctl] minor = %d, request = %d\n", minor, request);
+	*sz = 0;
+	return 0;
+}

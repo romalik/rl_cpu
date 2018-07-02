@@ -9,19 +9,14 @@
 /*
  * Ioctl definitions
  */
-#if 0
-//#ifndef _IOCTL_
-#define _IOCTL_
-#ifdef KERNEL
-#include "ttychars.h"
-#include "ttydev.h"
-#else
+
+#ifndef IOCTL_H__
+#define IOCTL_H__
 #include <sys/ttychars.h>
 #include <sys/ttydev.h>
 
 int     ioctl (int d, int request, ...);
 
-#endif
 
 struct tchars {
     char    t_intrc;        /* interrupt */
@@ -104,6 +99,8 @@ struct ttysize {
 #define _ION(x,y,n)     (IOC_INOUT|      (((n)&IOCPARM_MASK)<<16)|((x)<<8)|y)
 #endif
 
+
+#if 1
 /*
  * tty ioctl commands
  */
@@ -128,13 +125,13 @@ struct ttysize {
 #define TIOCSETN        _IOW('t', 10,struct sgttyb)/* as above, but no flushtty */
 #define TIOCEXCL        _IO ('t', 13)       /* set exclusive use of tty */
 #define TIOCNXCL        _IO ('t', 14)       /* reset exclusive use of tty */
-#define TIOCFLUSH       _IOW('t', 16, int)  /* flush buffers */
+//#define TIOCFLUSH       _IOW('t', 16, int)  /* flush buffers */
 #define TIOCSETC        _IOW('t', 17,struct tchars)/* set special characters */
 #define TIOCGETC        _IOR('t', 18,struct tchars)/* get special characters */
 #define     TANDEM      0x00000001          /* send stopc on out q full */
 #define     CBREAK      0x00000002          /* half-cooked mode */
                             /* 0x4             (old LCASE) */
-#define     ECHO        0x00000008          /* echo input */
+//#define     ECHO        0x00000008          /* echo input */
 #define     CRMOD       0x00000010          /* map \r to \r\n on output */
 #define     RAW         0x00000020          /* no i/o processing */
 #define     ODDP        0x00000040          /* get/send odd parity */
@@ -154,7 +151,7 @@ struct ttysize {
                      /* 0x00080000             (old TILDE) */
 #define     MDMBUF      0x00100000          /* start/stop output on carrier intr */
 #define     LITOUT      0x00200000          /* literal output */
-#define     TOSTOP      0x00400000          /* SIGSTOP on background output */
+//#define     TOSTOP      0x00400000          /* SIGSTOP on background output */
 #define     FLUSHO      0x00800000          /* flush output to terminal */
 #define     NOHANG      0x01000000          /* no SIGHUP on carrier drop */
 #define     RTSCTS      0x02000000          /* use RTS/CTS flow control */
@@ -163,7 +160,7 @@ struct ttysize {
 #define     CTLECH      0x10000000          /* echo control chars as ^X */
 #define     PENDIN      0x20000000          /* tp->t_rawq needs reread */
 #define     DECCTQ      0x40000000          /* only ^Q starts after ^S */
-#define     NOFLSH      0x80000000          /* no output flush on signal */
+//#define     NOFLSH      0x80000000          /* no output flush on signal */
 /* locals, from 127 down */
 #define TIOCLBIS        _IOW('t', 127, int) /* bis local mode bits */
 #define TIOCLBIC        _IOW('t', 126, int) /* bic local mode bits */
@@ -256,5 +253,5 @@ struct ttysize {
 #define SIOCSARP        _IOW ('i',30, struct arpreq)    /* set arp entry */
 #define SIOCGARP        _IOWR('i',31, struct arpreq)    /* get arp entry */
 #define SIOCDARP        _IOW ('i',32, struct arpreq)    /* delete arp entry */
-
+#endif
 #endif

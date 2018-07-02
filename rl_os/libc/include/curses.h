@@ -1,17 +1,26 @@
 /* curses.h - defines macros and prototypes for curses */
 
-#ifndef CURSES_H
+#ifndef _CURSES_H
+#define _CURSES_H
 
 #include <termios.h>
 #include <stdarg.h>
 #include <stdio.h>
 
-typedef int bool;
+//typedef int bool;
 
+#ifndef TRUE
 #define TRUE 1
+#endif
+#ifndef FALSE
 #define FALSE 0
-#define ERR 1		/* general error flag */
+#endif
+#ifndef ERR
+#define ERR (-1)	/* general error flag */
+#endif
+#ifndef OK
 #define OK 0		/* general OK flag */
+#endif
 
 /* Macros. */
 #define box(win,vc,hc) wbox(win,0,0,0,0,vc,hc)
@@ -51,48 +60,46 @@ typedef int bool;
 #define mvdelch(y,x) (wmove(stdscr,y,x)==ERR?ERR:wdelch(stdscr))
 #define mvwdelch(win,y,x) (wmove(win,y,x)==ERR?ERR:wdelch(win))
 #define standout() wstandout(stdscr)
-#define wstandout(win) (win)->_attrs |= A_STANDOUT
+#define wstandout(win) ((win)->_attrs |= A_STANDOUT)
 #define standend() wstandend(stdscr)
-#define wstandend(win) (win)->_attrs &= ~A_STANDOUT
+#define wstandend(win) ((win)->_attrs &= ~A_STANDOUT)
 #define attrset(attrs) wattrset(stdscr, attrs)
-#define wattrset(win, attrs) (win)->_attrs = (attrs)
+#define wattrset(win, attrs) ((win)->_attrs = (attrs))
 #define attron(attrs) wattron(stdscr, attrs)
-#define wattron(win, attrs) (win)->_attrs |= (attrs)
+#define wattron(win, attrs) ((win)->_attrs |= (attrs))
 #define attroff(attrs) wattroff(stdscr,attrs)
-#define wattroff(win, attrs) (win)->_attrs &= ~(attrs)
-#define resetty() stty(1, &_orig_tty)
+#define wattroff(win, attrs) ((win)->_attrs &= ~(attrs))
+#define resetty() tcsetattr(1, TCSANOW, &_orig_tty)
 #define getyx(win,y,x) (y = (win)->_cury, x = (win)->_curx)
-#define getmaxyx(win,y,x) (y = (win)->_maxy, x = (win)->_maxx)
-#define getbegyx(win,y,x) (y = (win)->_begy, x = (win)->_begx)
 
 /* Video attribute definitions. */
-#define A_BLINK        0x0100
-#define A_BLANK        0
-#define A_BOLD	       0x0200
-#define A_DIM	       0
-#define A_PROTECT      0
-#define A_REVERSE      0x0400
-#define A_STANDOUT     0x0800
-#define A_UNDERLINE    0x1000
-#define A_ALTCHARSET   0x2000
+#define	A_BLINK        0x0100
+#define	A_BLANK        0
+#define	A_BOLD         0x0200
+#define	A_DIM          0
+#define	A_PROTECT      0
+#define	A_REVERSE      0x0400
+#define	A_STANDOUT     0x0800
+#define	A_UNDERLINE    0x1000
+#define	A_ALTCHARSET   0x2000
 
 /* Type declarations. */
 typedef struct {
   int	   _cury;			/* current pseudo-cursor */
   int	   _curx;
-  int	   _maxy;			/* max coordinates */
-  int	   _maxx;
-  int	   _begy;			/* origin on screen */
-  int	   _begx;
+  int      _maxy;			/* max coordinates */
+  int      _maxx;
+  int      _begy;			/* origin on screen */
+  int      _begx;
   int	   _flags;			/* window properties */
   int	   _attrs;			/* attributes of written characters */
-  int	   _tabsize;			/* tab character size */
+  int      _tabsize;			/* tab character size */
   bool	   _clear;			/* causes clear at next refresh */
   bool	   _leave;			/* leaves cursor as it happens */
   bool	   _scroll;			/* allows window scrolling */
   bool	   _nodelay;			/* input character wait flag */
   bool	   _keypad;			/* flags keypad key mode active */
-  int	 **_line;			/* pointer to line pointer array */
+  int    **_line;			/* pointer to line pointer array */
   int	  *_minchng;			/* First changed character in line */
   int	  *_maxchng;			/* Last changed character in line */
   int	   _regtop;			/* Top/bottom of scrolling region */
@@ -132,89 +139,87 @@ extern unsigned int ACS_UARROW;
 extern unsigned int ACS_BOARD;
 extern unsigned int ACS_LANTERN;
 extern unsigned int ACS_BLOCK;
-
-extern char *unctrl(char _c);
-extern int baudrate(void);
-extern void beep(void);
-extern void cbreak(void);
-extern void clearok(WINDOW *_win, bool _flag);
-extern void clrscr(void);
-extern void curs_set(int _visibility);
-extern void delwin(WINDOW *_win);
-extern void doupdate(void);
-extern void echo(void);
-extern int endwin(void);
-extern int erasechar(void);
-extern void fatal(char *_s);
-extern int fixterm(void);
-extern void flash(void);
-extern void gettmode(void);
-extern void idlok(WINDOW *_win, bool _flag);
-extern WINDOW *initscr(void);
-extern void keypad(WINDOW *_win, bool _flag);
-extern int killchar(void);
-extern void leaveok(WINDOW *_win, bool _flag);
-extern char *longname(void);
-extern void meta(WINDOW *_win, bool _flag);
-extern int mvcur(int _oldy, int _oldx, int _newy, int _newx);
-extern int mvinch(int _y, int _x);
-extern int mvprintw(int _y, int _x, const char *_fmt, ...);
-extern int mvscanw(int _y, int _x, const char *_fmt, ...);
-extern int mvwin(WINDOW *_win, int _begy, int _begx);
-extern int mvwinch(WINDOW *_win, int _y, int _x);
-extern int mvwprintw(WINDOW *_win, int _y, int _x, const char *_fmt, ...);
-extern int mvwscanw(WINDOW *_win, int _y, int _x, const char *_fmt,
-                                                                        ...);
-extern WINDOW *newwin(int _num_lines, int _num_cols, int _y, int _x);
-extern void nl(void);
-extern void nocbreak(void);
-extern void nodelay(WINDOW *_win, bool _flag);
-extern void noecho(void);
-extern void nonl(void);
-extern void noraw(void);
-extern int outc(int _c);
-extern void overlay(WINDOW *_win1, WINDOW *_win2);
-extern void overwrite(WINDOW *_win1, WINDOW *_win2);
-extern void poscur(int _r, int _c);
-extern int printw(const char *_fmt, ...);
-extern void raw(void);
-extern int resetterm(void);
-extern int saveoldterm(void);
-extern int saveterm(void);
-extern int savetty(void);
-extern int scanw(const char *_fmt, ...);
-extern void scroll(WINDOW *_win);
-extern void scrollok(WINDOW *_win, bool _flag);
-extern int setscrreg(int _top, int _bottom);
-extern int setterm(char *_type);
-extern int setupterm(void);
-extern WINDOW *subwin(WINDOW *_orig, int _nlines, int _ncols, int _y,
+char *unctrl(int _c) ;
+int baudrate(void);
+void beep(void);
+void cbreak(void);
+void clearok(WINDOW *_win, bool _flag) ;
+void clrscr(void);
+void curs_set(int _visibility) ;
+void delwin(WINDOW *_win) ;
+void doupdate(void);
+void echo(void);
+int endwin(void);
+int erasechar(void);
+void fatal(char *_s) ;
+int fixterm(void);
+void flash(void);
+void gettmode(void);
+void idlok(WINDOW *_win, bool _flag) ;
+WINDOW *initscr(void);
+void keypad(WINDOW *_win, bool _flag) ;
+int killchar(void);
+void leaveok(WINDOW *_win, bool _flag) ;
+char *longname(void);
+void meta(WINDOW *_win, bool _flag) ;
+int mvcur(int _oldy, int _oldx, int _newy, int _newx) ;
+int mvinch(int _y, int _x) ;
+int mvprintw(int _y, int _x, const char *_fmt, ...) ;
+int mvscanw(int _y, int _x, const char *_fmt, ...) ;
+int mvwin(WINDOW *_win, int _begy, int _begx) ;
+int mvwinch(WINDOW *_win, int _y, int _x) ;
+int mvwprintw(WINDOW *_win, int _y, int _x, const char *_fmt,
+									...) ;
+int mvwscanw(WINDOW *_win, int _y, int _x, const char *_fmt,
+									...) ;
+WINDOW *newwin(int _num_lines, int _num_cols, int _y, int _x);
+void nl(void);
+void nocbreak(void);
+void nodelay(WINDOW *_win, bool _flag) ;
+void noecho(void);
+void nonl(void);
+void noraw(void);
+void outc(int _c) ;
+void  overlay(WINDOW *_win1, WINDOW *_win2) ;
+void  overwrite(WINDOW *_win1, WINDOW *_win2) ;
+void poscur(int _r, int _c) ;
+int printw(const char *_fmt, ...) ;
+void raw(void);
+int resetterm(void);
+int saveoldterm(void);
+int saveterm(void);
+int savetty(void);
+int scanw(const char *_fmt, ...) ;
+void scroll(WINDOW *_win) ;
+void scrollok(WINDOW *_win, bool _flag) ;
+int setscrreg(int _top, int _bottom) ;
+int setterm(char *_type) ;
+int setupterm(void);
+WINDOW *subwin(WINDOW *_orig, int _nlines, int _ncols, int _y,
 					int _x);
-extern int tabsize(int _ts);
-extern void touchwin(WINDOW *_win);
-extern int waddch(WINDOW *_win, int _c);
-extern int waddstr(WINDOW *_win, char *_str);
-extern int wbox(WINDOW *_win, int _ymin, int _xmin, int _ymax,
-				int _xmax, unsigned int _v, unsigned int _h);
-extern void wclear(WINDOW *_win);
-extern int wclrtobot(WINDOW *_win);
-extern int wclrtoeol(WINDOW *_win);
-extern int wdelch(WINDOW *_win);
-extern int wdeleteln(WINDOW *_win);
-extern void werase(WINDOW *_win);
-extern int wgetch(WINDOW *_win);
-extern int wgetstr(WINDOW *_win, char *_str);
-extern int winch(WINDOW *_win);
-extern int winsch(WINDOW *_win, char _c);
-extern int winsertln(WINDOW *_win);
-extern int wmove(WINDOW *_win, int _y, int _x);
-extern void wnoutrefresh(WINDOW *_win);
-extern int wprintw(WINDOW *_win, const char *_fmt, ...);
-extern void wrefresh(WINDOW *_win);
-extern int wscanw(WINDOW *_win, const char *_fmt, ...);
-extern int wsetscrreg(WINDOW *_win, int _top, int _bottom);
-extern int wtabsize(WINDOW *_win, int _ts);
+int tabsize(int _ts) ;
+void touchwin(WINDOW *_win) ;
+int waddch(WINDOW *_win, int _c) ;
+int waddstr(WINDOW *_win, char *_str) ;
+int wbox(WINDOW *_win, int _ymin, int _xmin, int _ymax,
+				int _xmax, unsigned int _v, unsigned int _h) ;
+void wclear(WINDOW *_win) ;
+int wclrtobot(WINDOW *_win) ;
+int wclrtoeol(WINDOW *_win) ;
+int wdelch(WINDOW *_win) ;
+int wdeleteln(WINDOW *_win) ;
+void werase(WINDOW *_win) ;
+int wgetch(WINDOW *_win) ;
+int wgetstr(WINDOW *_win, char *_str) ;
+int winch(WINDOW *_win) ;
+int winsch(WINDOW *_win, int _c) ;
+int winsertln(WINDOW *_win) ;
+int wmove(WINDOW *_win, int _y, int _x) ;
+void wnoutrefresh(WINDOW *_win) ;
+int wprintw(WINDOW *_win, const char *_fmt, ...);
+void wrefresh(WINDOW *_win) ;
+int wscanw(WINDOW *_win, const char *_fmt, ...);
+int wsetscrreg(WINDOW *_win, int _top, int _bottom) ;
+int wtabsize(WINDOW *_win, int _ts) ;
 
-#define CURSES_H
-
-#endif
+#endif /* _CURSES_H */

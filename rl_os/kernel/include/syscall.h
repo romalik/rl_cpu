@@ -72,8 +72,31 @@
 #define __NR_clone 67
 #define __NR_mkfifo 68
 #define __NR_yield 69
+#define __NR_regrpc 70
 
-#define __NR_N_SYSCALL 70
+#define __NR_N_SYSCALL 71
+
+
+
+
+struct regrpcSyscall {
+    unsigned int id;
+
+	unsigned int addr;
+	unsigned int stack;
+	unsigned int major;
+	unsigned int type;
+};
+
+
+
+struct ioctlSyscall {
+    unsigned int id;
+	int fd;
+    int req;
+	int retval;
+    void * p;
+};
 
 struct creatSyscall {
     unsigned int id;

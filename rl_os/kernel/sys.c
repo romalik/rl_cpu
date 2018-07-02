@@ -78,7 +78,7 @@ int (*sys_table[])(void * scallStructPtr) = {
     /* __NR_acct 51  */ sys_none,
     /* __NR_phys 52  */ sys_none,
     /* __NR_lock 53  */ sys_none,
-    /* __NR_ioctl 54 */ sys_none,
+    /* __NR_ioctl 54 */ sys_ioctl,
     /* __NR_fcntl 55 */ sys_none,
     /* __NR_mpx 56   */ sys_none,
     /* __NR_setpgid 57*/ sys_none,
@@ -93,7 +93,8 @@ int (*sys_table[])(void * scallStructPtr) = {
     /* __NR_setsid 66*/ sys_none,
     /* __NR_clone 67 */ sys_clone,
     /* __NR_mkfifo 68*/ sys_mkfifo,
-    /* __NR_yield 68*/ sys_yield
+    /* __NR_yield 69*/ sys_yield,
+    /* __NR_regrpc 70*/ sys_regrpc
 
 
     };

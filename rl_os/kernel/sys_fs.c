@@ -117,6 +117,27 @@ int sys_stat(void * scallStructPtr) {
 
   return 0;
 }
+
+int sys_ioctl(void * scallStructPtr) {
+  unsigned int fn_buf[1024];
+  struct stat st;
+  struct ioctlSyscall s;
+  int retval;
+  size_t sz;
+  ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct ioctlSyscall), 0, (unsigned int *)&s);
+  ugets(cProc, (size_t)s.p, 0, 14, 1024, 0, fn_buf);
+
+  retval = k_ioctl(cProc->openFiles[s.fd], s.req, fn_buf, &sz);
+
+  s.retval = retval;
+  if(sz) {
+	uputs(cProc, (size_t)s.p, 0, 14, sz, 0, (unsigned int *)&st);
+  }
+  uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct ioctlSyscall), 0, (unsigned int *)&s);
+
+  return 0;
+}
+
 int sys_fstat(void * scallStructPtr) {
   struct fstatSyscall s;
   struct stat st;

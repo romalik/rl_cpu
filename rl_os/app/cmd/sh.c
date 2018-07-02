@@ -15,7 +15,7 @@ int bgChildren = 0;
 extern char ** environ;
 
 int cls(int argc, char **argv) {
-  printf("%c[1J%c[H", 0x1b, 0x1b);
+  printf("%c[2J%c[H", 0x1b, 0x1b);
   return 0;
 }
 
@@ -74,6 +74,7 @@ int export_sh(int argc, char **argv) {
   printf("bad format\n");
   return 0;
 }
+
 
 int help(int argc, char **argv);
 
@@ -216,6 +217,7 @@ int main(int argc, char ** argv) {
   int i = 0;
   int script_mode = 0;
   int script_fd = 0;
+
 
   printf("Starting shell\n");
 

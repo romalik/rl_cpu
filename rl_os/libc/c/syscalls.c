@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <fcntl.h>
+
+int getdtablesize() {
+return 10;
+}
 
 int reboot(int a, int b, int c) {
   puts("reboot stub!");
@@ -119,8 +124,14 @@ uid_t getuid() {
 
 
 int ioctl(int d, int request, ...) {
-  puts("ioctl stub!");
-  return 0;
+    struct ioctlSyscall s;
+    s.id = __NR_ioctl;
+	s.fd = d;
+    s.req = request;
+    s.p = (void *)*(size_t *)(&request + 1);
+
+    syscall(&s);
+    return s.retval;
 }
 
 int kill(pid_t pid, int sig) {
@@ -199,8 +210,25 @@ int read(int fd, void *buf, int count) {
     return s.size;
 }
 
+#define chunk 1024
 int rename(const char *old, const char * new) {
-  puts("rename stub!");
+  int fdOld;
+  int fdNew;
+  unsigned int buf[chunk];
+  size_t n;
+  unlink(new);
+  fdOld = open(old, O_RDONLY);
+  fdNew = open(new, O_WRONLY|O_CREAT);
+  
+  while((n = read(fdOld, buf, chunk)) > 0) {
+    write(fdNew, buf, n);
+  }
+
+  close(fdOld);
+  close(fdNew);
+  unlink(old);
+  puts("rename hack!");
+  
   /*
   struct openSyscall s;
     s.id = __NR_open;
@@ -211,12 +239,12 @@ int rename(const char *old, const char * new) {
     */
   return 0;
 }
-
+/*
 sighandler_t signal(int signum, sighandler_t sighandler) {
   puts("signal stub!");
   return (sighandler_t)0;
 }
-
+*/
 /* sleep.c
  */
 /* Divide by ten in shifts. Would be nice if the compiler did that for us 8)

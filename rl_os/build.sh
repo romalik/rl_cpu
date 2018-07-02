@@ -24,12 +24,12 @@ make -C kernel
 ####################
 #  prepare libc    #
 ####################
-#make -C lib clean
-#make -C lib
-#cp -rfv lib/include rootfs/lib
 make -C libc clean
 make -C libc
 cp -rfv libc/include rootfs/lib
+#make -C libc_bsd clean
+#make -C libc_bsd
+#cp -rfv libc/include rootfs/lib
 #-------------------
 
 
@@ -37,8 +37,10 @@ cp -rfv libc/include rootfs/lib
 ####################
 #  prepare apps    #
 ####################
-make -C app clean 
-make -C app
+cd app
+./build.sh
+cd ..
+
 #-------------------
 
 
@@ -70,7 +72,8 @@ cp rootfs/bin/sh rootfs/bstrap
 cp rootfs/bin/cat rootfs/bstrap
 cp rootfs/bin/wc rootfs/bstrap
 cp rootfs/bin/echo rootfs/bstrap
-#cp rootfs/bin/test rootfs/bstrap
+cp rootfs/bin/nctest rootfs/bstrap
+cp rootfs/bin/test rootfs/bstrap
 cp rootfs/bin/ls rootfs/bstrap
 cp rootfs/bin/ps rootfs/bstrap
 #cp rootfs/bin/dd rootfs/bstrap
@@ -78,11 +81,11 @@ cp rootfs/bin/ps rootfs/bstrap
 #cp rootfs/bin/kill rootfs/bstrap
 #cp rootfs/bin/cat rootfs/bstrap
 cp rootfs/bin/tar rootfs/bstrap
+cp rootfs/bin/mt_test rootfs/bstrap
 cp rootfs/bin/vt rootfs/bstrap
-cp rootfs/bin/reader rootfs/bstrap
-cp levee rootfs/bstrap/
 
-cp rootfs/scripts/install.sh rootfs/bstrap/init.sh
+cp rootfs/scripts/install.sh rootfs/bstrap/
+cp rootfs/scripts/st.sh rootfs/bstrap/
 
 #-------------------
 

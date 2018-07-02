@@ -89,6 +89,14 @@ struct killSyscall {
     int sig;
 };
 
+struct ioctlSyscall {
+    unsigned int id;
+	int fd;
+    int req;
+	int retval;
+    void * p;
+};
+
 struct yieldSyscall {
     unsigned int id;
 };

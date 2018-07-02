@@ -14,7 +14,11 @@ typedef int ssize_t;
 typedef int16_t intptr_t;
 typedef uint16_t uintptr_t;
 
+typedef int bool;
+typedef int wchar_t;
 
+#define true 1
+#define false 0
 
 typedef unsigned long fpos_t;
 typedef unsigned long off_t;

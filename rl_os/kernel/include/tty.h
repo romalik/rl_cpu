@@ -10,5 +10,6 @@ unsigned int tty_close(unsigned int minor, FILE * fd);
 
 unsigned int tty_read(unsigned int minor, unsigned int * buf, size_t n);
 unsigned int tty_write(unsigned int minor, const unsigned int * buf, size_t n);
+int tty_ioctl(unsigned int minor, unsigned int request, unsigned int * buf, size_t * sz, FILE * file);
 
 #endif

@@ -12,6 +12,17 @@
 #include <sched.h>
 extern unsigned int system_interrupt_stack[];
 
+
+int sys_regrpc(void * scallStructPtr) {
+    struct regrpcSyscall s;
+    ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct regrpcSyscall), 0, (unsigned int *)&s);
+
+	k_regExternalDeviceCallback(cProc, s.major, s.addr, s.stack, s.type);
+
+    uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct regrpcSyscall), 0, (unsigned int *)&s);
+    return 0;
+}
+
 int sys_kill(void * scallStructPtr) {
     struct killSyscall s;
     ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct killSyscall), 0, (unsigned int *)&s);

@@ -144,8 +144,24 @@ struct devOpTable {
     unsigned int (*read)(unsigned int minor, unsigned int * buf, size_t n);
     unsigned int (*open)(unsigned int minor, FILE * file);
     unsigned int (*close)(unsigned int minor, FILE * file);
+    unsigned int (*ioctl)(unsigned int minor, unsigned int request, unsigned int * buf, size_t * sz, FILE * file);
 };
 
+struct RPCParams {
+	size_t fnAddr;
+	size_t stackAddr;
+	struct Process * driver;
+};
+
+struct extDevOpTable {
+	struct Process * driver;
+	pid_t driverPid;
+	struct RPCParams callbacks[RPC_CALLBACK_TYPES_NR];
+};
+
+void k_regExternalDeviceCallback(struct Process * p, unsigned int major, unsigned int addr, unsigned int stack, unsigned int type);
+
+unsigned int extDevCallback(struct RPCParams * params, unsigned int minor, const unsigned int * buf, size_t n, FILE * f, unsigned int req);
 
 
 /*
@@ -249,9 +265,11 @@ int k_mkdir(const void *__path);
 int k_mkfifo(const void *__path);
 int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor);
 
-int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc);
+int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc, void *ioctlFunc);
 
 int k_unlink(const char * name);
+
+int k_ioctl(FILE * fd, int request, unsigned int * buf, size_t * sz);
 
 size_t try_k_read(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_t scallStruct);
 size_t try_k_write(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_t scallStruct);

@@ -68,7 +68,7 @@ extern unsigned int system_interrupt_stack[2048];
 ///* __NR_acct 51  */ int sys_none,
 ///* __NR_phys 52  */ int sys_none,
 ///* __NR_lock 53  */ int sys_none,
-///* __NR_ioctl 54 */ int sys_none,
+/* __NR_ioctl 54 */ int sys_ioctl(void * scallStructPtr);
 ///* __NR_fcntl 55 */ int sys_none,
 ///* __NR_mpx 56   */ int sys_none,
 ///* __NR_setpgid 57*/ int sys_none,
@@ -84,6 +84,7 @@ extern unsigned int system_interrupt_stack[2048];
 /* __NR_clone 67 */ int sys_clone(void * scallStructPtr);
 /* __NR_mkfifo 68*/ int sys_mkfifo(void * scallStructPtr);
 /* __NR_yield 69   */ int sys_yield(void * scallStructPtr);
+/* __NR_regrpc 70 */ int sys_regrpc(void * scallStructPtr);
 
 
 

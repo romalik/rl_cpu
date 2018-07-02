@@ -19,4 +19,12 @@ extern void panic(char * s);
 
 #define NULL 0
 
+#define RPC_CALLBACK_ON_READ 0
+#define RPC_CALLBACK_ON_WRITE 1
+#define RPC_CALLBACK_ON_OPEN 2
+#define RPC_CALLBACK_ON_CLOSE 3
+#define RPC_CALLBACK_ON_IOCTL 4
+#define RPC_CALLBACK_TYPES_NR 5
+
+
 #endif /* ndef TYPES_H */

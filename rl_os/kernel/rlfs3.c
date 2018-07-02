@@ -12,6 +12,7 @@
 FILE openFiles[MAX_FILES];
 struct fs_node fs_root;
 struct devOpTable devList[MAX_DEVS];
+struct extDevOpTable extDevList[MAX_DEVS];
 
 int blockRequest = 0;
 
@@ -1042,12 +1043,52 @@ int k_mkfifo(const void *__path) {
   return k_mknod(path, 'c', 2, current_pipe_id);
 }
 
-int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc) {
+int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc, void *ioctlFunc) {
     if (major < MAX_DEVS) {
         devList[major].write = writeFunc;
         devList[major].read = readFunc;
         devList[major].open = openFunc;
         devList[major].close = closeFunc;
+        devList[major].ioctl = ioctlFunc;
     }
     return 0;
+}
+
+void k_regExternalDeviceCallback(struct Process * p, unsigned int major, unsigned int addr, unsigned int stack, unsigned int type) {
+	struct RPCParams params;
+	unsigned int localMajor = major & 0x7f;
+	extDevList[localMajor].driver = p;
+	extDevList[localMajor].driverPid = p->pid;
+	
+	params.driver = p;
+	params.fnAddr = addr;
+	params.stackAddr = stack;
+	
+	if(type >= RPC_CALLBACK_TYPES_NR) {
+		panic("Try to reg RPC with wrong type!\n");
+	}
+	
+	extDevList[localMajor].callbacks[type] = params;
+	
+}
+
+
+int k_ioctl(FILE * fd, int request, unsigned int * buf, size_t * sz) {
+    if (S_ISBLK(fd->flags)) {
+        return 0;
+    } else if (S_ISCHR(fd->flags)) {
+        unsigned int major;
+        unsigned int minor;
+        struct devOpTable *ops;
+        major = (fd->device >> 8);
+        minor = (fd->device & 0xff);
+        ops = &devList[major];
+        if(ops->ioctl) {
+			return ops->ioctl(minor, request, buf, sz, fd);
+		}
+    } else {
+		
+    }
+	*sz = 0;
+	return -1;
 }
