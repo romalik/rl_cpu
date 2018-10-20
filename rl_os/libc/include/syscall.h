@@ -156,6 +156,21 @@ struct mkdirSyscall {
     int res;
 };
 
+struct mountSyscall {
+    unsigned int id;
+    const char *dev_path;
+    const char *mount_point_path;
+    unsigned int flags;
+    int res;
+};
+struct umountSyscall {
+    unsigned int id;
+    const char *mount_point_path;
+    int res;
+};
+
+
+
 struct mkfifoSyscall {
     unsigned int id;
     const char *path;

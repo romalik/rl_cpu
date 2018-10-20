@@ -387,7 +387,7 @@ int load_main(int argc, char **argv) {
 
 int rlfs_mkfs_main(int argc, char **argv) {
     printf("Making filesystem\n");
-    fs_mkfs();
+    fs_mkfs(0);
     printf("done\n");
 }
 

@@ -35,8 +35,8 @@ extern unsigned int system_interrupt_stack[2048];
 /* __NR_stat 18  */ int sys_stat(void * scallStructPtr);
 ///* __NR_lseek 19 */ int sys_none,
 ///* __NR_getpid 20*/ int sys_none,
-///* __NR_mount 21 */ int sys_none,
-///* __NR_umount 22*/ int sys_none,
+/* __NR_mount 21 */ int sys_mount(void * scallStructPtr);
+/* __NR_umount 22*/ int sys_umount(void * scallStructPtr);
 ///* __NR_setuid 23*/ int sys_none,
 ///* __NR_getuid 24*/ int sys_none,
 ///* __NR_stime 25 */ int sys_none,

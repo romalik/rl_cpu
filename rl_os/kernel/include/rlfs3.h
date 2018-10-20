@@ -13,6 +13,8 @@
 //#include <sched.h>
 #define MAX_FILES 10
 #define MAX_DEVS 10
+#define MAX_MOUNT_POINTS 5
+
 
 #define O_RDONLY        0
 #define O_WRONLY        1
@@ -98,7 +100,7 @@
  *  dev/pipe id
  */
 
-typedef struct fs_node { blk_t idx; } fs_node_t;
+typedef struct fs_node { unsigned int dev; blk_t idx; } fs_node_t;
 
 
 typedef struct dirent {
@@ -132,6 +134,15 @@ struct extDevOpTable {
 	pid_t driverPid;
 	size_t queue_user;
 };
+
+
+struct mtab_entry {
+  fs_node_t device_node;
+  fs_node_t mount_point;
+  fs_node_t fs_root;
+};
+
+extern struct set mtab;
 
 void k_regExternalDeviceCallback(struct Process * p, unsigned int major, unsigned int queue_user, unsigned int type);
 
@@ -204,7 +215,7 @@ extern struct set openFiles;
 extern struct fs_node fs_root;
 extern struct devOpTable devList[MAX_DEVS];
 
-void fs_mkfs();
+void fs_mkfs(unsigned int device);
 
 int fs_create(fs_node_t *where, const unsigned int *name, unsigned int flags,
               fs_node_t *res);
@@ -249,5 +260,10 @@ int k_ioctl(FILE * fd, int request, unsigned int * buf, size_t * sz);
 
 size_t try_k_read(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_t scallStruct);
 size_t try_k_write(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_t scallStruct);
+
+int k_mount(const char * device_file, const char * mount_point);
+int k_umount(const char * device_file);
+
+void k_dump_mtab();
 
 #endif

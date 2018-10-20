@@ -10,8 +10,6 @@
 #define CMD_ATA_RESET 3
 
 void ataInit(unsigned int device);
-void ataReadDataBuffer(unsigned int *Buffer, unsigned int numBytes);
-void ataWriteDataBuffer(unsigned int *Buffer, unsigned int numBytes);
 
 unsigned int ataReadSectorsLBA(unsigned int device, unsigned int lba, unsigned int *Buffer);
 unsigned int ataWriteSectorsLBA(unsigned int device, unsigned int lba, unsigned int *Buffer);

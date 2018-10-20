@@ -87,6 +87,7 @@ typedef int16_t ws;
 #define IO_ADDR_ATA_RANGE 3
 #define IO_ADDR_GLCD_RANGE 4
 #define IO_ADDR_GPIO_RANGE 5
+#define IO_ADDR_ATA_2_RANGE 6
 
 #define INT_UART_LINE 4
 #define INT_MMU_LINE 5
@@ -301,6 +302,7 @@ class HDD : public VMemDevice {
   int size;
   w cmdAddr;
   w dataAddr;
+  int channel;
   int cSector;
   int cState;
   int cPos;
@@ -312,7 +314,8 @@ class HDD : public VMemDevice {
   static const int CMD_WRITE = 2;
   static const int CMD_RESET = 3;
 public:
-  HDD(std::string path) {
+  HDD(std::string path, int _channel) {
+    channel = _channel;
     image_path = path;
     std::ifstream is(path.c_str(), std::ifstream::binary);
     is.seekg (0, is.end);
@@ -331,7 +334,11 @@ public:
     printf("HDD: create cmd:0x%04x data:0x%04x\n", cmdAddr, dataAddr);
 
     auto selectFn = [this](size_t a) -> bool {
-      return getIoRange(a) == IO_ADDR_ATA_RANGE;
+      if(channel == 0) {
+	return getIoRange(a) == IO_ADDR_ATA_RANGE;
+      } else {
+        return getIoRange(a) == IO_ADDR_ATA_2_RANGE;
+      }
     };
 
     auto transformFn = [this](size_t a) -> size_t {

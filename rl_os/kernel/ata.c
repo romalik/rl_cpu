@@ -4,6 +4,18 @@
 
 static struct iblkdriver ataDriver;
 
+static unsigned int ata_ctl_ports[2] =
+{
+  ATA_CONTROL_PORT,
+  ATA_2_CONTROL_PORT
+};
+
+static unsigned int ata_data_ports[2] =
+{
+  ATA_DATA_PORT,
+  ATA_2_DATA_PORT
+};
+
 void ataStop(unsigned int device) {}
 
 
@@ -16,38 +28,40 @@ struct iblkdriver * ataGetDriver() {
 }
 
 void ataInit(unsigned int device) {
-    outb(ATA_CONTROL_PORT, CMD_ATA_RESET);
+    outb(ata_ctl_ports[device], CMD_ATA_RESET);
 }
 
-void ataReadDataBuffer(unsigned int *Buffer, unsigned int numBytes) {
+void ataReadDataBuffer(unsigned int device, unsigned int *Buffer, unsigned int numBytes) {
     unsigned int i;
 
     for (i = 0; i < numBytes; i++) {
-        *(Buffer++) = inb(ATA_DATA_PORT);
+        *(Buffer++) = inb(ata_data_ports[device]);
     }
 }
 
-void ataWriteDataBuffer(unsigned int *Buffer, unsigned int numBytes) {
+void ataWriteDataBuffer(unsigned int device, unsigned int *Buffer, unsigned int numBytes) {
     unsigned int i;
 
     for (i = 0; i < numBytes; i++) {
-        outb(ATA_DATA_PORT, *(Buffer++));
+        outb(ata_data_ports[device], *(Buffer++));
     }
 }
 
-unsigned int ataReadSectorsLBA(unsigned int device, unsigned int Sector, unsigned int *Buffer) {
-    outb(ATA_CONTROL_PORT, CMD_ATA_READ);
-    outb(ATA_DATA_PORT, 0);
-    outb(ATA_DATA_PORT, (Sector & 0xffff));
-    ataReadDataBuffer(Buffer, 256);
+unsigned int ataReadSectorsLBA(unsigned int device_full, unsigned int Sector, unsigned int *Buffer) {
+  unsigned int device = DEV_MINOR(device_full);
+    outb(ata_ctl_ports[device], CMD_ATA_READ);
+    outb(ata_data_ports[device], 0);
+    outb(ata_data_ports[device], (Sector & 0xffff));
+    ataReadDataBuffer(device, Buffer, 256);
     return 0;
 }
 
-unsigned int ataWriteSectorsLBA(unsigned int device, unsigned int Sector, unsigned int *Buffer) {
-    outb(ATA_CONTROL_PORT, CMD_ATA_WRITE);
-    outb(ATA_DATA_PORT, 0);
-    outb(ATA_DATA_PORT, (Sector & 0xffff));
-    ataWriteDataBuffer(Buffer, 256);
+unsigned int ataWriteSectorsLBA(unsigned int device_full, unsigned int Sector, unsigned int *Buffer) {
+  unsigned int device = DEV_MINOR(device_full);
+    outb(ata_ctl_ports[device], CMD_ATA_WRITE);
+    outb(ata_data_ports[device], 0);
+    outb(ata_data_ports[device], (Sector & 0xffff));
+    ataWriteDataBuffer(device, Buffer, 256);
     return 0;
 }
 

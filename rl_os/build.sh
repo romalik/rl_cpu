@@ -59,37 +59,42 @@ cd ..
 ####################
 #  prepare arch    #
 ####################
-rm -rf rootfs/bstrap
-mkdir -p rootfs/bstrap
+rm -rf rootfs/hda
+mkdir -p rootfs/hda
 cd rootfs
 rm -rf scripts
 cp -rfv text_conv scripts
-tar cfv bstrap/bin.tar bin
-tar cfv bstrap/scripts.tar scripts
+tar cfv hda/bin.tar bin
+tar cfv hda/scripts.tar scripts
 cd ..
-cp ls_c rootfs/bstrap
-cp rootfs/bin/sh rootfs/bstrap
-cp rootfs/bin/cat rootfs/bstrap
-cp rootfs/bin/wc rootfs/bstrap
-cp rootfs/bin/echo rootfs/bstrap
-#cp rootfs/bin/nctest rootfs/bstrap
-cp rootfs/bin/test rootfs/bstrap
-cp rootfs/bin/ls rootfs/bstrap
-cp rootfs/bin/ps rootfs/bstrap
-#cp rootfs/bin/dd rootfs/bstrap
-#cp rootfs/bin/hello rootfs/bstrap
-#cp rootfs/bin/kill rootfs/bstrap
-#cp rootfs/bin/cat rootfs/bstrap
-cp rootfs/bin/tar rootfs/bstrap
-cp rootfs/bin/testrpc rootfs/bstrap
-cp rootfs/bin/mt_test rootfs/bstrap
-#cp rootfs/bin/vt rootfs/bstrap
+cp ls_c rootfs/hda
+cp rootfs/bin/sh rootfs/hda
+cp rootfs/bin/mount rootfs/hda
+cp rootfs/bin/mkdir rootfs/hda
+cp rootfs/bin/umount rootfs/hda
+cp rootfs/bin/cat rootfs/hda
+cp rootfs/bin/wc rootfs/hda
+cp rootfs/bin/echo rootfs/hda
+#cp rootfs/bin/nctest rootfs/hda
+cp rootfs/bin/test rootfs/hda
+cp rootfs/bin/ls rootfs/hda
+cp rootfs/bin/ps rootfs/hda
+#cp rootfs/bin/dd rootfs/hda
+#cp rootfs/bin/hello rootfs/hda
+#cp rootfs/bin/kill rootfs/hda
+#cp rootfs/bin/cat rootfs/hda
+cp rootfs/bin/tar rootfs/hda
+cp rootfs/bin/testrpc rootfs/hda
+cp rootfs/bin/mt_test rootfs/hda
+#cp rootfs/bin/vt rootfs/hda
 
-cp rootfs/scripts/install.sh rootfs/bstrap/
-cp rootfs/scripts/st.sh rootfs/bstrap/
+cp rootfs/scripts/install.sh rootfs/hda/
+cp rootfs/scripts/st.sh rootfs/hda/
 
 #-------------------
 
 
 
-g++ -o ./tools/make_rootfs ./tools/make_rootfs.cpp && ./tools/make_rootfs hdd 10000000 rootfs/bstrap
+g++ -o ./tools/make_rootfs ./tools/make_rootfs.cpp
+./tools/make_rootfs hda 10000000 rootfs/hda
+./tools/make_rootfs hdb 10000000 rootfs/hdb

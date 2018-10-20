@@ -15,6 +15,10 @@ struct set openFiles;
 static unsigned int openFilesArena[MAX_FILES * sizeof(FILE) + MAX_FILES];
 
 
+struct set mtab;
+static unsigned int mtabArena[MAX_MOUNT_POINTS * sizeof(struct mtab_entry) + MAX_MOUNT_POINTS];
+
+
 struct fs_node fs_root;
 struct devOpTable devList[MAX_DEVS];
 struct extDevOpTable extDevList[MAX_DEVS];
@@ -59,33 +63,33 @@ int blockRequest = 0;
  *  major|minor
  */
 
-void fs_mkfs() {
+void fs_mkfs(unsigned int device) {
     struct Block *b;
     int i;
     size_t n;
     fs_node_t dir;
-    b = bread(0, 0);
+    b = bread(device, 0);
 
     memcpy(b->data, (void *)"RLFS filesystem", 16);
     b->flags = BLOCK_MODIFIED;
     bfree(b);
 
     for (i = 1; i < 35; i++) {
-        b = bread(0, i);
+        b = bread(device, i);
         for (n = 0; n < 256; n++) {
             b->data[n] = 0;
         }
         b->flags = BLOCK_MODIFIED;
         bfree(b);
     }
-    b = bread(0, 1);
+    b = bread(device, 1);
     b->data[0] = 0xffff;
     b->data[1] = 0xffff;
     b->data[2] = 0x0007;
     b->flags = BLOCK_MODIFIED;
     bfree(b);
 
-    b = bread(0, 34);
+    b = bread(device, 34);
     b->data[0] = S_IFDIR;
     b->data[1] = 64;
     b->data[2] = 0x0000;
@@ -96,6 +100,7 @@ void fs_mkfs() {
     bfree(b);
 
     dir.idx = 34;
+    dir.dev = device;
 
     fs_write(&dir, 0, 31, (unsigned int *)("."));
     fs_write(&dir, 31, 1, &(dir.idx));
@@ -108,8 +113,10 @@ void fs_mkfs() {
 void fs_init() {
     int i;
     set_create_static(MAX_FILES, sizeof(FILE), &openFiles, openFilesArena);
+    set_create_static(MAX_MOUNT_POINTS, sizeof(struct mtab_entry), &mtab, mtabArena);
 
     fs_root.idx = 34;
+    fs_root.dev = 0;
 	
 	for(i = 0; i<MAX_DEVS; i++) {
 		devList[i].registered = 0;
@@ -117,14 +124,60 @@ void fs_init() {
 	}
 }
 
+void fs_mount(fs_node_t where, fs_node_t mount_fs_root, fs_node_t device_node) {
+  struct mtab_entry new_mtab_entry;
+  new_mtab_entry.fs_root = mount_fs_root;
+  new_mtab_entry.mount_point = where;
+  new_mtab_entry.device_node = device_node;
+  set_insert(&mtab, (unsigned int *)&new_mtab_entry);
+  printf("Mounted\n");
+}
 
-blk_t fs_findFreeSector() {
+void fs_umount(fs_node_t device_node) {
+  size_t i;
+  struct mtab_entry * ent;
+  for(i = 0; i<mtab.size; i++) {
+    ent = (struct mtab_entry *)set_at(&mtab, i);
+    if((ent->device_node.dev == device_node.dev) && (ent->device_node.idx == device_node.idx)) {
+      set_remove(&mtab, i);
+      printf("Unmounted\n");
+      return;
+    }
+  }
+  printf("mtab entry not found\n");
+}
+
+struct mtab_entry * fs_mtab_seek(fs_node_t * mount_point) {
+  size_t i;
+  struct mtab_entry * ent;
+  for(i = 0; i<mtab.size; i++) {
+    ent = (struct mtab_entry *)set_at(&mtab, i);
+    if((ent->mount_point.dev == mount_point->dev) && (ent->mount_point.idx == mount_point->idx)) {
+      return ent;
+    }
+  }
+  return 0;
+}
+
+struct mtab_entry * fs_mtab_rseek(fs_node_t * fs_root) {
+  size_t i;
+  struct mtab_entry * ent;
+  for(i = 0; i<mtab.size; i++) {
+    ent = (struct mtab_entry *)set_at(&mtab, i);
+    if((ent->fs_root.dev == fs_root->dev) && (ent->fs_root.idx == fs_root->idx)) {
+      return ent;
+    }
+  }
+  return 0;
+}
+
+blk_t fs_findFreeSector(unsigned int device) {
     int i;
     int j;
     unsigned int cBitmap = 0;
     struct Block *b;
     for (cBitmap = 0; cBitmap < 32; cBitmap++) {
-        b = bread(0, cBitmap + 1);
+        b = bread(device, cBitmap + 1);
         for (i = 0; i < 256; i++) {
             if (b->data[i] != 0xffff) {
                 for (j = 0; j < 16; j++) {
@@ -147,7 +200,7 @@ blk_t fs_findFreeSector() {
     return 0;
 }
 
-void fs_markSector(blk_t sect, int val) {
+void fs_markSector(unsigned int device, blk_t sect, int val) {
     int idx;
     int pos;
     unsigned int cBitmap;
@@ -159,7 +212,7 @@ void fs_markSector(blk_t sect, int val) {
     sect = sect & 0xfff;
     idx = sect >> 4;
     pos = sect & 0x0f;
-    b = bread(0, cBitmap + 1);
+    b = bread(device, cBitmap + 1);
     if (val) {
         b->data[idx] = (b->data[idx] | (1 << pos));
     } else {
@@ -169,34 +222,34 @@ void fs_markSector(blk_t sect, int val) {
     bfree(b);
 }
 
-blk_t fs_allocBlock() {
+blk_t fs_allocBlock(unsigned int device) {
     blk_t newBlock;
-    newBlock = fs_findFreeSector();
-    fs_markSector(newBlock, 1);
+    newBlock = fs_findFreeSector(device);
+    fs_markSector(device, newBlock, 1);
     //    printf("Alloc block %d\n", newBlock);
     return newBlock;
 }
 
-#define fs_freeBlock(b) fs_markSector((b), 0)
+#define fs_freeBlock(d, b) fs_markSector((d), (b), 0)
 
 int fs_stat(fs_node_t *node, struct stat *res) {
     struct Block *b;
 
-    b = bread(0, node->idx);
+    b = bread(node->dev, node->idx);
 
-    res->st_dev = 0;
+    res->st_dev = node->dev;
     res->st_ino = node->idx;
     res->st_mode = b->data[0];
     res->st_nlink = 0;
     res->st_uid = 0;
     res->st_gid = 0;
-    res->st_rdev = 0;
+    res->st_rdev = 0;//node->dev;
     res->st_size = *(off_t *)&b->data[1];
     res->st_atime = 0;
     res->st_mtime = 0;
     res->st_ctime = 0;
 
-    if (S_ISCHR(res->st_mode)) {
+    if (S_ISCHR(res->st_mode) || S_ISBLK(res->st_mode)) {
         res->st_rdev = res->st_size;
         res->st_size = 1;
     }
@@ -226,13 +279,13 @@ int fs_create(fs_node_t *where, const unsigned int *name, unsigned int flags,
         } else {
             int i;
             struct Block *b;
-            blk_t newBlock = fs_allocBlock();
+            blk_t newBlock = fs_allocBlock(where->dev);
 
             // printf("Dirent: at inode %d off %d write block %d\n", where->idx,
             //       s.size, newBlock);
             fs_write(where, s.st_size, 31, name);
             fs_write(where, s.st_size + 31, 1, &newBlock);
-            b = bread(0, newBlock);
+            b = bread(where->dev, newBlock);
             b->data[0] = flags;
             for (i = 1; i < 256; i++) {
                 b->data[i] = 0;
@@ -251,8 +304,17 @@ int fs_create(fs_node_t *where, const unsigned int *name, unsigned int flags,
 int fs_finddir(fs_node_t *where, const unsigned int *what, fs_node_t *res) {
     off_t i;
     struct stat s;
+    struct mtab_entry * mtab_ent;
 
     // printf("Finding dirent %s at node %d\n", what, where->idx);
+    //check if desired node is ".." and in mtab
+    if(!strcmp(what, "..")) {
+      if(mtab_ent = fs_mtab_rseek(where)) {
+        //printf("Crossing mountpoint UP [%d %d] -> [%d %d]\n", where->dev, where->idx, mtab_ent->mount_point.dev, mtab_ent->mount_point.idx);
+        where->idx = mtab_ent->mount_point.idx;
+        where->dev = mtab_ent->mount_point.dev;
+      }
+    }
 
     fs_stat(where, &s);
     for (i = 0; i < s.st_size; i += 32) {
@@ -260,6 +322,16 @@ int fs_finddir(fs_node_t *where, const unsigned int *what, fs_node_t *res) {
         fs_read(where, i, 32, (unsigned int *)&dEnt);
         if (!strcmp(dEnt.name, what)) {
             res->idx = dEnt.idx;
+            res->dev = where->dev;
+            //MOUNTPOINTS:
+            //check if found node is in mtab
+            if(mtab_ent = fs_mtab_seek(res)) {
+              //printf("Crossing mountpoint DOWN [%d %d] -> [%d %d]\n", res->dev, res->idx, mtab_ent->fs_root.dev, mtab_ent->fs_root.idx);
+              res->idx = mtab_ent->fs_root.idx;
+              res->dev = mtab_ent->fs_root.dev;
+            }
+            //translate device and idx in node if needed
+
             // printf("Found! %d\n", res->idx);
             return FS_OK;
         }
@@ -276,11 +348,11 @@ int fs_readdir(fs_node_t *dir, off_t n, dirent_t *res) {
     }
 }
 
-blk_t getOrAllocBlockByOffset(struct Block * nodeBlock, off_t offset) {
+blk_t getOrAllocBlockByOffset(unsigned int device, struct Block * nodeBlock, off_t offset) {
   if(offset < DIRECT_INDEXES_CNT*256) {
     blk_t blk = nodeBlock->data[((offset >> 8)&0xff) + 3];
     if(!blk) {
-      blk = fs_allocBlock();
+      blk = fs_allocBlock(device);
       nodeBlock->data[((offset >> 8)&0xff) + 3] = blk;
     }
     return blk;
@@ -295,22 +367,22 @@ blk_t getOrAllocBlockByOffset(struct Block * nodeBlock, off_t offset) {
     iBlkIdx = nodeBlock->data[iBlkOff];
     if(!iBlkIdx) {
       unsigned int i = 0;
-      iBlkIdx = fs_allocBlock();
+      iBlkIdx = fs_allocBlock(device);
       nodeBlock->data[iBlkOff] = iBlkIdx;
       nodeBlock->flags = BLOCK_MODIFIED;
-      iBlk = bread(0, iBlkIdx);
+      iBlk = bread(device, iBlkIdx);
       for(i= 0; i<256; i++) {
         iBlk->data[i] = 0;
       }
       iBlk->flags = BLOCK_MODIFIED;
     } else {
-      iBlk = bread(0, iBlkIdx);
+      iBlk = bread(device, iBlkIdx);
     }
 
     retval = iBlk->data[(offset >> 8) & 0xff];
 
     if(!retval) {
-      retval = fs_allocBlock();
+      retval = fs_allocBlock(device);
       iBlk->data[(offset >> 8) & 0xff] = retval;
       iBlk->flags = BLOCK_MODIFIED;
     }
@@ -329,7 +401,8 @@ unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
   unsigned int offsetInBlock;
   size_t alreadyRead;
   blk_t cBlock;
-  nodeBlock = bread(0, node->idx);
+  nodeBlock = bread(node->dev, node->idx);
+
 
   s.st_mode = nodeBlock->data[0];
   s.st_size = *(off_t *)&nodeBlock->data[1];
@@ -346,13 +419,13 @@ unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
 
   while (size > 0) {
       size_t read_now;
-      cBlock = getOrAllocBlockByOffset(nodeBlock, offset);
+      cBlock = getOrAllocBlockByOffset(node->dev, nodeBlock, offset);
       offsetInBlock = offset & 0xff;
       read_now = 256 - offsetInBlock;
       if (size < read_now) {
           read_now = size;
       }
-      currentBlock = bread(0, cBlock);
+      currentBlock = bread(node->dev, cBlock);
       memcpy(buf + alreadyRead, currentBlock->data + offsetInBlock, read_now);
 
       offset += read_now;
@@ -386,7 +459,7 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
   // printf("Write [%s] to node %d off %d size %d\n", buf, node->idx,
   // offset, size);
 
-  nodeBlock = bread(0, node->idx);
+  nodeBlock = bread(node->dev, node->idx);
 
   s.st_mode = nodeBlock->data[0];
   s.st_size = *(off_t *)&nodeBlock->data[1];
@@ -407,7 +480,7 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
 */
 
 
-  cBlock = getOrAllocBlockByOffset(nodeBlock, offset);
+  cBlock = getOrAllocBlockByOffset(node->dev, nodeBlock, offset);
   offsetInBlock = offset & 0xff;
 
   while (size > 0) {
@@ -415,7 +488,7 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
       if (size < write_now) {
           write_now = size;
       }
-      currentBlock = bread(0, cBlock);
+      currentBlock = bread(node->dev, cBlock);
       memcpy(currentBlock->data + offsetInBlock, buf + alreadyWritten,
              write_now);
 
@@ -424,7 +497,7 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
       size -= write_now;
 
       cBlockIdx = offset >> 8;
-      cBlock = getOrAllocBlockByOffset(nodeBlock, offset);
+      cBlock = getOrAllocBlockByOffset(node->dev, nodeBlock, offset);
 
       offsetInBlock = offset & 0xff;
       currentBlock->flags = BLOCK_MODIFIED;
@@ -441,149 +514,31 @@ unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
   return alreadyWritten;
    
 }
-/*
-unsigned int fs_read(fs_node_t *node, off_t offset, size_t size,
-                     unsigned int *buf) {
-    struct stat s;
-    unsigned int offsetInBlock;
-    blk_t cBlockIdx;
-    blk_t cBlock;
-    struct Block *nodeBlock;
-    struct Block *currentBlock;
-    size_t alreadyRead;
 
-    nodeBlock = bread(0, node->idx);
-
-    s.st_mode = nodeBlock->data[0];
-    s.st_size = *(off_t *)&nodeBlock->data[1];
-
-    if (offset > s.st_size) {
-        return 0;
-    }
-
-    if (offset + size > s.st_size) {
-        size = s.st_size - offset;
-    }
-
-    alreadyRead = 0;
-    //cBlockIdx = offset >> 8;
-    //cBlock = nodeBlock->data[cBlockIdx + 3];
-
-    while (size > 0) {
-        size_t read_now;
-        cBlock = nodeBlock->data[(offset >> 8) + 3];
-        offsetInBlock = offset & 0xff;
-        read_now = 256 - offsetInBlock;
-        if (size < read_now) {
-            read_now = size;
-        }
-        currentBlock = bread(0, cBlock);
-        memcpy(buf + alreadyRead, currentBlock->data + offsetInBlock, read_now);
-
-        offset += read_now;
-        alreadyRead += read_now;
-        size -= read_now;
-
-        bfree(currentBlock);
-    }
-
-    bfree(nodeBlock);
-    return alreadyRead;
-}
-
-
-
-unsigned int fs_write(fs_node_t *node, off_t offset, size_t size,
-                      const unsigned int *buf) {
-    struct stat s;
-    unsigned int offsetInBlock;
-    blk_t cBlockIdx;
-    blk_t cBlock;
-    struct Block *nodeBlock;
-    struct Block *currentBlock;
-    size_t alreadyWritten;
-
-    // printf("Write [%s] to node %d off %d size %d\n", buf, node->idx,
-    // offset, size);
-
-    nodeBlock = bread(0, node->idx);
-
-    s.st_mode = nodeBlock->data[0];
-    s.st_size = *(off_t *)&nodeBlock->data[1];
-
-    if (offset > s.st_size) {
-        return 0;
-    }
-
-    alreadyWritten = 0;
-    //cBlockIdx = offset >> 8;
-    //cBlock = nodeBlock->data[cBlockIdx + 3];
-    cBlock = nodeBlock->data[(offset >> 8) + 3];
-    if (cBlock == 0) {
-        cBlock = fs_allocBlock();
-        nodeBlock->data[(offset >> 8) + 3] = cBlock;;
-    }
-    offsetInBlock = offset & 0xff;
-
-    while (size > 0) {
-        size_t write_now = 256 - offsetInBlock;
-        if (size < write_now) {
-            write_now = size;
-        }
-        currentBlock = bread(0, cBlock);
-        memcpy(currentBlock->data + offsetInBlock, buf + alreadyWritten,
-               write_now);
-
-        offset += write_now;
-        alreadyWritten += write_now;
-        size -= write_now;
-
-        cBlockIdx = offset >> 8;
-        cBlock = nodeBlock->data[cBlockIdx + 3];
-        if (cBlock == 0) {
-            cBlock = fs_allocBlock();
-            nodeBlock->data[cBlockIdx + 3] = cBlock;
-        }
-
-        offsetInBlock = offset & 0xff;
-        currentBlock->flags = BLOCK_MODIFIED;
-        bfree(currentBlock);
-    }
-
-    if (offset > s.st_size) {
-        *(off_t *)&nodeBlock->data[1] = offset;
-        //nodeBlock->data[2] = offset >> 16;
-    }
-
-    nodeBlock->flags = BLOCK_MODIFIED;
-    bfree(nodeBlock);
-    return alreadyWritten;
-}
-*/
 void fs_reset(fs_node_t *node) {
     off_t off;
     int i;
     struct Block *b;
     struct stat s;
     blk_t blk;
-    b = bread(0, node->idx);
+    b = bread(node->dev, node->idx);
     s.st_mode = b->data[0];
     s.st_size = *(off_t *)&b->data[1];
 
     //free data blocks
     for(off = 0; off < s.st_size; off+=256) {
-      blk = getOrAllocBlockByOffset(b, off);
-      fs_freeBlock(blk);
+      blk = getOrAllocBlockByOffset(node->dev, b, off);
+      fs_freeBlock(node->dev, blk);
     }
 
     //free index blocks
     for(i = DIRECT_INDEXES_CNT + 3; i < 255; i++) {
       if(b->data[i] == 0)
         break;
-      fs_freeBlock(b->data[i]);
+      fs_freeBlock(node->dev, b->data[i]);
     }
     bfree(b);
-    fs_freeBlock(node->idx);
+    fs_freeBlock(node->dev, node->idx);
 }
 
 
@@ -1049,7 +1004,7 @@ int k_mknod(const void *__path, int type, unsigned int major, unsigned int minor
             }
             rv = fs_create(&parent, s, type, &devNode);
             // printf("fs create rv %d\n", rv);
-            b = bread(0, devNode.idx);
+            b = bread(devNode.dev, devNode.idx);
             b->data[1] = ((major << 8) | (minor & 0xff));
 
              //printf("mknod: create dev maj %d min %d mask %d\n", major, minor, b->data[1]);
@@ -1111,4 +1066,58 @@ int k_ioctl(FILE * fd, int request, unsigned int * buf, size_t * sz) {
     }
 	*sz = 0;
 	return -1;
+}
+
+int k_mount(const char * device_file, const char * mount_point) {
+  fs_node_t device_file_inode;
+  fs_node_t mount_point_inode;
+  fs_node_t new_fs_root;
+  struct stat s;
+  int rv;
+
+  rv = fs_lookup((const unsigned int *)device_file, NULL, &device_file_inode);
+  if (rv != FS_OK) {
+      return NULL;
+  }
+
+  rv = fs_lookup((const unsigned int *)mount_point, NULL, &mount_point_inode);
+  if (rv != FS_OK) {
+      return NULL;
+  }
+
+
+  // printf("Finding dirent %s at node %d\n", what, where->idx);
+
+  fs_stat(&device_file_inode, &s);
+
+  new_fs_root.dev = s.st_rdev;
+  new_fs_root.idx = 34;
+
+  fs_mount(mount_point_inode, new_fs_root, device_file_inode);
+
+  k_dump_mtab();
+  return 0;
+}
+
+int k_umount(const char * device_file) {
+  int rv;
+  fs_node_t device_file_inode;
+  rv = fs_lookup((const unsigned int *)device_file, NULL, &device_file_inode);
+  if (rv != FS_OK) {
+      return NULL;
+  }
+
+  fs_umount(device_file_inode);
+  k_dump_mtab();
+  return 0;
+}
+
+void k_dump_mtab() {
+  size_t i = 0;
+  struct mtab_entry * ent;
+  printf("mtab:\n");
+  for(i = 0; i<mtab.size; i++) {
+    ent = (struct mtab_entry *)set_at(&mtab, i);
+    printf("fs [d: %d idx: %d] mounted to [d: %d idx: %d]\n", ent->fs_root.dev, ent->fs_root.idx, ent->mount_point.dev, ent->mount_point.idx);
+  }
 }

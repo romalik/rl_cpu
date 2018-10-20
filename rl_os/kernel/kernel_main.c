@@ -54,7 +54,8 @@ int kernel_main() {
     // malloc_init((size_t)&__data_end, (size_t)(0x3000));
     //  printf("Init interrupts..\n");
 
-    ataInit(0);
+  ataInit(0);
+  ataInit(1);
     blkdrivers_init();
 
     regBlkDriver(0, ataGetDriver());
@@ -92,6 +93,9 @@ int kernel_main() {
     k_mknod("/dev/schedctl", 'c', 3, 0);
     k_mknod("/dev/null", 'c', 4, 0);
     k_mknod("/dev/zero", 'c', 5, 0);
+
+    k_mknod("/dev/hda", 'b', 0, 0);
+    k_mknod("/dev/hdb", 'b', 0, 1);
 
     printf("Press s for builtin shell, any key for init [%s]\n", init_path);
 

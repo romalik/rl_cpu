@@ -162,6 +162,26 @@ int mkdir(const char *path, mode_t mode) {
     syscall(&s);
     return s.res;
 }
+
+int mount(const char *dev, const char *path, int flags) {
+    struct mountSyscall s;
+    s.id = __NR_mount;
+    s.dev_path = dev;
+    s.mount_point_path = path;
+    s.flags = flags;
+    syscall(&s);
+    return s.res;
+}
+
+int umount(const char *path) {
+    struct umountSyscall s;
+    s.id = __NR_umount;
+    s.mount_point_path = path;
+    syscall(&s);
+    return s.res;
+}
+
+
 int mkfifo(const char *path, mode_t mode) {
     struct mkfifoSyscall s;
     s.id = __NR_mkfifo;
@@ -395,8 +415,6 @@ int mknod(const char *path, mode_t mode, dev_t dev) {
  int setgid(gid_t gid){ return 0; }
  int brk(void *addr){ return 0; }
  void *sbrk(intptr_t increment){ return 0; }
- int mount(const char *dev, const char *path, int flags){ return 0; }
- int umount(const char *dev){ return 0; }
  gid_t getgid(void){ return 0; }
  uid_t geteuid(void){ return 0; }
  gid_t getegid(void){ return 0; }

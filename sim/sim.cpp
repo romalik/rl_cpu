@@ -190,7 +190,8 @@ Cpu::Cpu() {
     this->devices.push_back(new PORT(0, NULL, &std::cout));
 
     this->devices.push_back(new LCD(320, 240, intCtl));
-    this->devices.push_back(new HDD(std::string("hdd")));
+    this->devices.push_back(new HDD(std::string("hda"),0));
+    this->devices.push_back(new HDD(std::string("hdb"),1));
     this->devices.push_back(new Timer(intCtl, 3, 5000ULL));
     this->devices.push_back(new MMUTable());
     this->devices.push_back(intCtl);

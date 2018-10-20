@@ -24,6 +24,39 @@ int sys_read(void * scallStructPtr) {
   return 0;
 }
 
+
+int sys_mount(void * scallStructPtr) {
+  unsigned int dev_path[512];
+  unsigned int mount_point_path[512];
+  struct mountSyscall s;
+
+  ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct mountSyscall), 0, (unsigned int *)&s);
+  ugets(cProc, (size_t)s.dev_path, 0, 14, 512, 1, dev_path);
+  ugets(cProc, (size_t)s.mount_point_path, 0, 14, 512, 1, mount_point_path);
+
+  s.res = k_mount((const char *)dev_path, (const char *)mount_point_path);
+
+  uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct mountSyscall), 0, (unsigned int *)&s);
+  return 0;
+
+}
+
+int sys_umount(void * scallStructPtr) {
+  unsigned int mount_point_path[512];
+  struct umountSyscall s;
+
+  ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct umountSyscall), 0, (unsigned int *)&s);
+  ugets(cProc, (size_t)s.mount_point_path, 0, 14, 512, 1, mount_point_path);
+
+  s.res = k_umount((const char *)mount_point_path);
+
+  uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct umountSyscall), 0, (unsigned int *)&s);
+  return 0;
+
+}
+
+
+
 int sys_mkdir(void * scallStructPtr) {
   unsigned int iobuf[1024];
   struct mkdirSyscall s;

@@ -42,6 +42,7 @@ int sys_chdir(void * scallStructPtr) {
 
     k_stat(fn_buf, &st);
     if (S_ISDIR(st.st_mode)) {
+      cProc->cwd.dev = st.st_dev;
       cProc->cwd.idx = st.st_ino;
       s.res = 0;
     } else {

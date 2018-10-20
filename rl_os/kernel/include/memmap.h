@@ -4,6 +4,9 @@
 #define ATA_CONTROL_PORT (0x60)
 #define ATA_DATA_PORT (0x61)
 
+#define ATA_2_CONTROL_PORT (0xC0)
+#define ATA_2_DATA_PORT (0xC1)
+
 #define PORT_OUT (0xA0)
 #define UART (0x40)
 #define UART2 (0x81)
