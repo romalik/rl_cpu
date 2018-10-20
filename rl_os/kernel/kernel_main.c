@@ -9,6 +9,7 @@
 #include <mm.h>
 //#include <vfs.h>
 #include <blk.h>
+#include <blkdriver.h>
 #include <tty.h>
 #include <piper.h>
 
@@ -53,7 +54,11 @@ int kernel_main() {
     // malloc_init((size_t)&__data_end, (size_t)(0x3000));
     //  printf("Init interrupts..\n");
 
-    ataInit();
+    ataInit(0);
+    blkdrivers_init();
+
+    regBlkDriver(0, ataGetDriver());
+
     block_init();
     fs_init();
 
@@ -69,6 +74,8 @@ int kernel_main() {
 	waitq_init();
 
     kernel_worker_init();
+
+
 
     k_regDevice(0, tty_write, tty_read, tty_open, tty_close, tty_ioctl);
     k_regDevice(1, proc_file_write, proc_file_read, 0, 0, 0);

@@ -19,7 +19,7 @@ void block_sync() {
     for (i = 0; i < BLOCK_CACHE_SIZE; i++) {
         if (blockCache[i].cnt == 0) {
             if (blockCache[i].flags == BLOCK_MODIFIED) {
-                ataWriteSectorsLBA(blockCache[i].n, blockCache[i].data);
+                getBlkDriver(blockCache[i].device)->write(blockCache[i].device, blockCache[i].n, blockCache[i].data);
             }
             blockCache[i].flags = BLOCK_FREE;
         }
@@ -46,7 +46,7 @@ struct Block *bread(unsigned int device, unsigned int n) {
                 blockCache[i].n = n;
                 blockCache[i].cnt = 1;
 //                blockCache[i].data = &blockDataCache[64 * 4 * i];
-                ataReadSectorsLBA(n, blockCache[i].data);
+                getBlkDriver(blockCache[i].device)->read(blockCache[i].device, n, blockCache[i].data);
                 //        printf("bread fetch and ret %d\n", i);
                 return &blockCache[i];
             }

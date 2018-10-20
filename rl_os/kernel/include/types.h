@@ -17,6 +17,9 @@ typedef int16_t pid_t;
 
 extern void panic(char * s);
 
+#define DEV_MAJOR(x) ((x) >> 8)
+#define DEV_MINOR(x) ((x) & 0xff)
+
 #define NULL 0
 
 #define RPC_CALLBACK_ON_READ 0
