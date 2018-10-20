@@ -10,7 +10,11 @@
 #include <sys.h>
 
 #endif
-FILE openFiles[MAX_FILES];
+
+struct set openFiles;
+static unsigned int openFilesArena[MAX_FILES * sizeof(FILE) + MAX_FILES];
+
+
 struct fs_node fs_root;
 struct devOpTable devList[MAX_DEVS];
 struct extDevOpTable extDevList[MAX_DEVS];
@@ -103,9 +107,8 @@ void fs_mkfs() {
 
 void fs_init() {
     int i;
-    for (i = 0; i < MAX_FILES; i++) {
-        openFiles[i].mode = FS_MODE_NONE;
-    }
+    set_create_static(MAX_FILES, sizeof(FILE), &openFiles, openFilesArena);
+
     fs_root.idx = 34;
 	
 	for(i = 0; i<MAX_DEVS; i++) {
@@ -114,15 +117,6 @@ void fs_init() {
 	}
 }
 
-int fs_get_free_fd() {
-    int i;
-    for (i = 0; i < MAX_FILES; i++) {
-        if (openFiles[i].mode == FS_MODE_NONE) {
-            return i;
-        }
-    }
-    return -1;
-}
 
 blk_t fs_findFreeSector() {
     int i;
@@ -628,23 +622,25 @@ int k_unlink(const char * name) {
 }
 
 FILE *fs_open(fs_node_t *node, unsigned int mode) {
-    int fd;
+    FILE f;
+    FILE * fp = &f;
     struct stat s;
-    fd = fs_get_free_fd();
     fs_stat(node, &s);
-    openFiles[fd].mode = mode;
-    openFiles[fd].size = s.st_size;
-    openFiles[fd].flags = s.st_mode;
-    openFiles[fd].device = s.st_rdev;
-    openFiles[fd].pos = 0;
-    openFiles[fd].refcnt = 1;
+    f.mode = mode;
+    f.size = s.st_size;
+    f.flags = s.st_mode;
+    f.device = s.st_rdev;
+    f.pos = 0;
+    f.refcnt = 1;
     if (mode & O_APPEND) {
-        openFiles[fd].pos = s.st_size;
+        f.pos = s.st_size;
     }
-    openFiles[fd].node = *node;
+    f.node = *node;
     if (mode == O_WRONLY && !S_ISCHR(s.st_mode) && !S_ISBLK(s.st_mode)) {
         fs_reset(node);
     }
+
+    fp = (FILE *)set_insert(&openFiles, (unsigned int *)&f);
 
     if(S_ISCHR(s.st_mode)) {
       unsigned int major;
@@ -654,10 +650,10 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
       minor = (s.st_rdev & 0xff);
       ops = &devList[major];
       if(ops->open) {
-        ops->open(minor, &openFiles[fd]);
+        ops->open(minor, fp);
       }
     }
-    return &openFiles[fd];
+    return fp;
 }
 
 int fs_lookup(const unsigned int *name, fs_node_t *parent, fs_node_t *res) {
@@ -942,7 +938,7 @@ void k_close(FILE *fd) {
       }
     }
 
-    fd->mode = FS_MODE_NONE;
+    set_remove_by_element(&openFiles, (unsigned int *)fd);
   }
 }
 

@@ -14,30 +14,6 @@
 #define MAX_FILES 10
 #define MAX_DEVS 10
 
-/*
-#define FS_NONE 0
-#define FS_FILE 1
-#define FS_DIR 2
-#define FS_CHAR_DEV 3
-#define FS_BLOCK_DEV 4
-#define FS_PIPE 5
-#define FS_LINK 6
-*/
-
-
-
-
-
-#define FS_MODE_NONE 0xffff
-
-/*
-#define FS_MODE_READ 'r'
-#define FS_MODE_WRITE 'w'
-#define FS_MODE_APPEND 'a'
-
-*/
-
-
 #define O_RDONLY        0
 #define O_WRONLY        1
 #define O_RDWR          2
@@ -222,7 +198,9 @@ struct stat {
 extern int blockRequest;
 
 
-extern FILE openFiles[MAX_FILES];
+
+extern struct set openFiles;
+
 extern struct fs_node fs_root;
 extern struct devOpTable devList[MAX_DEVS];
 
