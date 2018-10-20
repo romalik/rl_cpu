@@ -7,6 +7,17 @@
 #include <stdio.h>
 #include <fcntl.h>
 
+
+int regrpc(size_t queue_user, size_t major, size_t type) {
+  struct regrpcSyscall s;
+  s.id = __NR_regrpc;
+  s.queue_user = queue_user;
+  s.major = major;
+  s.type = type;
+  syscall(&s);
+  return 0;
+}
+
 int getdtablesize() {
 return 10;
 }
@@ -361,7 +372,19 @@ int unlink(const char *path){
 
 
 
- int mknod(const char *path, mode_t mode, dev_t dev) { return 0; }
+int mknod(const char *path, mode_t mode, dev_t dev) { 
+  struct mknodSyscall s;
+  s.id = __NR_mknod;
+  s.path = path;
+  s.major = (dev & 0xff00) >> 8;
+  s.minor = (dev & 0x00ff);
+  syscall(&s);
+  return s.res; 
+}
+
+
+
+
  int link(const char *path, const char *path2){ return 0; }
  int sync(void){ return 0; }
  int chmod(const char *path, mode_t mode){ return 0; }

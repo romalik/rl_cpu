@@ -49,6 +49,18 @@ int sys_mkfifo(void * scallStructPtr) {
   uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct mkfifoSyscall), 0, (unsigned int *)&s);
   return 0;
 }
+int sys_mknod(void * scallStructPtr) {
+  unsigned int iobuf[1024];
+  struct mknodSyscall s;
+
+  ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct mknodSyscall), 0, (unsigned int *)&s);
+  ugets(cProc, (size_t)s.path, 0, 14, 1024, 1, iobuf);
+
+  s.res = k_mknod(iobuf,'c',s.major,s.minor);
+
+  uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct mknodSyscall), 0, (unsigned int *)&s);
+  return 0;
+}
 int sys_pipe(void * scallStructPtr) {
   struct pipeSyscall s;
   int fd;

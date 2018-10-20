@@ -8,6 +8,7 @@
 #include <waitq.h>
 #include <syscall.h>
 #include <sys.h>
+
 #endif
 FILE openFiles[MAX_FILES];
 struct fs_node fs_root;
@@ -106,6 +107,11 @@ void fs_init() {
         openFiles[i].mode = FS_MODE_NONE;
     }
     fs_root.idx = 34;
+	
+	for(i = 0; i<MAX_DEVS; i++) {
+		devList[i].registered = 0;
+		extDevList[i].registered = 0;
+	}
 }
 
 int fs_get_free_fd() {
@@ -818,11 +824,36 @@ size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
     } else if (S_ISCHR(fd->flags)) {
         unsigned int major;
         unsigned int minor;
-        struct devOpTable *ops;
+		unsigned int registeredDevice = 0;
         major = (fd->device >> 8);
         minor = (fd->device & 0xff);
-        ops = &devList[major];
-        alreadyRead = ops->read(minor, buf, size);
+		if(major& 0xf0) {
+			struct extDevOpTable *ops;
+			if(major < MAX_DEVS) {
+				//externalDevice
+				ops = &extDevList[major&0x7f];
+				registeredDevice = ops->registered;
+			}
+			if(registeredDevice) {
+				printf("Reading from registered extdevice major 0x%2X\n", major);
+			} else {
+				printf("Try read from unregistered extdevice major 0x%2X\n", major);
+			}
+		} else {
+			struct devOpTable *ops;
+			if(major < MAX_DEVS) {
+				ops = &devList[major];
+				registeredDevice = ops->registered;
+			}
+
+			if(registeredDevice) {
+				//printf("Reading from registered intdevice major 0x%2X\n", major);
+				alreadyRead = ops->read(minor, buf, size);
+			} else {
+				//printf("Try read from unregistered intdevice major 0x%2X\n", major);
+			}
+
+		}
         return alreadyRead;
     } else {
         if (size + fd->pos > fd->size) {
@@ -1045,6 +1076,7 @@ int k_mkfifo(const void *__path) {
 
 int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openFunc, void *closeFunc, void *ioctlFunc) {
     if (major < MAX_DEVS) {
+		devList[major].registered = 1;
         devList[major].write = writeFunc;
         devList[major].read = readFunc;
         devList[major].open = openFunc;
@@ -1054,21 +1086,13 @@ int k_regDevice(unsigned int major, void *writeFunc, void *readFunc, void *openF
     return 0;
 }
 
-void k_regExternalDeviceCallback(struct Process * p, unsigned int major, unsigned int addr, unsigned int stack, unsigned int type) {
-	struct RPCParams params;
+void k_regExternalDeviceCallback(struct Process * p, unsigned int major, unsigned int queue_user, unsigned int type) {
 	unsigned int localMajor = major & 0x7f;
+	extDevList[localMajor].registered = 1;
 	extDevList[localMajor].driver = p;
 	extDevList[localMajor].driverPid = p->pid;
-	
-	params.driver = p;
-	params.fnAddr = addr;
-	params.stackAddr = stack;
-	
-	if(type >= RPC_CALLBACK_TYPES_NR) {
-		panic("Try to reg RPC with wrong type!\n");
-	}
-	
-	extDevList[localMajor].callbacks[type] = params;
+			
+	extDevList[localMajor].queue_user = queue_user;
 	
 }
 

@@ -8,6 +8,7 @@
 #endif
 #include <string.h>
 #include <types.h>
+#include <set.h>
 //#include <waitq.h>
 //#include <sched.h>
 #define MAX_FILES 10
@@ -140,6 +141,7 @@ typedef struct __FILE {
 } FILE;
 
 struct devOpTable {
+	unsigned int registered;
     unsigned int (*write)(unsigned int minor, const unsigned int * buf, size_t n);
     unsigned int (*read)(unsigned int minor, unsigned int * buf, size_t n);
     unsigned int (*open)(unsigned int minor, FILE * file);
@@ -147,19 +149,15 @@ struct devOpTable {
     unsigned int (*ioctl)(unsigned int minor, unsigned int request, unsigned int * buf, size_t * sz, FILE * file);
 };
 
-struct RPCParams {
-	size_t fnAddr;
-	size_t stackAddr;
-	struct Process * driver;
-};
 
 struct extDevOpTable {
+	unsigned int registered;
 	struct Process * driver;
 	pid_t driverPid;
-	struct RPCParams callbacks[RPC_CALLBACK_TYPES_NR];
+	size_t queue_user;
 };
 
-void k_regExternalDeviceCallback(struct Process * p, unsigned int major, unsigned int addr, unsigned int stack, unsigned int type);
+void k_regExternalDeviceCallback(struct Process * p, unsigned int major, unsigned int queue_user, unsigned int type);
 
 unsigned int extDevCallback(struct RPCParams * params, unsigned int minor, const unsigned int * buf, size_t n, FILE * f, unsigned int req);
 

@@ -75,6 +75,21 @@ void syscall(void *p);
 #define __NR_clone 67
 #define __NR_mkfifo 68
 #define __NR_yield 69
+#define __NR_regrpc 70
+
+#define __NR_N_SYSCALL 71
+
+
+
+
+struct regrpcSyscall {
+    unsigned int id;
+
+        unsigned int queue_user;
+        unsigned int major;
+        unsigned int type;
+};
+
 
 
 struct creatSyscall {
@@ -144,6 +159,13 @@ struct mkdirSyscall {
 struct mkfifoSyscall {
     unsigned int id;
     const char *path;
+    int res;
+};
+struct mknodSyscall {
+    unsigned int id;
+    const char *path;
+    int major;
+    int minor;
     int res;
 };
 struct pipeSyscall {

@@ -95,22 +95,47 @@ void do_kernel_task_clone(int i) {
     struct Process *new_p;
     //printf("Kernel worker: forking!\n");
     if (findProcByPid(kernelTaskQueue[i].callerPid, &p)) {
+		size_t stack_placement = 0;
+		size_t fn_addr = 0;
+		size_t arg = 0;
         new_p = do_fork(p, 1);
 
         if(kernelTaskQueue[i].args) {
-          struct forkSyscall s;
-          ugets(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
-          s.pid = new_p->pid;
-          uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct forkSyscall), 0, (unsigned int *)&s);
+          struct cloneSyscall s;
+          ugets(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct cloneSyscall), 0, (unsigned int *)&s);
+		  stack_placement = (size_t)s.stack;
+		  fn_addr = (size_t)s.fn;
+		  arg = (size_t)s.args;
+		  s.retval = new_p->pid;
+          //s.pid = new_p->pid;
+          uputs(p, (size_t)kernelTaskQueue[i].args, 0, 14, sizeof(struct cloneSyscall), 0, (unsigned int *)&s);
         }
+
+
+		printf("Create thread stack 0x%04X fn_addr 0x%04X arg 0x%04X\n", stack_placement, fn_addr, arg);
+
+   	    uputs(new_p, stack_placement, 0, 14, 1, 0, (unsigned int *)&arg);
+
+		new_p->intFrame.SP = stack_placement+1;//+sizeof(struct InterruptFrame)+off;
+		new_p->intFrame.AP = stack_placement;
+		new_p->intFrame.BP = stack_placement+1;
+		new_p->intFrame.highPC = fn_addr;
+		new_p->intFrame.D = 0;
+		new_p->intFrame.S = 0;
+		new_p->intFrame.SW = SW_COMMIT_ENABLE | SW_INT_ENABLE | SW_USER_MODE | (new_p->mmuSelector&0xff);
+
+		new_p->isThread = 1;
+
+		memcpy((unsigned int *)new_p->cmd, (unsigned int *)p->cmd, 32);
+
+
+
         //printf("Kernel worker: new_p 0x%04X\n", new_p);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
-        p->state = PROC_STATE_RUN;
+        new_p->state = PROC_STATE_RUN;
+		p->state = PROC_STATE_RUN;
 
-        if(p->pid != 0) {
-            //do not launch the process if forked from pid 0 - exec follows
-          run_proc(new_p);
-        }
+
     }
 }
 
@@ -212,18 +237,18 @@ void do_kernel_task_exit(int i) {
         //printf("Exit code: %d\n", p->retval);
         kernelTaskQueue[i].type = KERNEL_TASK_NONE;
         //close files
-        for (j = 0; j < MAX_FILES_PER_PROC; j++) {
-            if (p->openFiles[j]) {
-              k_close(p->openFiles[j]);
-              p->openFiles[j] = 0;
-              //printf("Closing file %d\n", i);
-            }
-        }
+        if(!p->isThread) {
+			for (j = 0; j < MAX_FILES_PER_PROC; j++) {
+				if (p->openFiles[j]) {
+				  k_close(p->openFiles[j]);
+				  p->openFiles[j] = 0;
+				  //printf("Closing file %d\n", i);
+				}
+			}
 
-        //if(!p->isThread) {
-          freeProcessPages(p);
-          mmu_mark_selector(p->mmuSelector, 0);
-        //}
+			freeProcessPages(p);
+            mmu_mark_selector(p->mmuSelector, 0);
+        }
           //printf("Exit for pid %d selector %d done\n", p->pid, p->mmuSelector);
     } else {
 

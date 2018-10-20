@@ -117,8 +117,10 @@
 
 #define TEBUFMAX 2048  /* Bytes in the terminal package output buffer.        */
 #define MAXLNLEN  300  /* Maximum line length this editor can handle.         */
-#define SCNROWS    24  /* Number of rows    in target terminal.               */
-#define SCNCOLS    80  /* Number of columns in target terminal.               */
+//#define SCNROWS    24  /* Number of rows    in target terminal.               */
+//#define SCNCOLS    80  /* Number of columns in target terminal.               */
+#define SCNROWS    30  /* Number of rows    in target terminal.               */
+#define SCNCOLS    53  /* Number of columns in target terminal.               */
 #define MAXFNAME  255  /* Maximum length of a filename.                       */
 #define VERSION  "1.3" /* Version number of this editor.                      */
 #define TEMPEXT  "tmp" /* Filename extension for temporary files.             */

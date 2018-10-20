@@ -38,7 +38,7 @@ int (*sys_table[])(void * scallStructPtr) = {
     /* __NR_execve 11*/ sys_execve,
     /* __NR_chdir 12 */ sys_chdir,
     /* __NR_time 13  */ sys_none,
-    /* __NR_mknod 14 */ sys_none,
+    /* __NR_mknod 14 */ sys_mknod,
     /* __NR_chmod 15 */ sys_none,
     /* __NR_chown 16 */ sys_none,
     /* __NR_break 17 */ sys_none,

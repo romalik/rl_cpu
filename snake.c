@@ -63,7 +63,7 @@ int mygetch() {
 #define DIRECTION_RIGHT 2
 #define DIRECTION_UP    3
 
-unsigned char self[20];
+unsigned char self[128];
 unsigned char current_direction = 4; /* L D R U */
 unsigned char current_length = 6; /* len * 2 */
 
@@ -382,14 +382,14 @@ void draw() {
     unsigned char c = 0;
     unsigned char r = 0;
     printf("%c[1J%c[H", 0x1b, 0x1b);
-    printf("Direction: %d\n##########\n#", current_direction);
+    printf("Length: %d\n|________|\n|", current_length/2);
     for(r = 0; r < 8; r++) {
         for(c = 0; c < 8; c++) {
-            printf("%s", (fb[r] & (1<<c))?"@":".");
+            printf("%s", (fb[r] & (1<<c))?"*":" ");
         }
-        printf("#\n#");
+        printf("|\n|");
     }
-    printf("#########\n");
+    printf("^^^^^^^^|\n");
 
 }
 

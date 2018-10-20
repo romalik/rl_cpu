@@ -21,8 +21,12 @@ struct Process * do_fork(struct Process * p, int clone) {
     new_p->state = PROC_STATE_CONSTRUCT;
     new_p->pid = sched_genPid();
     new_p->parent = p;
-    new_p->mmuSelector = mmu_get_free_selector();
-    mmu_mark_selector(new_p->mmuSelector, 1);
+	if(!clone) {
+		new_p->mmuSelector = mmu_get_free_selector();
+		mmu_mark_selector(new_p->mmuSelector, 1);
+	} else {
+		new_p->mmuSelector = p->mmuSelector;
+	}
 
 	if(clone) {
 		new_p->isThread = 1;

@@ -82,8 +82,7 @@
 struct regrpcSyscall {
     unsigned int id;
 
-	unsigned int addr;
-	unsigned int stack;
+	unsigned int queue_user;
 	unsigned int major;
 	unsigned int type;
 };
@@ -144,6 +143,14 @@ struct mkdirSyscall {
 struct mkfifoSyscall {
     unsigned int id;
     const char *path;
+    int res;
+};
+
+struct mknodSyscall {
+    unsigned int id;
+    const char *path;
+    int major;
+    int minor;
     int res;
 };
 

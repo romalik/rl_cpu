@@ -72,7 +72,7 @@ cp rootfs/bin/sh rootfs/bstrap
 cp rootfs/bin/cat rootfs/bstrap
 cp rootfs/bin/wc rootfs/bstrap
 cp rootfs/bin/echo rootfs/bstrap
-cp rootfs/bin/nctest rootfs/bstrap
+#cp rootfs/bin/nctest rootfs/bstrap
 cp rootfs/bin/test rootfs/bstrap
 cp rootfs/bin/ls rootfs/bstrap
 cp rootfs/bin/ps rootfs/bstrap
@@ -81,8 +81,9 @@ cp rootfs/bin/ps rootfs/bstrap
 #cp rootfs/bin/kill rootfs/bstrap
 #cp rootfs/bin/cat rootfs/bstrap
 cp rootfs/bin/tar rootfs/bstrap
+cp rootfs/bin/testrpc rootfs/bstrap
 cp rootfs/bin/mt_test rootfs/bstrap
-cp rootfs/bin/vt rootfs/bstrap
+#cp rootfs/bin/vt rootfs/bstrap
 
 cp rootfs/scripts/install.sh rootfs/bstrap/
 cp rootfs/scripts/st.sh rootfs/bstrap/

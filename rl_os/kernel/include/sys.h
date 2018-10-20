@@ -28,7 +28,7 @@ extern unsigned int system_interrupt_stack[2048];
 /* __NR_execve 11*/ int sys_execve(void * scallStructPtr);
 /* __NR_chdir 12 */ int sys_chdir(void * scallStructPtr);
 ///* __NR_time 13  */ int sys_none,
-///* __NR_mknod 14 */ int sys_none,
+/* __NR_mknod 14 */ int sys_mknod(void * scallStructPtr);
 ///* __NR_chmod 15 */ int sys_none,
 ///* __NR_chown 16 */ int sys_none,
 ///* __NR_break 17 */ int sys_none,
