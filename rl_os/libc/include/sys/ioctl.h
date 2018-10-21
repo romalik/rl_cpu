@@ -15,7 +15,7 @@
 #include <sys/ttychars.h>
 #include <sys/ttydev.h>
 
-int     ioctl (int d, int request, ...);
+int     ioctl (int d, int request, unsigned int * data);
 
 
 struct tchars {

@@ -12,7 +12,7 @@
 #include <blkdriver.h>
 #include <tty.h>
 #include <piper.h>
-
+#include <loop.h>
 
 extern char __data_end;
 extern char __code_end;
@@ -60,6 +60,9 @@ int kernel_main() {
 
     regBlkDriver(0, ataGetDriver());
 
+    loop_init(0);
+    regBlkDriver((7UL<<8), loop_get_driver());
+
     block_init();
     fs_init();
 
@@ -78,24 +81,28 @@ int kernel_main() {
 
 
 
-    k_regDevice(0, tty_write, tty_read, tty_open, tty_close, tty_ioctl);
-    k_regDevice(1, proc_file_write, proc_file_read, 0, 0, 0);
-    k_regDevice(2, piper_write, piper_read, piper_open, piper_close, 0);
-    k_regDevice(3, sched_file_write, sched_file_read, 0, 0, 0);
-    k_regDevice(4, null_file_write, null_file_read, 0, 0, 0);
-    k_regDevice(5, zero_file_write, zero_file_read, 0, 0, 0);
+    k_regDevice(0, 0,0,0,0,0);
+    k_regDevice(1, tty_write, tty_read, tty_open, tty_close, tty_ioctl);
+    k_regDevice(2, proc_file_write, proc_file_read, 0, 0, 0);
+    k_regDevice(3, piper_write, piper_read, piper_open, piper_close, 0);
+    k_regDevice(4, sched_file_write, sched_file_read, 0, 0, 0);
+    k_regDevice(5, null_file_write, null_file_read, 0, 0, 0);
+    k_regDevice(6, zero_file_write, zero_file_read, 0, 0, 0);
+    k_regDevice(7, 0, 0, 0, 0, loop_ioctl);
 
     k_mkdir("/dev");
 
-    k_mknod("/dev/tty", 'c', 0, 0);
-    k_mknod("/dev/tty2", 'c', 0, 1);
-    k_mknod("/dev/proc", 'c', 1, 0);
-    k_mknod("/dev/schedctl", 'c', 3, 0);
-    k_mknod("/dev/null", 'c', 4, 0);
-    k_mknod("/dev/zero", 'c', 5, 0);
+    k_mknod("/dev/tty", 'c', 1, 0);
+    k_mknod("/dev/tty2", 'c', 1, 1);
+    k_mknod("/dev/proc", 'c', 2, 0);
+    k_mknod("/dev/schedctl", 'c', 4, 0);
+    k_mknod("/dev/null", 'c', 5, 0);
+    k_mknod("/dev/zero", 'c', 6, 0);
 
     k_mknod("/dev/hda", 'b', 0, 0);
     k_mknod("/dev/hdb", 'b', 0, 1);
+
+    k_mknod("/dev/loop", 'b', 7, 0);
 
     printf("Press s for builtin shell, any key for init [%s]\n", init_path);
 

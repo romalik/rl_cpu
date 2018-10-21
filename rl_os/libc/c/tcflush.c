@@ -3,5 +3,5 @@
 
 int tcflush(int fd, int q)
 {
-  return ioctl(fd, TIOCFLUSH, q);
+  return ioctl(fd, TIOCFLUSH, (unsigned int *)q);
 }

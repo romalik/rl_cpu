@@ -12,7 +12,7 @@ main (int argc,char ** argv)
 	unsigned short filetype;
 	int major,minor;
 	
-	newmode = 0666 & ~umask(0);
+	newmode = 0666;// & ~umask(0);
 	
 	if (argc == 5) {
 		switch(argv[2][0]) {

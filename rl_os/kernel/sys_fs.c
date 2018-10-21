@@ -85,11 +85,18 @@ int sys_mkfifo(void * scallStructPtr) {
 int sys_mknod(void * scallStructPtr) {
   unsigned int iobuf[1024];
   struct mknodSyscall s;
+  char type;
+
+  if(s.mode & S_IFCHR) {
+    type = 'c';
+  } else if(s.mode & S_IFBLK) {
+    type = 'b';
+  }
 
   ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct mknodSyscall), 0, (unsigned int *)&s);
   ugets(cProc, (size_t)s.path, 0, 14, 1024, 1, iobuf);
 
-  s.res = k_mknod(iobuf,'c',s.major,s.minor);
+  s.res = k_mknod(iobuf,type,s.major,s.minor);
 
   uputs(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct mknodSyscall), 0, (unsigned int *)&s);
   return 0;

@@ -13,9 +13,9 @@ make
 make install
 cd ..
 
-cd linenoise
-make clean
-make
-make install
-cd ..
+#cd linenoise
+#make clean
+#make
+#make install
+#cd ..
 

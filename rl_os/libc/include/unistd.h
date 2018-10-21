@@ -99,7 +99,7 @@ int execve(const char *path, char * const argv[], char *const envp[]);
 pid_t wait(int *status);
 int setuid(uid_t uid);
 int setgid(gid_t gid);
-int ioctl(int fd, int request, ...);
+int ioctl(int fd, int request, unsigned int * data);
 int brk(void *addr);
 void *sbrk(intptr_t increment);
 int mount(const char *dev, const char *path, int flags);

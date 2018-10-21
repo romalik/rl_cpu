@@ -162,6 +162,7 @@ struct mkfifoSyscall {
 struct mknodSyscall {
     unsigned int id;
     const char *path;
+    int mode;
     int major;
     int minor;
     int res;

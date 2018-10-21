@@ -67,34 +67,35 @@ cp -rfv text_conv scripts
 tar cfv hda/bin.tar bin
 tar cfv hda/scripts.tar scripts
 cd ..
-cp ls_c rootfs/hda
 cp rootfs/bin/sh rootfs/hda
 cp rootfs/bin/mount rootfs/hda
 cp rootfs/bin/mkdir rootfs/hda
+cp rootfs/bin/mknod rootfs/hda
 cp rootfs/bin/umount rootfs/hda
 cp rootfs/bin/cat rootfs/hda
-cp rootfs/bin/wc rootfs/hda
+#cp rootfs/bin/wc rootfs/hda
 cp rootfs/bin/echo rootfs/hda
 #cp rootfs/bin/nctest rootfs/hda
-cp rootfs/bin/test rootfs/hda
+#cp rootfs/bin/test rootfs/hda
 cp rootfs/bin/ls rootfs/hda
 cp rootfs/bin/ps rootfs/hda
-#cp rootfs/bin/dd rootfs/hda
+cp rootfs/bin/dd rootfs/hda
 #cp rootfs/bin/hello rootfs/hda
 #cp rootfs/bin/kill rootfs/hda
 #cp rootfs/bin/cat rootfs/hda
 cp rootfs/bin/tar rootfs/hda
-cp rootfs/bin/testrpc rootfs/hda
+#cp rootfs/bin/testrpc rootfs/hda
 cp rootfs/bin/mt_test rootfs/hda
+cp rootfs/bin/setloop rootfs/hda
 #cp rootfs/bin/vt rootfs/hda
 
 cp rootfs/scripts/install.sh rootfs/hda/
 cp rootfs/scripts/st.sh rootfs/hda/
-
+cp hdb_s.img ./rootfs/hda
 #-------------------
 
 
 
 g++ -o ./tools/make_rootfs ./tools/make_rootfs.cpp
 ./tools/make_rootfs hda 10000000 rootfs/hda
-./tools/make_rootfs hdb 10000000 rootfs/hdb
+./tools/make_rootfs hdb 20000 rootfs/hdb

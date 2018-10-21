@@ -597,7 +597,7 @@ FILE *fs_open(fs_node_t *node, unsigned int mode) {
 
     fp = (FILE *)set_insert(&openFiles, (unsigned int *)&f);
 
-    if(S_ISCHR(s.st_mode)) {
+    if(S_ISCHR(s.st_mode) || S_ISBLK(s.st_mode)) {
       unsigned int major;
       unsigned int minor;
       struct devOpTable *ops;
@@ -1049,9 +1049,7 @@ void k_regExternalDeviceCallback(struct Process * p, unsigned int major, unsigne
 
 
 int k_ioctl(FILE * fd, int request, unsigned int * buf, size_t * sz) {
-    if (S_ISBLK(fd->flags)) {
-        return 0;
-    } else if (S_ISCHR(fd->flags)) {
+    if (S_ISCHR(fd->flags) || S_ISBLK(fd->flags)) {
         unsigned int major;
         unsigned int minor;
         struct devOpTable *ops;

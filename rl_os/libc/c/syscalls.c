@@ -134,12 +134,12 @@ uid_t getuid() {
 }
 
 
-int ioctl(int d, int request, ...) {
+int ioctl(int d, int request, unsigned int * data) {
     struct ioctlSyscall s;
     s.id = __NR_ioctl;
 	s.fd = d;
     s.req = request;
-    s.p = (void *)*(size_t *)(&request + 1);
+    s.p = (void *)data;
 
     syscall(&s);
     return s.retval;
@@ -394,7 +394,8 @@ int unlink(const char *path){
 
 int mknod(const char *path, mode_t mode, dev_t dev) { 
   struct mknodSyscall s;
-  s.id = __NR_mknod;
+  s.id = __NR_mknod; 
+  s.mode = mode;
   s.path = path;
   s.major = (dev & 0xff00) >> 8;
   s.minor = (dev & 0x00ff);

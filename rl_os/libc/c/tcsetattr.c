@@ -9,6 +9,6 @@ int tcsetattr(int fd, int oa, const struct termios *termios_p)
     op = TCSETSW;
   if (oa == TCSAFLUSH)
     op = TCSETSF;
-  return ioctl(fd, op, termios_p);
+  return ioctl(fd, op, (unsigned int *)termios_p);
 }
 
