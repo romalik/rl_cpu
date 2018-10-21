@@ -50,7 +50,7 @@ extern unsigned int system_interrupt_stack[2048];
 ///* __NR_access 33*/ int sys_none,
 ///* __NR_nice 34  */ int sys_none,
 ///* __NR_ftime 35 */ int sys_none,
-///* __NR_sync 36  */ int sys_none,
+/* __NR_sync 36  */ int sys_sync(void * scallStructPtr);
 /* __NR_kill 37  */ int sys_kill(void * scallStructPtr);
 ///* __NR_rename 38*/ int sys_none,
 /* __NR_mkdir 39 */ int sys_mkdir(void * scallStructPtr);

@@ -675,10 +675,51 @@ int fs_lookup(const unsigned int *name, fs_node_t *parent, fs_node_t *res) {
     return FS_OK; // should never get here o_O
 }
 
+
+
+static size_t blkdev_read(FILE *fd, unsigned int *buf, size_t size) {
+
+  struct Block * b;
+  size_t nblk;
+  size_t off_in_blk;
+  size_t sz_to_read = size;
+  nblk = (fd->pos >> 8); //divide by 256
+  off_in_blk = fd->pos & 0xff;
+  if(off_in_blk + size > 0x100) {
+    sz_to_read = 0x100 - off_in_blk;
+  }
+
+  b = bread(fd->device, nblk);
+  memcpy(buf, b->data + off_in_blk, sz_to_read);
+  bfree(b);
+  fd->pos+=sz_to_read;
+//  printf("blkdev_read: %d\n", sz_to_read);
+  return sz_to_read;
+}
+
+static size_t blkdev_write(FILE *fd, const unsigned int *buf, size_t size) {
+
+  struct Block * b;
+  size_t nblk;
+  size_t off_in_blk;
+  size_t sz_to_write = size;
+  nblk = (fd->pos >> 8); //divide by 256
+  off_in_blk = fd->pos & 0xff;
+  if(off_in_blk + size > 0x100) {
+    sz_to_write = 0x100 - off_in_blk;
+  }
+
+  b = bread(fd->device, nblk);
+  memcpy(b->data + off_in_blk, buf, sz_to_write);
+  fd->pos+=sz_to_write;
+  return sz_to_write;
+}
+
+
 size_t k_write(FILE *fd, const unsigned int *buf, size_t size) {
   size_t written = 0;
   if (S_ISBLK(fd->flags)) {
-        return 0;
+        return blkdev_write(fd, buf, size);
   } else if (S_ISCHR(fd->flags)) {
         unsigned int major;
         unsigned int minor;
@@ -768,10 +809,12 @@ size_t try_k_write(FILE *fd, unsigned int *buf, size_t size, pid_t caller, size_
 	return retval;
 }
 
+
+
 size_t k_read(FILE *fd, unsigned int *buf, size_t size) {
   size_t alreadyRead = 0;
     if (S_ISBLK(fd->flags)) {
-        return 0;
+        return blkdev_read(fd, buf, size);
     } else if (S_ISCHR(fd->flags)) {
         unsigned int major;
         unsigned int minor;

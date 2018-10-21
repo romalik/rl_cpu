@@ -9,6 +9,12 @@
 #include <syscall.h>
 #include <mm.h>
 
+
+int sys_sync(void * scallStructPtr) {
+  block_sync();
+  return 0;
+}
+
 int sys_write(void * scallStructPtr) {
   struct readSyscall s;
   ugets(cProc, (size_t)scallStructPtr, 0, 14, sizeof(struct writeSyscall), 0, (unsigned int *)&s);

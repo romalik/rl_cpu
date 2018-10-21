@@ -60,7 +60,7 @@ int (*sys_table[])(void * scallStructPtr) = {
     /* __NR_access 33*/ sys_none,
     /* __NR_nice 34  */ sys_none,
     /* __NR_ftime 35 */ sys_none,
-    /* __NR_sync 36  */ sys_none,
+    /* __NR_sync 36  */ sys_sync,
     /* __NR_kill 37  */ sys_kill,
     /* __NR_rename 38*/ sys_none,
     /* __NR_mkdir 39 */ sys_mkdir,

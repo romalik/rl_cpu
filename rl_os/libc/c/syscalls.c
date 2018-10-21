@@ -404,10 +404,16 @@ int mknod(const char *path, mode_t mode, dev_t dev) {
 }
 
 
+int sync(void){ 
+    struct syncSyscall s;
+    s.id = __NR_sync;
+    syscall(&s);
+    return 0; 
+
+}
 
 
  int link(const char *path, const char *path2){ return 0; }
- int sync(void){ return 0; }
  int chmod(const char *path, mode_t mode){ return 0; }
  int chown(const char *path, uid_t owner, gid_t group){ return 0; }
  pid_t getppid(void){ return 0; }

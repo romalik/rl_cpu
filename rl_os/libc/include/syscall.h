@@ -80,7 +80,9 @@ void syscall(void *p);
 #define __NR_N_SYSCALL 71
 
 
-
+struct syncSyscall {
+	unsigned int id;
+};
 
 struct regrpcSyscall {
     unsigned int id;

@@ -80,6 +80,8 @@ cp rootfs/bin/echo rootfs/hda
 cp rootfs/bin/ls rootfs/hda
 cp rootfs/bin/ps rootfs/hda
 cp rootfs/bin/dd rootfs/hda
+cp rootfs/bin/sync rootfs/hda
+
 #cp rootfs/bin/hello rootfs/hda
 #cp rootfs/bin/kill rootfs/hda
 #cp rootfs/bin/cat rootfs/hda
@@ -91,11 +93,10 @@ cp rootfs/bin/setloop rootfs/hda
 
 cp rootfs/scripts/install.sh rootfs/hda/
 cp rootfs/scripts/st.sh rootfs/hda/
-cp hdb_s.img ./rootfs/hda
 #-------------------
 
 
 
 g++ -o ./tools/make_rootfs ./tools/make_rootfs.cpp
 ./tools/make_rootfs hda 10000000 rootfs/hda
-./tools/make_rootfs hdb 20000 rootfs/hdb
+#./tools/make_rootfs hdb 10000000 rootfs/hdb
