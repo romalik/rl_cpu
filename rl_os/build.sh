@@ -87,9 +87,7 @@ cp rootfs/bin/sync rootfs/hda
 #cp rootfs/bin/cat rootfs/hda
 cp rootfs/bin/tar rootfs/hda
 #cp rootfs/bin/testrpc rootfs/hda
-cp rootfs/bin/mt_test rootfs/hda
-cp rootfs/bin/setloop rootfs/hda
-#cp rootfs/bin/vt rootfs/hda
+cp rootfs/bin/uip_test rootfs/hda
 
 cp rootfs/scripts/install.sh rootfs/hda/
 cp rootfs/scripts/st.sh rootfs/hda/

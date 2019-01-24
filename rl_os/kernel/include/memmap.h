@@ -9,7 +9,10 @@
 
 #define PORT_OUT (0xA0)
 #define UART (0x40)
-#define UART2 (0x81)
+#define UART_SR (0x41)
+//#define UART2 (0x81)
+#define UART2 (0x42)
+#define UART2_SR (0x43)
 
 #define INT0_vec (0x20)
 #define INT1_vec (0x21)

@@ -2,7 +2,7 @@
 #include <kstdio.h>
 #include <cb.h>
 
-#define UART_BUFFER_SIZE 100
+#define UART_BUFFER_SIZE 500
 
 unsigned int uart_buffer_data[2][UART_BUFFER_SIZE];
 struct circular_buffer uart_buffer[2];
@@ -18,8 +18,9 @@ void uart_init() {
 void uart_interrupt() {
   int c;
   int got = 0;
-  while ((c = inb(UART)) != 0) {
-	  got = 1;
+  while (inb(UART_SR)) {
+    got = 1;
+    c = inb(UART);
     cb_push(&uart_buffer[0], c);
   }
   
@@ -30,8 +31,9 @@ void uart_interrupt() {
 void uart2_interrupt() {
   int c;
   int got = 0;
-  while ((c = inb(UART2)) != 0) {
-	  got = 1;
+  while (inb(UART2_SR)) {
+    c = inb(UART2);
+    got = 1;
     cb_push(&uart_buffer[1], c);
   }
   
@@ -75,7 +77,12 @@ unsigned int tty_write(unsigned int minor, const unsigned int * buf, size_t n) {
   int to_write = n;
   while(to_write) {
 
-    outb(PORT_OUT, *buf);
+
+	if(minor) {
+          outb(UART2, *buf);
+	} else {
+          outb(UART, *buf);
+	}
     buf++;
     to_write--;
   }

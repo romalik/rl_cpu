@@ -104,7 +104,7 @@ int kernel_main() {
 
     k_mknod("/dev/loop", 'b', 7, 0);
 
-    printf("Press s for builtin shell, any key for init [%s]\n", init_path);
+//    printf("Press s for builtin shell, any key for init [%s]\n", init_path);
 
 
 
@@ -124,29 +124,6 @@ int kernel_main() {
         sched_start();
         init_interrupts();
         kernel_worker();
-        /*
-        struct Process * initP;
-        unsigned int b;
-        unsigned int c;
-        int initPid = 0;
-        mm_allocSegment(&b);
-        mm_allocSegment(&c);
-        printf("Loading init\n");
-
-        initPid = sched_genPid();
-        initP = sched_add_proc(initPid, b, c, 0);
-
-        if(do_exec(initP, INIT_PATH, NULL, NULL)) {
-            printf("Failed to exec init!\n");
-            halt();
-        }
-
-
-        printf("Starting scheduler\n");
-        sched_start();
-        while (1) {
-        }
-*/
     }
 
     printf("System halted\n");
